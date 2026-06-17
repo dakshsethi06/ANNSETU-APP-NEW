@@ -1,171 +1,109 @@
-# 🌾 Annsetu — Live Mandi Price Mobile Application
+# 🌾 Annsetu (अन्नसेतु)
+### Connecting Farmers to Live Mandi Prices
 
-> **Annsetu** (अन्नसेतु) means "bridge of food/grain" in Sanskrit.  
-> This app bridges farmers and markets by surfacing real-time mandi commodity prices from the Government of India's Open Data Portal.
-
-> **Platform:** Android (APK) — built with React Native + Expo (SDK 54)
+**Annsetu** ("bridge of food/grain" in Sanskrit) is a mobile application designed to bridge the information gap for farmers by providing real-time commodity prices sourced directly from the Government of India's Open Data Portal.
 
 ---
 
-## Quick Start
-
-### Prerequisites
-
-- **Node.js** v18+ installed → [nodejs.org](https://nodejs.org)
-- **npm** (comes with Node.js)
-- **Expo Go** app on your Android phone (for testing) → [Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent)
-
-> **Note:** No separate backend server is needed! The app calls the Government API (data.gov.in) directly.
+## 🚀 Key Features
+* **Real-time Price Sync:** Fetches active commodity prices directly from the official Indian government dataset (`data.gov.in`).
+* **Clean UI/UX:** High-contrast, easy-to-read price cards optimized for outdoor environments.
+* **Offline-Resilient Error Handling:** Gracefully handles network timeouts, API rate limits, and offline scenarios.
 
 ---
 
-### 1. Clone / Extract the Project
+## 🛠️ Tech Stack & Architecture
 
-```bash
-# If using the ZIP:
-unzip annsetu.zip
-cd annsetu
-```
+### **Mobile App (Frontend)**
+* **Framework:** React Native with Expo (SDK 54)
+* **Design System:** Custom HSL palette featuring accessible contrast ratios.
+* **API Client:** Native `fetch` API directly interacting with the government REST endpoints.
 
----
-
-### 2. Set Up the Mobile App
-
-```bash
-cd mobile
-npm install
-```
-
-Start the Expo development server:
-
-```bash
-npx expo start
-```
-
-You should see a QR code in the terminal.
+### **Proxy Server (Backend)**
+* **Runtime:** Node.js (Express)
+* **Purpose:** Built as an optional proxy server to encapsulate API keys and perform price aggregations.
+* **Dependencies:** `axios`, `cors`, `dotenv`.
 
 ---
 
-### 3. Test on Your Phone
+## 📁 Project Directory
 
-1. Make sure your **phone and computer are on the same Wi-Fi network**
-2. Open the **Expo Go** app on your phone
-3. Scan the QR code from the terminal
-4. The Annsetu app will load on your phone!
-
-> **Tip:** If the QR code doesn't work, press `w` in the terminal to open the web version in your laptop's browser.
-
----
-
-### 4. Use the App
-
-1. You'll see **"Annsetu"** in the top-left corner
-2. Tap **"Find Mandi Prices"**
-3. See the **Minimum** and **Maximum** prices for Potato in Uttar Pradesh displayed below the button
-4. Commodity (Potato) and State (Uttar Pradesh) are fixed
-
----
-
-### 5. Build the APK (Optional)
-
-To create a standalone APK file:
-
-```bash
-cd mobile
-
-# Install EAS CLI globally
-npm install -g eas-cli
-
-# Log in to Expo account (create one at expo.dev if needed)
-eas login
-
-# Build APK for Android
-eas build -p android --profile preview
-```
-
-The `preview` profile creates an APK (vs AAB for Play Store). You'll get a download link once the build completes.
-
----
-
-## Project Structure
-
-```
+```text
 annsetu/
-├── mobile/
-│   ├── App.js             ← Entry point — loads HomeScreen
-│   ├── app.json           ← Expo configuration (app name, icon)
-│   ├── package.json       ← React Native dependencies (Expo SDK 54)
+├── mobile/                   # React Native (Expo) Client
+│   ├── App.js                # App entry point
+│   ├── app.json              # Expo configuration
+│   ├── package.json          # Dependency manifest
 │   └── src/
 │       ├── screens/
-│       │   └── HomeScreen.js  ← Main screen — button + price display
+│       │   └── HomeScreen.js # Main UI screen & interaction logic
 │       ├── services/
-│       │   └── api.js         ← Calls data.gov.in API directly
-│       └── theme.js           ← Colors, spacing, shadows
+│       │   └── api.js        # API service layer (data.gov.in)
+│       └── theme.js          # App style tokens & custom theme
 │
-├── backend/               ← (Legacy — not needed anymore)
-│   └── server.js          ← Express server (kept for reference)
-│
-├── README.md              ← This file
-├── STUDY_GUIDE.md         ← Full project walkthrough for beginners
-└── .gitignore
+└── backend/                  # Node.js (Express) API Proxy
+    ├── server.js             # Server routing and aggregation logic
+    ├── package.json          # Dependency manifest
+    └── .env.example          # Environment variables template
 ```
 
 ---
 
-## How It Works
+## ⚙️ Getting Started
 
-```
-┌──────────────────────────────────────────────┐
-│              ANDROID DEVICE                    │
-│                                                │
-│   App.js ──renders──► HomeScreen.js            │
-│                          │                     │
-│                   User taps button             │
-│                          │                     │
-│                          ▼                     │
-│              api.js → fetch(data.gov.in)       │
-│                          │                     │
-└──────────────────────────┼─────────────────────┘
-                           │  HTTPS GET Request
-                           ▼
-┌──────────────────────────────────────────────┐
-│     GOVERNMENT API (api.data.gov.in)           │
-│                                                │
-│   Returns JSON with mandi price records        │
-│                                                │
-└──────────────────────────┬─────────────────────┘
-                           │  JSON Response
-                           ▼
-┌──────────────────────────────────────────────┐
-│              ANDROID DEVICE                    │
-│                                                │
-│   api.js parses min/max prices                 │
-│   HomeScreen shows the results                 │
-│                                                │
-└──────────────────────────────────────────────┘
-```
+### Prerequisites
+* **Node.js** (v18+)
+* **Expo Go** app installed on your Android/iOS device.
 
 ---
 
-## Troubleshooting
+### Step 1: Running the Mobile App (Expo Go)
+The mobile app calls the government API directly and can run independently of the backend server.
 
-| Problem | Fix |
-|---|---|
-| "Download latest Expo Go" error | Make sure you're using **Expo SDK 54** (check `package.json` has `"expo": "~54.0.0"`) |
-| "No mandi price data found" | The government API may be temporarily unavailable — try again |
-| Expo Go won't connect | Ensure phone and computer are on the same Wi-Fi network |
-| QR code not scanning | Press `w` in terminal to open web version, or type the URL manually in Expo Go |
-| "No internet connection" | Check your phone/computer has internet access |
+1. Navigate to the `mobile` directory:
+   ```bash
+   cd mobile
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Expo development server:
+   ```bash
+   npm run start
+   ```
+4. **Scan the QR Code** printed in your terminal using the **Expo Go** app (Android) or your **Camera app** (iOS).
 
 ---
 
-## Deployment Notes
+### Step 2: Running the Proxy Server (Optional)
+If you want to run the Express backend proxy server:
 
-- **Mobile App:** Use `eas build` to create APKs or AABs for the Google Play Store.
-- **No backend needed** — the app talks to data.gov.in directly.
+1. Navigate to the `backend` directory:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Copy environment configuration:
+   ```bash
+   copy .env.example .env
+   ```
+4. Start the server:
+   ```bash
+   npm run dev
+   ```
 
 ---
 
-## License
+## 📡 API Details
+* **Source:** Open Government Data (OGD) Platform India (`api.data.gov.in`)
+* **Resource:** Mandi Market Prices (Agriculture Marketing)
+* **Filters:** Currently configured to retrieve Potato prices in Uttar Pradesh.
 
-MIT — Free to use, modify, and distribute.
+---
+
+## ⚖️ License
+This project is licensed under the MIT License. Feel free to use, modify, and distribute.
