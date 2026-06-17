@@ -1,7 +1,7 @@
-# 🌾 Annsetu (अन्नसेतु)
+# 🌾 Annsetu
 ### Connecting Farmers to Live Mandi Prices
 
-**Annsetu** ("bridge of food/grain" in Sanskrit) is a mobile application designed to bridge the information gap for farmers by providing real-time commodity prices sourced directly from the Government of India's Open Data Portal.
+**Annsetu** is a mobile application designed to bridge the information gap for farmers by providing real-time commodity prices sourced directly from the Government of India's Open Data Portal.
 
 ---
 
