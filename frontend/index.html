@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Annsetu — Live Mandi Prices</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="brand">
+      <span class="brand-name">Annsetu</span>
+    </div>
+    <span class="brand-tagline">Connecting Farmers to Markets</span>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+    <section class="hero">
+      <h1 class="hero-title">Today's Mandi<br />Prices</h1>
+
+      <button id="fetchBtn" class="fetch-btn" onclick="fetchPrices()">
+        <span class="btn-text">Get Mandi Prices</span>
+        <span class="btn-spinner" aria-hidden="true"></span>
+      </button>
+    </section>
+
+    <!-- Summary Cards -->
+    <section id="summarySection" class="summary-section hidden" aria-live="polite">
+      <div class="summary-grid">
+        <div class="price-card card-min">
+          <p class="card-label">Minimum Price</p>
+          <p class="card-value" id="minPrice">—</p>
+          <p class="card-unit">per quintal</p>
+        </div>
+        <div class="price-card card-max">
+          <p class="card-label">Maximum Price</p>
+          <p class="card-value" id="maxPrice">—</p>
+          <p class="card-unit">per quintal</p>
+        </div>
+      </div>
+      <p class="records-note" id="recordsNote"></p>
+    </section>
+    <!-- Records Table -->
+    <section id="tableSection" class="table-section hidden">
+      <h2 class="table-heading">Commodity Breakdown</h2>
+      <div class="table-wrapper">
+        <table class="price-table" id="priceTable">
+          <thead>
+            <tr>
+              <th>Commodity</th>
+              <th>Market</th>
+              <th>State</th>
+              <th>Min ₹</th>
+              <th>Max ₹</th>
+              <th>Modal ₹</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Error -->
+    <section id="errorSection" class="error-section hidden" role="alert">
+      <div class="error-card">
+        <span class="error-icon">⚠️</span>
+        <p class="error-message" id="errorMessage">Something went wrong.</p>
+        <button class="retry-btn" onclick="fetchPrices()">Try Again</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Data sourced from <a href="https://data.gov.in" target="_blank" rel="noopener">data.gov.in</a> — Government of India Open Data Portal</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
