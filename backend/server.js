@@ -99,6 +99,7 @@ app.get('/api/mandi-prices', async (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'Annsetu Backend' }));
+app.get('/healthcheck', (req, res) => res.json({ status: 'ok', message: 'welcome' }));
 
 app.listen(PORT, () => {
   console.log(`✅ Annsetu backend running on http://localhost:${PORT}`);
