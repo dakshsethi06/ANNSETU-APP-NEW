@@ -1,6 +1,7 @@
 // =============================================
 // HomeScreen — Annsetu App
 // Tabs: Mandi Prices (with state selector) + Weather Info
+// Enhanced Premium Agrarian UI
 // =============================================
 
 import React, { useState, useEffect } from 'react';
@@ -20,6 +21,7 @@ import {
 } from 'react-native';
 import { fetchMandiPrices, fetchStates, fetchWeather } from '../services/api';
 import { COLORS, RADIUS, SPACING, SHADOWS } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeScreen() {
   // ── Tabs ──────────────────────────────────────
@@ -138,18 +140,33 @@ export default function HomeScreen() {
 
   const getWeatherBg = (condition) => {
     const cond = condition ? condition.toLowerCase() : '';
-    if (cond.includes('clear') || cond.includes('sunny')) return '#FFF3E0';
-    if (cond.includes('rain') || cond.includes('drizzle') || cond.includes('shower') || cond.includes('patchy') || cond.includes('thunder') || cond.includes('storm')) return '#E1F5FE';
-    if (cond.includes('cloud') || cond.includes('overcast') || cond.includes('mist') || cond.includes('haze') || cond.includes('fog')) return '#ECEFF1';
+    if (cond.includes('clear') || cond.includes('sunny')) return '#FFFBEA';
+    if (cond.includes('rain') || cond.includes('drizzle') || cond.includes('shower') || cond.includes('patchy') || cond.includes('thunder') || cond.includes('storm')) return '#F0F9FF';
+    if (cond.includes('cloud') || cond.includes('overcast') || cond.includes('mist') || cond.includes('haze') || cond.includes('fog')) return '#F4F6F7';
     return COLORS.white;
   };
 
   const getWeatherBorderColor = (condition) => {
     const cond = condition ? condition.toLowerCase() : '';
     if (cond.includes('clear') || cond.includes('sunny')) return COLORS.amber;
-    if (cond.includes('rain') || cond.includes('drizzle') || cond.includes('shower') || cond.includes('patchy') || cond.includes('thunder') || cond.includes('storm')) return '#4FC3F7';
-    if (cond.includes('cloud') || cond.includes('overcast') || cond.includes('mist') || cond.includes('haze') || cond.includes('fog')) return '#B0BEC5';
+    if (cond.includes('rain') || cond.includes('drizzle') || cond.includes('shower') || cond.includes('patchy') || cond.includes('thunder') || cond.includes('storm')) return '#0EA5E9';
+    if (cond.includes('cloud') || cond.includes('overcast') || cond.includes('mist') || cond.includes('haze') || cond.includes('fog')) return '#94A3B8';
     return COLORS.greenLight;
+  };
+
+  // Farmer Agricultural Advisory Logic
+  const getAgriAdvisory = (humidity, windSpeed, condition) => {
+    const cond = condition ? condition.toLowerCase() : '';
+    if (cond.includes('rain') || cond.includes('drizzle') || cond.includes('shower') || cond.includes('patchy') || cond.includes('thunder') || cond.includes('storm')) {
+      return "🌧️ Rain forecast: Suspend irrigation and secure harvested crops immediately.";
+    }
+    if (humidity > 80) {
+      return "💧 High humidity: Increased risk of fungal pests. Keep a close watch on crops.";
+    }
+    if (windSpeed > 25) {
+      return "💨 Strong winds: Postpone spraying chemical pesticides to avoid drift.";
+    }
+    return "✅ Good conditions: Ideal for weeding, fertilizer application, and spraying.";
   };
 
   // ── Render ────────────────────────────────────
@@ -160,53 +177,122 @@ export default function HomeScreen() {
     >
       <StatusBar barStyle="light-content" backgroundColor={COLORS.greenDeep} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.brandName}>Annsetu</Text>
-      </View>
+      {/* Premium Header with LinearGradient */}
+      <LinearGradient
+        colors={[COLORS.greenDeep, COLORS.greenMid]}
+        style={styles.header}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.headerContent}>
+          <Text style={styles.brandName}>Annsetu</Text>
+          <Text style={styles.brandTagline}>🌾 Connecting Farmers with Markets</Text>
+        </View>
+      </LinearGradient>
 
-      {/* Navigation Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'prices' && styles.tabButtonActive]}
-          onPress={() => setActiveTab('prices')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.tabText, activeTab === 'prices' && styles.tabTextActive]}>
-            🌾 Mandi Prices
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'weather' && styles.tabButtonActive]}
-          onPress={() => setActiveTab('weather')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.tabText, activeTab === 'weather' && styles.tabTextActive]}>
-            ☀️ Weather Info
-          </Text>
-        </TouchableOpacity>
+      {/* Centered Capsule Tabs Navigation */}
+      <View style={styles.tabOuterContainer}>
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'prices' && styles.tabButtonActive]}
+            onPress={() => setActiveTab('prices')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.tabText, activeTab === 'prices' && styles.tabTextActive]}>
+              🌾 Mandi Prices
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'weather' && styles.tabButtonActive]}
+            onPress={() => setActiveTab('weather')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.tabText, activeTab === 'weather' && styles.tabTextActive]}>
+              ☀️ Weather Info
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         {activeTab === 'prices' ? (
           /* ════════════ MANDI PRICES TAB ════════════ */
           <View style={styles.tabContent}>
-            <Text style={styles.title}>Mandi Prices</Text>
+            <Text style={styles.title}>Potato Mandi Prices</Text>
             <Text style={styles.subtitle}>
-              Potato — {selectedState || 'Select a state'}
+              Live price ranges by state (per quintal)
             </Text>
+
+            {/* Empty State / Select Prompt if state not selected */}
+            {!selectedState ? (
+              <View style={styles.emptyStateCard}>
+                <Text style={styles.emptyStateIcon}>📍</Text>
+                <Text style={styles.emptyStateTitle}>Select your State</Text>
+                <Text style={styles.emptyStateText}>
+                  Please choose an Indian state from the selector below to fetch the latest market price ranges for Potatoes.
+                </Text>
+              </View>
+            ) : minPrice === null ? (
+              <View style={styles.emptyStateCard}>
+                <Text style={styles.emptyStateIcon}>🥔</Text>
+                <Text style={styles.emptyStateTitle}>{selectedState}</Text>
+                <Text style={styles.emptyStateText}>
+                  State selected successfully. Click the "Find Prices" button to retrieve live data.
+                </Text>
+              </View>
+            ) : null}
+
+            {/* Unified Price Dashboard Widget */}
+            {minPrice !== null && maxPrice !== null && (
+              <View style={styles.priceDashboard}>
+                <View style={styles.dashboardHeader}>
+                  <View style={styles.cropIconContainer}>
+                    <Text style={styles.dashboardIcon}>🥔</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.dashboardTitle}>Potato (Aloo)</Text>
+                    <Text style={styles.dashboardLocation}>📍 {selectedState}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.dashboardDivider} />
+
+                <View style={styles.dashboardPriceRow}>
+                  <View style={styles.priceCol}>
+                    <Text style={styles.priceLabelText}>MIN PRICE</Text>
+                    <Text style={[styles.priceValueText, { color: COLORS.greenMid }]}>
+                      ₹{minPrice.toLocaleString('en-IN')}
+                    </Text>
+                  </View>
+                  <View style={styles.dashboardPriceDivider} />
+                  <View style={styles.priceCol}>
+                    <Text style={styles.priceLabelText}>MAX PRICE</Text>
+                    <Text style={[styles.priceValueText, { color: COLORS.amber }]}>
+                      ₹{maxPrice.toLocaleString('en-IN')}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.dashboardFooter}>
+                  <Text style={styles.spreadText}>
+                    ⚖️ Market Price Spread: ₹{(maxPrice - minPrice).toLocaleString('en-IN')} / quintal
+                  </Text>
+                </View>
+              </View>
+            )}
 
             {/* Button Row: Select State + Find Prices */}
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={[styles.button, styles.stateButton]}
                 onPress={handleSelectState}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
-                <Text style={styles.buttonText}>
+                <Text style={styles.buttonText} numberOfLines={1}>
                   {selectedState ? `📍 ${selectedState}` : '📍 Select State'}
                 </Text>
               </TouchableOpacity>
@@ -219,12 +305,12 @@ export default function HomeScreen() {
                 ]}
                 onPress={handleFetch}
                 disabled={loading || !selectedState}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
                 {loading ? (
                   <View style={styles.loadingRow}>
-                    <Text style={styles.buttonText}>Fetching…</Text>
                     <ActivityIndicator size="small" color="#fff" />
+                    <Text style={styles.buttonText}>Fetching…</Text>
                   </View>
                 ) : (
                   <Text style={styles.buttonText}>🔍 Find Prices</Text>
@@ -237,31 +323,12 @@ export default function HomeScreen() {
                 <Text style={styles.errorText}>⚠️ {error}</Text>
               </View>
             )}
-
-            {minPrice !== null && maxPrice !== null && (
-              <View style={styles.priceSection}>
-                <View style={[styles.priceCard, styles.minCard]}>
-                  <Text style={styles.priceLabel}>MINIMUM PRICE</Text>
-                  <Text style={[styles.priceValue, { color: COLORS.greenMid }]}>
-                    ₹{minPrice.toLocaleString('en-IN')}
-                  </Text>
-                  <Text style={styles.priceUnit}>per quintal</Text>
-                </View>
-                <View style={[styles.priceCard, styles.maxCard]}>
-                  <Text style={styles.priceLabel}>MAXIMUM PRICE</Text>
-                  <Text style={[styles.priceValue, { color: COLORS.amber }]}>
-                    ₹{maxPrice.toLocaleString('en-IN')}
-                  </Text>
-                  <Text style={styles.priceUnit}>per quintal</Text>
-                </View>
-              </View>
-            )}
           </View>
         ) : (
           /* ════════════ WEATHER TAB ════════════ */
           <View style={styles.tabContent}>
-            <Text style={styles.title}>Weather Info</Text>
-            <Text style={styles.subtitle}>Current & 5-Day Forecast</Text>
+            <Text style={styles.title}>Weather Information</Text>
+            <Text style={styles.subtitle}>Agrarian forecast & planning assistant</Text>
 
             {/* Search Row */}
             <View style={styles.searchContainer}>
@@ -277,7 +344,7 @@ export default function HomeScreen() {
                 style={[styles.searchButton, weatherLoading && styles.buttonDisabled]}
                 onPress={() => handleFetchWeather()}
                 disabled={weatherLoading}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
                 {weatherLoading ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -294,18 +361,24 @@ export default function HomeScreen() {
             )}
 
             {weatherData && (
-              <View style={{ width: '100%' }}>
+              <View style={{ width: '100%', alignItems: 'center' }}>
                 {/* Current Weather Card */}
                 <View
                   style={[
                     styles.weatherCard,
                     {
                       backgroundColor: getWeatherBg(weatherData.mainCondition),
-                      borderTopColor: getWeatherBorderColor(weatherData.mainCondition),
+                      borderColor: getWeatherBorderColor(weatherData.mainCondition),
                     },
                   ]}
                 >
-                  <Text style={styles.weatherLocation}>📍 {weatherData.location}</Text>
+                  <View style={styles.weatherCardHeader}>
+                    <Text style={styles.weatherLocation}>📍 {weatherData.location}</Text>
+                    <View style={styles.weatherConditionBadge}>
+                      <Text style={styles.weatherConditionBadgeText}>{weatherData.mainCondition}</Text>
+                    </View>
+                  </View>
+
                   <View style={styles.tempRow}>
                     <Text style={styles.weatherEmoji}>
                       {getWeatherEmoji(weatherData.mainCondition)}
@@ -313,6 +386,14 @@ export default function HomeScreen() {
                     <Text style={styles.weatherTemp}>{weatherData.temp}°C</Text>
                   </View>
                   <Text style={styles.weatherDesc}>{weatherData.description}</Text>
+
+                  {/* Agricultural Advice Banner */}
+                  <View style={styles.advisoryBanner}>
+                    <Text style={styles.advisoryTitle}>🌾 Farming Advisory</Text>
+                    <Text style={styles.advisoryText}>
+                      {getAgriAdvisory(weatherData.humidity, weatherData.windSpeed, weatherData.mainCondition)}
+                    </Text>
+                  </View>
 
                   <View style={styles.weatherDetails}>
                     <View style={styles.weatherDetailItem}>
@@ -330,7 +411,7 @@ export default function HomeScreen() {
                 {/* 5-Day Forecast */}
                 {weatherData.forecast && weatherData.forecast.length > 0 && (
                   <View style={styles.forecastContainer}>
-                    <Text style={styles.forecastTitle}>5-Day Forecast</Text>
+                    <Text style={styles.forecastTitle}>5-Day Weather Forecast</Text>
                     <ScrollView
                       horizontal
                       showsHorizontalScrollIndicator={false}
@@ -361,7 +442,7 @@ export default function HomeScreen() {
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          {activeTab === 'prices' ? 'Data from data.gov.in' : 'Data from WeatherAPI.com'}
+          {activeTab === 'prices' ? 'Data directly from data.gov.in' : 'Data directly from WeatherAPI.com'}
         </Text>
       </View>
 
@@ -380,6 +461,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={() => setStateModalVisible(false)}
+                activeOpacity={0.8}
               >
                 <Text style={styles.modalCloseText}>✕</Text>
               </TouchableOpacity>
@@ -458,158 +540,251 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
 
-  // Header
+  // Premium Header
   header: {
-    backgroundColor: COLORS.greenDeep,
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 12 : 54,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 16 : 60,
+    paddingBottom: 22,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    ...SHADOWS.md,
+  },
+  headerContent: {
+    alignItems: 'flex-start',
   },
   brandName: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 26,
+    fontWeight: '800',
+    color: COLORS.white,
+    letterSpacing: 0.8,
+  },
+  brandTagline: {
+    fontSize: 12,
     color: COLORS.amberLight,
-    letterSpacing: 0.5,
+    marginTop: 4,
+    fontWeight: '500',
   },
 
-  // Tab Bar
+  // Modern Capsule Tab Bar
+  tabOuterContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: -20, // overlapping look
+    zIndex: 10,
+  },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: COLORS.greenDeep,
-    paddingBottom: 8,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#254E3D',
+    backgroundColor: COLORS.white,
+    borderRadius: 30,
+    padding: 4,
+    width: '90%',
+    maxWidth: 360,
+    ...SHADOWS.md,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: RADIUS.md,
+    borderRadius: 26,
   },
   tabButtonActive: {
-    backgroundColor: '#2D6A4F',
+    backgroundColor: COLORS.greenDeep,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#A9C3B7',
+    fontWeight: '700',
+    color: COLORS.textLight,
   },
   tabTextActive: {
     color: COLORS.white,
   },
 
-  // Tab Content
+  // General Tab Content
   tabContent: {
-    paddingHorizontal: 24,
-    paddingTop: 30,
+    paddingHorizontal: 20,
+    paddingTop: 36,
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: COLORS.greenDeep,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: COLORS.textLight,
     marginTop: 4,
     marginBottom: 24,
+    textAlign: 'center',
   },
 
-  // Mandi: button row
+  // Mandi: Empty State Card
+  emptyStateCard: {
+    width: '100%',
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EAD9B0',
+    marginBottom: 20,
+    ...SHADOWS.sm,
+  },
+  emptyStateIcon: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.greenDeep,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 13,
+    color: COLORS.textMid,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+
+  // Unified Mandi Price Dashboard Card
+  priceDashboard: {
+    width: '100%',
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: 22,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: '#EAD9B0',
+    ...SHADOWS.md,
+  },
+  dashboardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  cropIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EAD9B0',
+  },
+  dashboardIcon: {
+    fontSize: 22,
+  },
+  dashboardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.greenDeep,
+  },
+  dashboardLocation: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    fontWeight: '500',
+  },
+  dashboardDivider: {
+    height: 1,
+    backgroundColor: '#EAD9B0',
+    marginVertical: 16,
+  },
+  dashboardPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  priceCol: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  dashboardPriceDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#EAD9B0',
+  },
+  priceLabelText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.textLight,
+    letterSpacing: 1.2,
+    marginBottom: 4,
+  },
+  priceValueText: {
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  dashboardFooter: {
+    backgroundColor: COLORS.wheat,
+    borderRadius: RADIUS.sm,
+    padding: 10,
+    marginTop: 18,
+    alignItems: 'center',
+  },
+  spreadText: {
+    fontSize: 11,
+    color: COLORS.greenDeep,
+    fontWeight: '600',
+  },
+
+  // Mandi: Button Row
   buttonRow: {
     flexDirection: 'row',
     gap: 12,
     width: '100%',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 16,
   },
   button: {
-    borderRadius: RADIUS.full,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    borderRadius: 28,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
     ...SHADOWS.md,
   },
   stateButton: {
-    backgroundColor: '#2D6A4F',
-    flex: 1,
+    backgroundColor: COLORS.greenMid,
+    flex: 1.1,
   },
   fetchButton: {
     backgroundColor: COLORS.greenDeep,
     flex: 1,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
   },
   buttonText: {
     color: COLORS.white,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
   },
 
   // Error Box
   errorBox: {
-    marginTop: 20,
+    marginTop: 10,
     backgroundColor: COLORS.errorBg,
     borderRadius: RADIUS.md,
     padding: 16,
     borderLeftWidth: 4,
     borderLeftColor: COLORS.errorRed,
     width: '100%',
-  },
-  errorText: {
-    color: COLORS.textMid,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-
-  // Price Cards
-  priceSection: {
-    marginTop: 24,
-    width: '100%',
-    flexDirection: 'row',
-    gap: 12,
     marginBottom: 20,
   },
-  priceCard: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.lg,
-    padding: 20,
-    alignItems: 'center',
-    borderTopWidth: 4,
-    ...SHADOWS.md,
-  },
-  minCard: {
-    borderTopColor: COLORS.greenLight,
-  },
-  maxCard: {
-    borderTopColor: COLORS.amber,
-  },
-  priceLabel: {
-    fontSize: 9,
+  errorText: {
+    color: COLORS.errorRed,
+    fontSize: 13,
     fontWeight: '600',
-    letterSpacing: 1.2,
-    color: COLORS.textLight,
-    marginBottom: 6,
-  },
-  priceValue: {
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  priceUnit: {
-    fontSize: 11,
-    color: COLORS.textLight,
+    textAlign: 'center',
   },
 
   // Weather: Search Row
@@ -628,7 +803,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textDark,
     borderWidth: 1,
-    borderColor: COLORS.wheatDark,
+    borderColor: '#EAD9B0',
     ...SHADOWS.sm,
   },
   searchButton: {
@@ -636,54 +811,93 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 22,
     ...SHADOWS.sm,
   },
   searchButtonText: {
     color: COLORS.white,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   // Weather Card
   weatherCard: {
     width: '100%',
     borderRadius: RADIUS.lg,
-    padding: 24,
-    borderTopWidth: 5,
+    padding: 22,
+    borderWidth: 1.5,
     ...SHADOWS.md,
     marginBottom: 20,
   },
+  weatherCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
   weatherLocation: {
     fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.textDark,
+  },
+  weatherConditionBadge: {
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  weatherConditionBadgeText: {
+    fontSize: 11,
     fontWeight: '700',
     color: COLORS.textDark,
-    marginBottom: 12,
   },
   tempRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 6,
+    gap: 14,
+    marginBottom: 4,
   },
   weatherEmoji: {
-    fontSize: 48,
+    fontSize: 52,
   },
   weatherTemp: {
-    fontSize: 44,
+    fontSize: 48,
     fontWeight: '800',
     color: COLORS.textDark,
   },
   weatherDesc: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     color: COLORS.textMid,
     textTransform: 'capitalize',
-    marginBottom: 20,
+    marginBottom: 16,
   },
+
+  // Agricultural Weather Advisory Banner
+  advisoryBanner: {
+    backgroundColor: 'rgba(45, 106, 79, 0.08)',
+    borderRadius: RADIUS.md,
+    padding: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.greenMid,
+    marginBottom: 18,
+  },
+  advisoryTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.greenDeep,
+    marginBottom: 4,
+  },
+  advisoryText: {
+    fontSize: 12,
+    color: COLORS.textMid,
+    lineHeight: 16,
+    fontWeight: '500',
+  },
+
   weatherDetails: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.55)',
     borderRadius: RADIUS.md,
     padding: 14,
   },
@@ -698,51 +912,51 @@ const styles = StyleSheet.create({
   weatherDetailLabel: {
     fontSize: 9,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     color: COLORS.textLight,
     marginBottom: 4,
   },
   weatherDetailValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.textDark,
   },
 
   // 5-Day Forecast
   forecastContainer: {
     width: '100%',
-    marginTop: 10,
+    marginTop: 8,
     marginBottom: 24,
   },
   forecastTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: COLORS.greenDeep,
     marginBottom: 12,
     alignSelf: 'flex-start',
   },
   forecastScroll: {
     gap: 12,
-    paddingRight: 10,
+    paddingRight: 12,
   },
   forecastCard: {
     backgroundColor: COLORS.white,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.lg,
     padding: 14,
-    width: 105,
+    width: 110,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.wheatDark,
+    borderColor: '#EAD9B0',
     ...SHADOWS.sm,
   },
   forecastDayName: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: COLORS.textDark,
     marginBottom: 6,
   },
   forecastEmoji: {
-    fontSize: 28,
+    fontSize: 30,
     marginBottom: 6,
   },
   forecastTempMax: {
@@ -761,22 +975,24 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
     textAlign: 'center',
     width: '100%',
+    fontWeight: '500',
   },
 
   // Footer
   footer: {
-    paddingVertical: 16,
+    paddingVertical: 18,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: COLORS.wheatDark,
+    borderTopColor: '#EAD9B0',
     backgroundColor: '#FAF5E8',
   },
   footerText: {
     fontSize: 11,
     color: COLORS.textLight,
+    fontWeight: '500',
   },
 
-  // ── Modal ──────────────────────────────────────
+  // Modal styling
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -801,7 +1017,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
     color: COLORS.greenDeep,
   },
   modalCloseBtn: {
@@ -848,19 +1064,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   stateItemSelected: {
-    backgroundColor: 'rgba(45, 106, 79, 0.1)',
+    backgroundColor: 'rgba(45, 106, 79, 0.08)',
   },
   stateItemText: {
     fontSize: 16,
     color: COLORS.textDark,
   },
   stateItemTextSelected: {
-    color: '#2D6A4F',
-    fontWeight: '600',
+    color: COLORS.greenDeep,
+    fontWeight: '700',
   },
   checkMark: {
     fontSize: 18,
-    color: '#2D6A4F',
+    color: COLORS.greenMid,
     fontWeight: '700',
   },
   separator: {
