@@ -196,8 +196,7 @@ export default function HomeScreen() {
         ) : (
           /* WEATHER INFORMATION TAB */
           <View style={styles.tabContent}>
-            <Text style={styles.title}>Local Weather</Text>
-            <Text style={styles.subtitle}>Real-time Agricultural Conditions</Text>
+            <Text style={styles.title}>Weather</Text>
 
             {/* Weather Search input */}
             <View style={styles.searchContainer}>
