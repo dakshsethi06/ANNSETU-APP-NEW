@@ -20,6 +20,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a91d7873-2cb9-44c9-b57a-e0d4bcbdc3ec"
+      }
+    },
+    "owner": "dakshsethis-organization"
   }
 }
