@@ -17,11 +17,11 @@
 ### **Mobile App (Frontend)**
 * **Framework:** React Native with Expo (SDK 54)
 * **Design System:** Custom HSL palette featuring accessible contrast ratios.
-* **API Client:** Native `fetch` API interacting with the proxy backend server.
+* **API Client:** Native `fetch` API directly interacting with the government REST endpoints.
 
 ### **Proxy Server (Backend)**
 * **Runtime:** Node.js (Express)
-* **Purpose:** Encapsulates API keys and performs price aggregations.
+* **Purpose:** Built as an optional proxy server to encapsulate API keys and perform price aggregations.
 * **Dependencies:** `axios`, `cors`, `dotenv`.
 
 ---
@@ -58,7 +58,7 @@ annsetu/
 ---
 
 ### Step 1: Running the Mobile App (Expo Go)
-The mobile app calls the backend proxy server to fetch live price updates.
+The mobile app calls the government API directly and can run independently of the backend server.
 
 1. Navigate to the `mobile` directory:
    ```bash

@@ -1,39 +1,51 @@
 // =============================================
 // Annsetu — API Service
-// Calls the deployed backend proxy server
+// Calls the Government Mandi API directly
+// No backend server needed!
 // =============================================
 
-const BASE_URL = 'https://mandi-info-production.up.railway.app';
+const API_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
+const API_KEY = '579b464db66ec23bdd0000011eca722018e9429560514de390d5bb1e';
 
-// WeatherAPI.com details
+// WeatherAPI.com API details
 const WEATHER_API_URL = 'https://api.weatherapi.com/v1/forecast.json';
-const WEATHER_API_KEY = 'cc98b5f11d594fa893f52703261806';
+const WEATHER_API_KEY = 'cc98b5f11d594fa893f52703261806'; // User's WeatherAPI.com API Key
 
 /**
- * Fetches potato mandi prices for Uttar Pradesh via the backend proxy
+ * Fetches potato mandi prices for a specific state directly from data.gov.in
  * Returns { minPrice, maxPrice }
  */
-export async function fetchMandiPrices() {
+export async function fetchMandiPrices(state = 'Uttar Pradesh') {
   try {
-    const url = `${BASE_URL}/api/mandi-prices`;
+    const url = `${API_URL}?api-key=${API_KEY}&format=json&limit=10&filters[commodity]=Potato&filters[state]=${encodeURIComponent(state)}`;
 
     const response = await fetch(url);
     const data = await response.json();
 
-    if (!data || !data.success) {
-      throw new Error(data?.error || 'Failed to fetch price data from server.');
+    const records = data?.records;
+
+    if (!records || records.length === 0) {
+      throw new Error(`No mandi price data found for ${state}.`);
     }
 
-    const minPrice = data?.summary?.minPrice;
-    const maxPrice = data?.summary?.maxPrice;
+    // Get all min and max prices from the records
+    const minPrices = [];
+    const maxPrices = [];
 
-    if (minPrice === undefined || maxPrice === undefined) {
-      throw new Error('Could not read prices from the server response.');
+    for (const r of records) {
+      const minVal = parseFloat(r.min_price || r.Min_Price || 0);
+      const maxVal = parseFloat(r.max_price || r.Max_Price || 0);
+      if (minVal > 0) minPrices.push(minVal);
+      if (maxVal > 0) maxPrices.push(maxVal);
+    }
+
+    if (minPrices.length === 0 && maxPrices.length === 0) {
+      throw new Error('Could not read prices from the data.');
     }
 
     return {
-      minPrice,
-      maxPrice,
+      minPrice: Math.min(...minPrices),
+      maxPrice: Math.max(...maxPrices),
     };
   } catch (err) {
     if (err.message.includes('Network request failed')) {
@@ -45,7 +57,7 @@ export async function fetchMandiPrices() {
 
 /**
  * Fetches current weather and 5-day forecast for a specific city.
- * Returns temperature, condition, humidity, wind, and forecast array.
+ * Returns temperature, main condition, description, humidity, wind speed, location name, and forecast array.
  */
 export async function fetchWeather(city) {
   try {
@@ -98,3 +110,33 @@ export async function fetchWeather(city) {
   }
 }
 
+/**
+ * Fetches the list of Indian states for Mandi price lookups.
+ * Returns an array of standard states.
+ */
+export async function fetchStates() {
+  return [
+    'Andhra Pradesh',
+    'Assam',
+    'Bihar',
+    'Chhattisgarh',
+    'Gujarat',
+    'Haryana',
+    'Himachal Pradesh',
+    'Jammu and Kashmir',
+    'Jharkhand',
+    'Karnataka',
+    'Kerala',
+    'Madhya Pradesh',
+    'Maharashtra',
+    'Odisha',
+    'Punjab',
+    'Rajasthan',
+    'Tamil Nadu',
+    'Telangana',
+    'Tripura',
+    'Uttar Pradesh',
+    'Uttarakhand',
+    'West Bengal'
+  ];
+}

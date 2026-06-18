@@ -31,9 +31,6 @@ app.get('/api/mandi-prices', async (req, res) => {
         'filters[commodity]': 'Potato',
         'filters[state]': 'Uttar Pradesh',
       },
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      },
       timeout: 15000,
     });
 
@@ -102,7 +99,6 @@ app.get('/api/mandi-prices', async (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'Annsetu Backend' }));
-app.get('/healthcheck', (req, res) => res.json({ status: 'ok', message: 'welcome' }));
 
 app.listen(PORT, () => {
   console.log(`✅ Annsetu backend running on http://localhost:${PORT}`);
