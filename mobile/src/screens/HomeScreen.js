@@ -22,6 +22,9 @@ import {
 import { fetchMandiPrices, fetchStates, fetchWeather, fetchFarmers, addFarmer, fetchHoldings } from '../services/api';
 import { COLORS, RADIUS, SPACING, SHADOWS } from '../theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import PriceCard from '../components/PriceCard';
+import PriceTable from '../components/PriceTable';
+import ErrorCard from '../components/ErrorCard';
 
 const getCommodityIcon = (name) => {
   switch (name) {
@@ -39,6 +42,14 @@ const getCommodityTranslation = (name) => {
     case 'Ladyfinger': return 'Bhindi';
     default: return '';
   }
+};
+
+const getWeatherGradient = (condition) => {
+  const cond = condition ? condition.toLowerCase() : '';
+  if (cond.includes('clear') || cond.includes('sunny')) return ['#FFFDF4', '#FFFDF4', '#FFF4D0']; // bright warm sun
+  if (cond.includes('rain') || cond.includes('drizzle') || cond.includes('shower') || cond.includes('patchy')) return ['#F0F9FF', '#E0F2FE', '#BAE6FD']; // fresh cool rain
+  if (cond.includes('thunder') || cond.includes('storm')) return ['#F8FAFC', '#E2E8F0', '#CBD5E1']; // moody storm overcast
+  return ['#FFFFFF', '#F8FAFC', '#F1F5F9']; // clean daylight
 };
 
 export default function HomeScreen() {
@@ -315,6 +326,14 @@ export default function HomeScreen() {
             onPress={() => setActiveTab('prices')}
             activeOpacity={0.8}
           >
+            {activeTab === 'prices' && (
+              <LinearGradient
+                colors={[COLORS.greenDeep, COLORS.greenMid]}
+                style={StyleSheet.absoluteFillObject}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              />
+            )}
             <Text style={[styles.tabText, activeTab === 'prices' && styles.tabTextActive]}>
               🌾 Prices
             </Text>
@@ -324,6 +343,14 @@ export default function HomeScreen() {
             onPress={() => setActiveTab('storage')}
             activeOpacity={0.8}
           >
+            {activeTab === 'storage' && (
+              <LinearGradient
+                colors={[COLORS.greenDeep, COLORS.greenMid]}
+                style={StyleSheet.absoluteFillObject}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              />
+            )}
             <Text style={[styles.tabText, activeTab === 'storage' && styles.tabTextActive]}>
               📦 Storage
             </Text>
@@ -333,6 +360,14 @@ export default function HomeScreen() {
             onPress={() => setActiveTab('weather')}
             activeOpacity={0.8}
           >
+            {activeTab === 'weather' && (
+              <LinearGradient
+                colors={[COLORS.greenDeep, COLORS.greenMid]}
+                style={StyleSheet.absoluteFillObject}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              />
+            )}
             <Text style={[styles.tabText, activeTab === 'weather' && styles.tabTextActive]}>
               ☀️ Weather
             </Text>
@@ -363,6 +398,9 @@ export default function HomeScreen() {
                 onPress={handleSelectState}
                 activeOpacity={0.7}
               >
+                <View style={styles.dropdownIconBadge}>
+                  <Text style={{ fontSize: 16 }}>🗺️</Text>
+                </View>
                 <View style={styles.dropdownFieldInner}>
                   <Text style={styles.dropdownLabel}>State</Text>
                   <Text style={styles.dropdownValue} numberOfLines={1}>
@@ -379,6 +417,9 @@ export default function HomeScreen() {
                 disabled={!selectedState || citiesLoading}
                 activeOpacity={0.7}
               >
+                <View style={styles.dropdownIconBadge}>
+                  <Text style={{ fontSize: 16 }}>📍</Text>
+                </View>
                 <View style={styles.dropdownFieldInner}>
                   <Text style={styles.dropdownLabel}>City / Market</Text>
                   {citiesLoading ? (
@@ -398,10 +439,12 @@ export default function HomeScreen() {
                 onPress={() => setCommodityModalVisible(true)}
                 activeOpacity={0.7}
               >
+                <View style={styles.dropdownIconBadge}>
+                  <Text style={{ fontSize: 16 }}>{getCommodityIcon(selectedCommodity)}</Text>
+                </View>
                 <View style={styles.dropdownFieldInner}>
                   <Text style={styles.dropdownLabel}>Commodity</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ fontSize: 16 }}>{getCommodityIcon(selectedCommodity)}</Text>
                     <Text style={styles.dropdownValue}>{selectedCommodity}</Text>
                   </View>
                 </View>
@@ -419,6 +462,14 @@ export default function HomeScreen() {
               disabled={loading || !selectedState}
               activeOpacity={0.85}
             >
+              {!loading && selectedState && (
+                <LinearGradient
+                  colors={[COLORS.greenDeep, COLORS.greenMid]}
+                  style={StyleSheet.absoluteFillObject}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                />
+              )}
               {loading ? (
                 <View style={styles.loadingRow}>
                   <ActivityIndicator size="small" color="#fff" />
@@ -457,77 +508,154 @@ export default function HomeScreen() {
 
                   <View style={styles.dashboardDivider} />
 
-                  <View style={styles.dashboardPriceRow}>
-                    <View style={styles.priceCol}>
-                      <Text style={styles.priceLabelText}>MIN PRICE</Text>
-                      <Text style={[styles.priceValueText, { color: '#2D6A4F' }]}>
-                        ₹{minPrice.toLocaleString('en-IN')}
-                      </Text>
-                      <Text style={styles.priceUnit}>per quintal</Text>
-                    </View>
-                    <View style={styles.dashboardPriceDivider} />
-                    <View style={styles.priceCol}>
-                      <Text style={styles.priceLabelText}>MAX PRICE</Text>
-                      <Text style={[styles.priceValueText, { color: '#C05621' }]}>
-                        ₹{maxPrice.toLocaleString('en-IN')}
-                      </Text>
-                      <Text style={styles.priceUnit}>per quintal</Text>
-                    </View>
+                  {/* Upgraded Side-by-Side count-up Price Cards */}
+                  <View style={styles.priceCardsRow}>
+                    <PriceCard label="Min Price" value={minPrice} variant="min" />
+                    <View style={{ width: 12 }} />
+                    <PriceCard label="Max Price" value={maxPrice} variant="max" />
                   </View>
 
-                  <View style={styles.dashboardFooter}>
-                    <Text style={styles.spreadLabel}>SPREAD</Text>
-                    <Text style={styles.spreadValue}>
-                      ₹{(maxPrice - minPrice).toLocaleString('en-IN')}
-                    </Text>
+                  {/* Visual Spread Slider Gauge */}
+                  <View style={styles.spreadGaugeContainer}>
+                    <View style={styles.spreadGaugeLabels}>
+                      <Text style={styles.spreadGaugeMin}>₹{minPrice.toLocaleString('en-IN')}</Text>
+                      <Text style={styles.spreadGaugeSpread}>Spread: ₹{(maxPrice - minPrice).toLocaleString('en-IN')}</Text>
+                      <Text style={styles.spreadGaugeMax}>₹{maxPrice.toLocaleString('en-IN')}</Text>
+                    </View>
+                    <View style={styles.spreadGaugeTrack}>
+                      <LinearGradient
+                        colors={[COLORS.greenLight, COLORS.amber, COLORS.errorRed]}
+                        style={StyleSheet.absoluteFillObject}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      />
+                    </View>
                   </View>
                 </View>
               </View>
             )}
 
-            {error && (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>⚠️ {error}</Text>
+            {/* ─── Detailed Market Deals List ─── */}
+            {minPrice !== null && maxPrice !== null && (
+              <View style={{ width: '100%', marginTop: 8 }}>
+                <Text style={styles.filterSectionLabel}>LIVE MARKET DEALS ({allMandiRecords.filter(r => !selectedCity || r.market === selectedCity).length})</Text>
+                {allMandiRecords
+                  .filter(r => !selectedCity || r.market === selectedCity)
+                  .map((record, index) => (
+                    <View key={index} style={styles.dealCard}>
+                      <View style={styles.dealCardHeader}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.dealMarket} numberOfLines={1}>📍 {record.market}</Text>
+                          <Text style={styles.dealVariety}>Variety: {record.variety} · {record.arrivalDate}</Text>
+                        </View>
+                        <View style={styles.dealModalBadge}>
+                          <Text style={styles.dealModalLabel}>AVG PRICE</Text>
+                          <Text style={styles.dealModalValue}>₹{record.modalPrice.toLocaleString('en-IN')}</Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.dealDivider} />
+                      
+                      <View style={styles.dealPriceGrid}>
+                        <View style={styles.dealPriceItem}>
+                          <Text style={styles.dealPriceLabel}>Min Price</Text>
+                          <Text style={[styles.dealPriceValue, { color: COLORS.greenMid }]}>₹{record.minPrice.toLocaleString('en-IN')}</Text>
+                        </View>
+                        <View style={styles.dealPriceDivider} />
+                        <View style={styles.dealPriceItem}>
+                          <Text style={styles.dealPriceLabel}>Max Price</Text>
+                          <Text style={[styles.dealPriceValue, { color: COLORS.amber }]}>₹{record.maxPrice.toLocaleString('en-IN')}</Text>
+                        </View>
+                      </View>
+
+                      {/* Interactive Farmer Link */}
+                      {record.farmerName && record.farmerSerial && (
+                        <View style={styles.dealFarmerRow}>
+                          <TouchableOpacity 
+                            style={styles.dealFarmerTouch}
+                            onPress={() => {
+                              handleSelectFarmer(record.farmerSerial);
+                              setActiveTab('storage');
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.dealFarmerAvatar}>
+                              <Text style={{ fontSize: 13 }}>👨‍🌾</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.dealFarmerText}>
+                                Sold by <Text style={{ fontWeight: '700', color: COLORS.greenDeep }}>{record.farmerName}</Text> (ID: {record.farmerSerial})
+                              </Text>
+                              <Text style={styles.dealFarmerAction}>View stock & storage details ›</Text>
+                            </View>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  ))}
               </View>
+            )}
+
+            {error && (
+              <ErrorCard message={error} onRetry={handleFetch} />
             )}
           </View>
         ) : activeTab === 'storage' ? (
           /* ════════════ COLD STORAGE TAB (FARMER LOOKUP) ════════════ */
           <View style={styles.tabContent}>
-            <Text style={styles.title}>Farmer & Storage Lookup</Text>
-            <Text style={styles.subtitle}>Choose a Farmer ID to load their profile and storage stock levels</Text>
+            <Text style={styles.title}>Farmer & Storage Registry</Text>
+            <Text style={styles.subtitle}>Browse active producers and audit storage stock holdings</Text>
 
-            {/* ─── Farmer ID Selector ─── */}
-            <View style={styles.idSelectorRow}>
-              {['101', '102', '103', '104'].map((id) => (
-                <TouchableOpacity
-                  key={id}
-                  style={[
-                    styles.idButton,
-                    selectedFarmerId === id && styles.idButtonActive,
-                  ]}
-                  onPress={() => handleSelectFarmer(id)}
-                  activeOpacity={0.75}
-                >
-                  <Text
+            {/* ─── Premium Farmer Selector ─── */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.farmerSelectScroll}
+            >
+              {[
+                { id: '101', name: 'Daksh', emoji: '🧑‍🌾' },
+                { id: '102', name: 'Niharika', emoji: '👩‍🌾' },
+                { id: '103', name: 'Jatin', emoji: '👨‍🌾' },
+                { id: '104', name: 'Ikshita', emoji: '👩‍🌾' },
+              ].map((f) => {
+                const isActive = selectedFarmerId === f.id;
+                return (
+                  <TouchableOpacity
+                    key={f.id}
                     style={[
-                      styles.idButtonText,
-                      selectedFarmerId === id && styles.idButtonTextActive,
+                      styles.farmerSelectCard,
+                      isActive && styles.farmerSelectCardActive
                     ]}
+                    onPress={() => handleSelectFarmer(f.id)}
+                    activeOpacity={0.75}
                   >
-                    {id}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                    <View style={[
+                      styles.farmerSelectAvatar,
+                      isActive && styles.farmerSelectAvatarActive
+                    ]}>
+                      <Text style={{ fontSize: 22 }}>{f.emoji}</Text>
+                      {isActive && (
+                        <View style={styles.farmerActiveBadge}>
+                          <Text style={{ color: '#fff', fontSize: 8, fontWeight: '900' }}>✓</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.farmerSelectName, isActive && styles.farmerSelectNameActive]}>
+                      {f.name}
+                    </Text>
+                    <Text style={styles.farmerSelectId}>ID: {f.id}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
             {/* Empty State */}
             {!selectedFarmerId && (
               <View style={styles.emptyStateCard}>
-                <Text style={styles.emptyStateIcon}>🔍</Text>
-                <Text style={styles.emptyStateTitle}>Select a Farmer ID</Text>
+                <Text style={styles.emptyStateIcon}>👨‍🌾</Text>
+                <Text style={styles.emptyStateTitle}>Select a Producer</Text>
                 <Text style={styles.emptyStateText}>
-                  Click on any of the ID buttons above to view details for that farmer and their cold storage listings.
+                  Choose a farmer profile from the carousel above to view their details, verified products, and cold storage stocks.
                 </Text>
               </View>
             )}
@@ -539,12 +667,7 @@ export default function HomeScreen() {
 
             {/* Error Message */}
             {selectedFarmerId && !farmerLoading && !holdingsLoading && (farmerError || holdingsError) && (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>⚠️ {farmerError || holdingsError}</Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={() => handleSelectFarmer(selectedFarmerId)}>
-                  <Text style={styles.retryBtnText}>Retry Lookup</Text>
-                </TouchableOpacity>
-              </View>
+              <ErrorCard message={farmerError || holdingsError} onRetry={() => handleSelectFarmer(selectedFarmerId)} />
             )}
 
             {/* Profile and Holdings Display */}
@@ -552,14 +675,19 @@ export default function HomeScreen() {
               <View style={{ width: '100%' }}>
                 {/* Farmer Profile Card */}
                 {farmerData && (
-                  <View style={styles.farmerCard}>
+                  <LinearGradient
+                    colors={['#FFFFFF', '#FAF8F4']}
+                    style={styles.farmerCard}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                  >
                     <View style={styles.farmerHeader}>
                       <View style={styles.farmerAvatar}>
                         <Text style={styles.farmerAvatarText}>👨‍🌾</Text>
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.farmerName}>{farmerData.name}</Text>
-                        <Text style={styles.farmerSerial}>ID: {farmerData.serial_number}</Text>
+                        <Text style={styles.farmerSerial}>Verified Producer ID: {farmerData.serial_number}</Text>
                       </View>
                       <View style={styles.verifiedBadge}>
                         <Text style={styles.verifiedBadgeText}>VERIFIED</Text>
@@ -567,14 +695,14 @@ export default function HomeScreen() {
                     </View>
                     <View style={styles.farmerDivider} />
                     <View style={styles.farmerMetaRow}>
-                      <Text style={styles.farmerMeta}>📍 State: {farmerData.state}</Text>
+                      <Text style={styles.farmerMeta}>📍 Region: {farmerData.state}</Text>
                       <Text style={styles.farmerMeta}>🌾 Crop: {farmerData.commodity}</Text>
                     </View>
-                  </View>
+                  </LinearGradient>
                 )}
 
                 {/* Storage Holdings Header */}
-                <Text style={[styles.filterSectionLabel, { marginTop: 12, marginBottom: 12 }]}>COLD STORAGE INVENTORY</Text>
+                <Text style={[styles.filterSectionLabel, { marginTop: 18, marginBottom: 12 }]}>COLD STORAGE INVENTORY</Text>
 
                 {/* Storage List */}
                 {holdingsList.length === 0 ? (
@@ -594,7 +722,7 @@ export default function HomeScreen() {
                       <View key={h.id + idx} style={styles.storageCard}>
                         <View style={styles.storageHeader}>
                           <View style={styles.storageIdBadge}>
-                            <Text style={styles.storageIdText}>Storage ID: {h.id}</Text>
+                            <Text style={styles.storageIdText}>Storage Lot: {h.id}</Text>
                           </View>
                           <View style={[styles.storageStatusBadge, { backgroundColor: badgeBg, borderColor: badgeBorder, borderWidth: 1 }]}>
                             <Text style={[styles.storageStatusText, { color: badgeText }]}>{h.status}</Text>
@@ -602,8 +730,25 @@ export default function HomeScreen() {
                         </View>
                         
                         <Text style={styles.storageTitle}>{h.crop} — {h.variety}</Text>
-                        <Text style={styles.storageFacility}>{h.cold_storage} · {h.location}</Text>
+                        <Text style={styles.storageFacility}>🏢 {h.cold_storage} · {h.location}</Text>
                         
+                        {/* Storage Capacity Bar */}
+                        <View style={styles.storageMeterContainer}>
+                          <View style={styles.storageMeterLabelRow}>
+                            <Text style={styles.storageMeterLabel}>Inventory Load</Text>
+                            <Text style={styles.storageMeterPct}>{Math.min(Math.round((h.bags / 400) * 100), 100)}% Capacity</Text>
+                          </View>
+                          <View style={styles.storageMeterTrack}>
+                            <View style={[
+                              styles.storageMeterFill, 
+                              { 
+                                width: `${Math.min(Math.round((h.bags / 400) * 100), 100)}%`,
+                                backgroundColor: isFresh ? COLORS.greenLight : COLORS.amber 
+                              }
+                            ]} />
+                          </View>
+                        </View>
+
                         <View style={styles.storageDivider} />
                         
                         <View style={styles.storageMetaGrid}>
@@ -626,7 +771,7 @@ export default function HomeScreen() {
                         </View>
 
                         <TouchableOpacity style={styles.outlinedActionBtn} activeOpacity={0.75}>
-                          <Text style={styles.outlinedActionBtnText}>View Details</Text>
+                          <Text style={styles.outlinedActionBtnText}>Download Storage Receipt ›</Text>
                         </TouchableOpacity>
                       </View>
                     );
@@ -666,57 +811,54 @@ export default function HomeScreen() {
             </View>
 
             {weatherError && (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>⚠️ {weatherError}</Text>
-              </View>
+              <ErrorCard message={weatherError} onRetry={() => handleFetchWeather()} />
             )}
 
             {weatherData && (
               <View style={{ width: '100%', alignItems: 'center' }}>
                 {/* Current Weather Card */}
-                <View
-                  style={[
-                    styles.weatherCard,
-                    {
-                      backgroundColor: getWeatherBg(weatherData.mainCondition),
-                      borderColor: getWeatherBorderColor(weatherData.mainCondition),
-                    },
-                  ]}
-                >
-                  <View style={styles.weatherCardHeader}>
-                    <Text style={styles.weatherLocation}>📍 {weatherData.location}</Text>
-                    <View style={styles.weatherConditionBadge}>
-                      <Text style={styles.weatherConditionBadgeText}>{weatherData.mainCondition}</Text>
+                <View style={[styles.weatherCardOuter, { borderColor: getWeatherBorderColor(weatherData.mainCondition) }]}>
+                  <LinearGradient
+                    colors={getWeatherGradient(weatherData.mainCondition)}
+                    style={styles.weatherCardGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <View style={styles.weatherCardHeader}>
+                      <Text style={styles.weatherLocation}>📍 {weatherData.location}</Text>
+                      <View style={styles.weatherConditionBadge}>
+                        <Text style={styles.weatherConditionBadgeText}>{weatherData.mainCondition}</Text>
+                      </View>
                     </View>
-                  </View>
 
-                  <View style={styles.tempRow}>
-                    <Text style={styles.weatherEmoji}>
-                      {getWeatherEmoji(weatherData.mainCondition)}
-                    </Text>
-                    <Text style={styles.weatherTemp}>{weatherData.temp}°C</Text>
-                  </View>
-                  <Text style={styles.weatherDesc}>{weatherData.description}</Text>
-
-                  {/* Agricultural Advice Banner */}
-                  <View style={styles.advisoryBanner}>
-                    <Text style={styles.advisoryTitle}>🌾 Farming Advisory</Text>
-                    <Text style={styles.advisoryText}>
-                      {getAgriAdvisory(weatherData.humidity, weatherData.windSpeed, weatherData.mainCondition)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.weatherDetails}>
-                    <View style={styles.weatherDetailItem}>
-                      <Text style={styles.weatherDetailLabel}>HUMIDITY</Text>
-                      <Text style={styles.weatherDetailValue}>💧 {weatherData.humidity}%</Text>
+                    <View style={styles.tempRow}>
+                      <Text style={styles.weatherEmoji}>
+                        {getWeatherEmoji(weatherData.mainCondition)}
+                      </Text>
+                      <Text style={styles.weatherTemp}>{weatherData.temp}°C</Text>
                     </View>
-                    <View style={styles.weatherDetailDivider} />
-                    <View style={styles.weatherDetailItem}>
-                      <Text style={styles.weatherDetailLabel}>WIND SPEED</Text>
-                      <Text style={styles.weatherDetailValue}>💨 {weatherData.windSpeed} km/h</Text>
+                    <Text style={styles.weatherDesc}>{weatherData.description}</Text>
+
+                    {/* Agricultural Advice Banner */}
+                    <View style={styles.advisoryBanner}>
+                      <Text style={styles.advisoryTitle}>🌾 Farming Advisory</Text>
+                      <Text style={styles.advisoryText}>
+                        {getAgriAdvisory(weatherData.humidity, weatherData.windSpeed, weatherData.mainCondition)}
+                      </Text>
                     </View>
-                  </View>
+
+                    <View style={styles.weatherDetails}>
+                      <View style={styles.weatherDetailItem}>
+                        <Text style={styles.weatherDetailLabel}>HUMIDITY</Text>
+                        <Text style={styles.weatherDetailValue}>💧 {weatherData.humidity}%</Text>
+                      </View>
+                      <View style={styles.weatherDetailDivider} />
+                      <View style={styles.weatherDetailItem}>
+                        <Text style={styles.weatherDetailLabel}>WIND SPEED</Text>
+                        <Text style={styles.weatherDetailValue}>💨 {weatherData.windSpeed} km/h</Text>
+                      </View>
+                    </View>
+                  </LinearGradient>
                 </View>
 
                 {/* 5-Day Forecast */}
@@ -729,7 +871,16 @@ export default function HomeScreen() {
                       contentContainerStyle={styles.forecastScroll}
                     >
                       {weatherData.forecast.map((dayItem, idx) => (
-                        <View key={dayItem.date + idx} style={styles.forecastCard}>
+                        <View 
+                          key={dayItem.date + idx} 
+                          style={[
+                            styles.forecastCard, 
+                            { 
+                              backgroundColor: getWeatherBg(dayItem.conditionText),
+                              borderColor: getWeatherBorderColor(dayItem.conditionText) 
+                            }
+                          ]}
+                        >
                           <Text style={styles.forecastDayName}>{getDayName(dayItem.date)}</Text>
                           <Text style={styles.forecastEmoji}>
                             {getWeatherEmoji(dayItem.conditionText)}
@@ -756,8 +907,6 @@ export default function HomeScreen() {
           {activeTab === 'prices' ? 'Data directly from data.gov.in' : activeTab === 'storage' ? 'Data from cold storage mock DB' : 'Data directly from WeatherAPI.com'}
         </Text>
       </View>
-
-
 
       {/* ════════════ STATE SELECTION MODAL ════════════ */}
       <Modal
@@ -821,14 +970,19 @@ export default function HomeScreen() {
                     onPress={() => handleStateSelect(item)}
                     activeOpacity={0.7}
                   >
-                    <Text
-                      style={[
-                        styles.stateItemText,
-                        selectedState === item && styles.stateItemTextSelected,
-                      ]}
-                    >
-                      {item}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      {selectedState === item && (
+                        <View style={styles.activeStripe} />
+                      )}
+                      <Text
+                        style={[
+                          styles.stateItemText,
+                          selectedState === item && styles.stateItemTextSelected,
+                        ]}
+                      >
+                        {item}
+                      </Text>
+                    </View>
                     {selectedState === item && (
                       <Text style={styles.checkMark}>✓</Text>
                     )}
@@ -886,18 +1040,23 @@ export default function HomeScreen() {
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                     <Text style={{ fontSize: 24 }}>{item.icon}</Text>
-                    <View>
-                      <Text
-                        style={[
-                          styles.stateItemText,
-                          selectedCommodity === item.name && styles.stateItemTextSelected,
-                        ]}
-                      >
-                        {item.name}
-                      </Text>
-                      <Text style={{ fontSize: 11, color: COLORS.textLight, fontWeight: '500', marginTop: 2 }}>
-                        {item.translation}
-                      </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      {selectedCommodity === item.name && (
+                        <View style={styles.activeStripe} />
+                      )}
+                      <View>
+                        <Text
+                          style={[
+                            styles.stateItemText,
+                            selectedCommodity === item.name && styles.stateItemTextSelected,
+                          ]}
+                        >
+                          {item.name}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: COLORS.textLight, fontWeight: '500', marginTop: 2 }}>
+                          {item.translation}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                   {selectedCommodity === item.name && (
@@ -962,14 +1121,19 @@ export default function HomeScreen() {
                     }}
                     activeOpacity={0.7}
                   >
-                    <Text
-                      style={[
-                        styles.stateItemText,
-                        selectedCity === item && styles.stateItemTextSelected,
-                      ]}
-                    >
-                      {item}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      {selectedCity === item && (
+                        <View style={styles.activeStripe} />
+                      )}
+                      <Text
+                        style={[
+                          styles.stateItemText,
+                          selectedCity === item && styles.stateItemTextSelected,
+                        ]}
+                      >
+                        {item}
+                      </Text>
+                    </View>
                     {selectedCity === item && (
                       <Text style={styles.checkMark}>✓</Text>
                     )}
@@ -1049,17 +1213,21 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     alignItems: 'center',
     borderRadius: 13,
+    overflow: 'hidden',
+    position: 'relative',
   },
   tabButtonActive: {
-    backgroundColor: COLORS.greenDeep,
+    // handled by LinearGradient internally
   },
   tabText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#9CA3AF',
+    zIndex: 2,
   },
   tabTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
   },
 
   // General Tab Content
@@ -1114,7 +1282,7 @@ const styles = StyleSheet.create({
   priceDashboard: {
     width: '100%',
     borderRadius: 16,
-    marginBottom: 22,
+    marginBottom: 20,
     overflow: 'hidden',
     backgroundColor: COLORS.white,
     borderWidth: 1,
@@ -1146,7 +1314,7 @@ const styles = StyleSheet.create({
   },
   dashboardTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#1A1A1A',
     letterSpacing: 0.2,
   },
@@ -1158,60 +1326,170 @@ const styles = StyleSheet.create({
   },
   dashboardDivider: {
     height: 1,
-    backgroundColor: '#F0EBE0',
+    backgroundColor: '#F3EFE3',
     marginVertical: 18,
   },
-  dashboardPriceRow: {
+  priceCardsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    width: '100%',
+    justifyContent: 'space-between',
+    marginBottom: 18,
   },
-  priceCol: {
-    flex: 1,
-    alignItems: 'center',
+
+  // Spread Gauge Slider
+  spreadGaugeContainer: {
+    marginTop: 8,
+    backgroundColor: '#FAF8F3',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#F0EBE0',
   },
-  dashboardPriceDivider: {
-    width: 1,
-    height: 48,
-    backgroundColor: '#F0EBE0',
-  },
-  priceLabelText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    letterSpacing: 1.5,
-    marginBottom: 6,
-  },
-  priceValueText: {
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  priceUnit: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  dashboardFooter: {
+  spreadGaugeLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F8F5EE',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginTop: 18,
+    marginBottom: 8,
   },
-  spreadLabel: {
-    fontSize: 10,
+  spreadGaugeMin: {
+    fontSize: 11,
     fontWeight: '700',
-    color: '#9CA3AF',
-    letterSpacing: 1.2,
+    color: COLORS.greenMid,
   },
-  spreadValue: {
-    fontSize: 16,
+  spreadGaugeSpread: {
+    fontSize: 11,
     fontWeight: '800',
     color: COLORS.greenDeep,
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  spreadGaugeMax: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.amber,
+  },
+  spreadGaugeTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#E2E8F0',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+
+  // Detailed Deal Card styling
+  dealCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E8E0CE',
+    ...SHADOWS.sm,
+  },
+  dealCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dealMarket: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textDark,
+  },
+  dealVariety: {
+    fontSize: 11,
+    color: COLORS.textLight,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  dealModalBadge: {
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  dealModalLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#2E7D32',
+    letterSpacing: 0.5,
+  },
+  dealModalValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#1B5E20',
+    marginTop: 1,
+  },
+  dealDivider: {
+    height: 1,
+    backgroundColor: '#F5ECE1',
+    marginVertical: 12,
+  },
+  dealPriceGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dealPriceItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  dealPriceDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#FAF5EE',
+  },
+  dealPriceLabel: {
+    fontSize: 9,
+    color: COLORS.textLight,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dealPriceValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  dealFarmerRow: {
+    marginTop: 12,
+    backgroundColor: '#FAF8F3',
+    borderRadius: 10,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#F0EBE0',
+  },
+  dealFarmerTouch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dealFarmerAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EAD9B0',
+    marginRight: 8,
+  },
+  dealFarmerText: {
+    fontSize: 11,
+    color: COLORS.textMid,
+    fontWeight: '500',
+  },
+  dealFarmerAction: {
+    fontSize: 9,
+    color: COLORS.greenMid,
+    fontWeight: '700',
+    marginTop: 1,
   },
 
   // Filter Section
@@ -1234,12 +1512,24 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E8E0CE',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     marginBottom: 10,
+    ...SHADOWS.sm,
   },
   dropdownFieldDisabled: {
     opacity: 0.45,
+  },
+  dropdownIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#F8F5EE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#FAF0E0',
   },
   dropdownFieldInner: {
     flex: 1,
@@ -1249,16 +1539,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#9CA3AF',
     letterSpacing: 0.8,
-    marginBottom: 3,
+    marginBottom: 2,
     textTransform: 'uppercase',
   },
   dropdownValue: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#1A1A1A',
   },
   dropdownChevron: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '300',
     color: '#C4B99A',
     marginLeft: 8,
@@ -1267,12 +1557,14 @@ const styles = StyleSheet.create({
   // Fetch Action Button
   fetchActionBtn: {
     width: '100%',
-    backgroundColor: COLORS.greenDeep,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#4A5D4E', // fallback background color if disabled
     ...SHADOWS.md,
   },
   fetchActionBtnDisabled: {
@@ -1283,6 +1575,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: 0.3,
+    zIndex: 2,
   },
   loadingRow: {
     flexDirection: 'row',
@@ -1290,32 +1583,265 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  buttonText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
 
-  // Error Box
-  errorBox: {
-    marginTop: 10,
-    backgroundColor: COLORS.errorBg,
-    borderRadius: RADIUS.md,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.errorRed,
-    width: '100%',
+  // Farmer Registry (Storage) Carousel Selector
+  farmerSelectScroll: {
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+    gap: 12,
     marginBottom: 20,
   },
-  errorText: {
-    color: COLORS.errorRed,
-    fontSize: 13,
+  farmerSelectCard: {
+    width: 90,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E0CE',
+    ...SHADOWS.sm,
+  },
+  farmerSelectCardActive: {
+    borderColor: COLORS.greenDeep,
+    backgroundColor: '#F3F7F5',
+  },
+  farmerSelectAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FAF5EE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#F0EBE0',
+  },
+  farmerSelectAvatarActive: {
+    backgroundColor: COLORS.white,
+    borderColor: COLORS.greenLight,
+    borderWidth: 1.5,
+  },
+  farmerActiveBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 15,
+    height: 15,
+    borderRadius: 7.5,
+    backgroundColor: COLORS.greenLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.white,
+  },
+  farmerSelectName: {
+    fontSize: 11,
     fontWeight: '600',
+    color: COLORS.textDark,
     textAlign: 'center',
   },
+  farmerSelectNameActive: {
+    color: COLORS.greenDeep,
+    fontWeight: '800',
+  },
+  farmerSelectId: {
+    fontSize: 9,
+    color: COLORS.textLight,
+    marginTop: 2,
+  },
 
-  // Weather: Search Row
+  // Farmer Profile Card
+  farmerCard: {
+    width: '100%',
+    borderRadius: RADIUS.lg,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#EAD9B0',
+    ...SHADOWS.md,
+  },
+  farmerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  farmerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: '#EAD9B0',
+    borderWidth: 1,
+  },
+  farmerAvatarText: {
+    fontSize: 20,
+  },
+  farmerName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.greenDeep,
+  },
+  farmerSerial: {
+    fontSize: 11,
+    color: COLORS.textLight,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  verifiedBadge: {
+    backgroundColor: '#DCFCE7',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+  },
+  verifiedBadgeText: {
+    color: '#166534',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  farmerDivider: {
+    height: 1,
+    backgroundColor: '#F5ECE1',
+    marginVertical: 12,
+  },
+  farmerMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  farmerMeta: {
+    fontSize: 12,
+    color: COLORS.textMid,
+    fontWeight: '600',
+  },
+
+  // Cold Storage Cards
+  storageCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E8E0CE',
+    ...SHADOWS.sm,
+  },
+  storageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  storageIdBadge: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  storageIdText: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  storageStatusBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  storageStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  storageTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  storageFacility: {
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '500',
+    marginBottom: 16,
+  },
+  storageDivider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginBottom: 14,
+  },
+
+  // Stock Capacity Load Meter
+  storageMeterContainer: {
+    marginBottom: 14,
+    marginTop: 4,
+  },
+  storageMeterLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  storageMeterLabel: {
+    fontSize: 9,
+    color: '#94A3B8',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  storageMeterPct: {
+    fontSize: 9,
+    color: '#334155',
+    fontWeight: '700',
+  },
+  storageMeterTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F1F5F9',
+    overflow: 'hidden',
+  },
+  storageMeterFill: {
+    height: 6,
+    borderRadius: 3,
+  },
+
+  storageMetaGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  storageMetaCol: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  storageMetaLabel: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  storageMetaValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  outlinedActionBtn: {
+    borderColor: '#E2E8F0',
+    borderWidth: 1.5,
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignSelf: 'center',
+    marginTop: 14,
+  },
+  outlinedActionBtnText: {
+    color: COLORS.greenMid,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  // Weather Search
   searchContainer: {
     flexDirection: 'row',
     gap: 10,
@@ -1332,6 +1858,7 @@ const styles = StyleSheet.create({
     color: COLORS.textDark,
     borderWidth: 1,
     borderColor: '#E8E0CE',
+    ...SHADOWS.sm,
   },
   searchButton: {
     backgroundColor: COLORS.greenDeep,
@@ -1339,6 +1866,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 22,
+    ...SHADOWS.sm,
   },
   searchButtonText: {
     color: COLORS.white,
@@ -1346,14 +1874,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Weather Card
-  weatherCard: {
+  // Weather Card Gradient Wrapper
+  weatherCardOuter: {
     width: '100%',
-    borderRadius: RADIUS.lg,
-    padding: 22,
     borderWidth: 1.5,
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
     ...SHADOWS.md,
     marginBottom: 20,
+  },
+  weatherCardGradient: {
+    padding: 22,
   },
   weatherCardHeader: {
     flexDirection: 'row',
@@ -1423,9 +1954,11 @@ const styles = StyleSheet.create({
 
   weatherDetails: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.55)',
+    backgroundColor: 'rgba(255,255,255,0.65)',
     borderRadius: RADIUS.md,
     padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
   },
   weatherDetailItem: {
     flex: 1,
@@ -1472,7 +2005,6 @@ const styles = StyleSheet.create({
     width: 110,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EAD9B0',
     ...SHADOWS.sm,
   },
   forecastDayName: {
@@ -1566,7 +2098,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     marginTop: 16,
     marginBottom: 8,
-    borderRadius: RADIUS.md,
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 4,
     borderWidth: 1,
@@ -1605,6 +2137,13 @@ const styles = StyleSheet.create({
     color: COLORS.greenMid,
     fontWeight: '700',
   },
+  activeStripe: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
+    backgroundColor: COLORS.greenMid,
+    marginRight: 10,
+  },
   separator: {
     height: 1,
     backgroundColor: '#EAD9B0',
@@ -1628,250 +2167,5 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     textAlign: 'center',
     paddingHorizontal: 24,
-  },
-  retryBtn: {
-    marginTop: 12,
-    backgroundColor: COLORS.greenDeep,
-    borderRadius: RADIUS.md,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    alignSelf: 'center',
-  },
-  retryBtnText: {
-    color: COLORS.white,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  addFarmerCardTrigger: {
-    width: '100%',
-    backgroundColor: COLORS.white,
-    borderColor: COLORS.greenMid,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderRadius: RADIUS.md,
-    paddingVertical: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  addFarmerTriggerText: {
-    color: COLORS.greenDeep,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  farmerCard: {
-    width: '100%',
-    backgroundColor: COLORS.white,
-    borderRadius: RADIUS.lg,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#EAD9B0',
-    ...SHADOWS.md,
-  },
-  farmerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  farmerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F0F9FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderColor: '#EAD9B0',
-    borderWidth: 1,
-  },
-  farmerAvatarText: {
-    fontSize: 20,
-  },
-  farmerName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.greenDeep,
-  },
-  farmerSerial: {
-    fontSize: 11,
-    color: COLORS.textLight,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  verifiedBadge: {
-    backgroundColor: '#DCFCE7',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#86EFAC',
-  },
-  verifiedBadgeText: {
-    color: '#166534',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  farmerDivider: {
-    height: 1,
-    backgroundColor: '#F5ECE1',
-    marginVertical: 12,
-  },
-  farmerMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  farmerMeta: {
-    fontSize: 12,
-    color: COLORS.textMid,
-    fontWeight: '500',
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.greenDeep,
-    marginBottom: 6,
-    letterSpacing: 0.5,
-  },
-  formInput: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: COLORS.textDeep,
-    marginBottom: 18,
-  },
-  submitButton: {
-    backgroundColor: COLORS.greenDeep,
-    borderRadius: 28,
-    paddingVertical: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-    ...SHADOWS.md,
-  },
-  submitButtonText: {
-    color: COLORS.white,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  storageCard: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 22,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E8E0CE',
-    ...SHADOWS.sm,
-  },
-  storageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  storageIdBadge: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  storageIdText: {
-    color: '#64748B',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  storageStatusBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  storageStatusText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  storageTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 6,
-  },
-  storageFacility: {
-    fontSize: 14,
-    color: '#64748B',
-    fontWeight: '500',
-    marginBottom: 16,
-  },
-  storageDivider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginBottom: 16,
-  },
-  storageMetaGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  storageMetaCol: {
-    flex: 1,
-  },
-  storageMetaLabel: {
-    fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '500',
-    marginBottom: 6,
-  },
-  storageMetaValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  outlinedActionBtn: {
-    borderColor: '#E2E8F0',
-    borderWidth: 1.5,
-    borderRadius: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    alignSelf: 'flex-start',
-    marginTop: 18,
-  },
-  outlinedActionBtnText: {
-    color: '#334155',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  idSelectorRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    marginVertical: 16,
-    width: '100%',
-  },
-  idButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8E0CE',
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    minWidth: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SHADOWS.sm,
-  },
-  idButtonActive: {
-    backgroundColor: COLORS.greenDeep,
-    borderColor: COLORS.greenDeep,
-  },
-  idButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.textDark,
-  },
-  idButtonTextActive: {
-    color: '#FFFFFF',
   },
 });

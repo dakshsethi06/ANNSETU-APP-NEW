@@ -50,7 +50,14 @@ export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'Pot
       throw new Error(`No mandi price data found for ${state}.`);
     }
 
-    const parsedRecords = records.map((r) => ({
+    const mockFarmersList = [
+      { name: 'Daksh', serial: '101' },
+      { name: 'Niharika', serial: '102' },
+      { name: 'Jatin', serial: '103' },
+      { name: 'Ikshita', serial: '104' },
+    ];
+
+    const parsedRecords = records.map((r, idx) => ({
       commodity: r.commodity || r.Commodity || 'Unknown',
       market: r.market || r.Market || 'Unknown',
       state: r.state || r.State || 'Unknown',
@@ -59,6 +66,8 @@ export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'Pot
       modalPrice: parseFloat(r.modal_price || r.Modal_Price || r.modal || 0),
       variety: r.variety || r.Variety || '-',
       arrivalDate: r.arrival_date || r.Arrival_Date || '-',
+      farmerName: r.farmer_name || r.farmerName || mockFarmersList[idx % mockFarmersList.length].name,
+      farmerSerial: r.farmer_serial || r.farmerSerial || mockFarmersList[idx % mockFarmersList.length].serial,
     })).filter((p) => p.minPrice > 0 || p.maxPrice > 0);
 
     if (parsedRecords.length === 0) {
