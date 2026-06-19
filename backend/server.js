@@ -9,27 +9,32 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Government Mandi Price API endpoint
-const MANDI_API_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
+// Government Mandi Price API endpoint (can be overridden by MANDI_API_URL in environment)
+const MANDI_API_URL = process.env.MANDI_API_URL || 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
 
 app.get('/api/mandi-prices', async (req, res) => {
   try {
     const apiKey = process.env.MANDI_API_KEY;
+    const isMock = process.env.USE_MOCK_SERVER === 'true';
+    const state = req.query.state || 'Uttar Pradesh';
+    const commodity = req.query.commodity || 'Potato';
 
-    if (!apiKey) {
+    if (!apiKey && !isMock) {
       return res.status(500).json({
         success: false,
         error: 'API key not configured. Please set MANDI_API_KEY in .env file.',
       });
     }
 
+    console.log(`[Server 1 Gateway] Routing request to: ${MANDI_API_URL} (State: ${state}, Commodity: ${commodity})`);
+
     const response = await axios.get(MANDI_API_URL, {
       params: {
-        'api-key': apiKey,
+        'api-key': apiKey || 'mock_key',
         format: 'json',
         limit: 10,
-        'filters[commodity]': 'Potato',
-        'filters[state]': 'Uttar Pradesh',
+        'filters[commodity]': commodity,
+        'filters[state]': state,
       },
       timeout: 15000,
     });
@@ -54,6 +59,8 @@ app.get('/api/mandi-prices', async (req, res) => {
         modalPrice: parseFloat(r.modal_price || r.Modal_Price || r.modal || 0),
         variety: r.variety || r.Variety || '-',
         arrivalDate: r.arrival_date || r.Arrival_Date || '-',
+        farmerName: r.farmer_name || null,
+        farmerSerial: r.farmer_serial || null,
       }))
       .filter((p) => p.minPrice > 0 || p.maxPrice > 0);
 
@@ -94,6 +101,45 @@ app.get('/api/mandi-prices', async (req, res) => {
       success: false,
       error: 'Failed to fetch mandi prices. Please try again later.',
     });
+  }
+});
+
+// Proxy farmers endpoints to Server 2 Mock Server
+app.get('/api/farmers', async (req, res) => {
+  try {
+    const mockUrl = process.env.MANDI_API_URL ? process.env.MANDI_API_URL.replace('/api/v1/mandi-prices', '/api/v1/farmers') : 'http://localhost:3002/api/v1/farmers';
+    const response = await axios.get(mockUrl, {
+      params: req.query
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Proxy farmers GET error:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to fetch farmers from mock registry' });
+  }
+});
+
+app.post('/api/farmers', async (req, res) => {
+  try {
+    const mockUrl = process.env.MANDI_API_URL ? process.env.MANDI_API_URL.replace('/api/v1/mandi-prices', '/api/v1/farmers') : 'http://localhost:3002/api/v1/farmers';
+    const response = await axios.post(mockUrl, req.body);
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error('Proxy farmers POST error:', error.message);
+    res.status(error.response?.status || 500).json(error.response?.data || { success: false, error: 'Failed to register farmer' });
+  }
+});
+
+// Proxy holdings endpoints to Server 2 Mock Server
+app.get('/api/holdings', async (req, res) => {
+  try {
+    const mockUrl = process.env.MANDI_API_URL ? process.env.MANDI_API_URL.replace('/api/v1/mandi-prices', '/api/v1/holdings') : 'http://localhost:3002/api/v1/holdings';
+    const response = await axios.get(mockUrl, {
+      params: req.query
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Proxy holdings GET error:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to fetch holdings from mock database' });
   }
 });
 
