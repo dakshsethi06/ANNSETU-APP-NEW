@@ -84,7 +84,7 @@ export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'Pot
     };
   } catch (err) {
     if (err.message.includes('Network request failed')) {
-      throw new Error('No internet connection. Please check your network.');
+      throw new Error('Could not connect to backend server. Please verify if it is running.');
     }
     throw err;
   }
