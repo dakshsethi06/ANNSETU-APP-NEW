@@ -88,11 +88,11 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   value: {
-    fontSize: 34,
+    fontSize: 24,
     fontWeight: '700',
     color: COLORS.greenDeep,
     marginBottom: SPACING.xs,
-    lineHeight: 40,
+    lineHeight: 30,
   },
   unit: {
     fontSize: 12,

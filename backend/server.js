@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 require('dotenv').config();
+const db = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,11 +16,10 @@ const MANDI_API_URL = process.env.MANDI_API_URL || 'https://api.data.gov.in/reso
 app.get('/api/mandi-prices', async (req, res) => {
   try {
     const apiKey = process.env.MANDI_API_KEY;
-    const isMock = process.env.USE_MOCK_SERVER === 'true';
     const state = req.query.state || 'Uttar Pradesh';
     const commodity = req.query.commodity || 'Potato';
 
-    if (!apiKey && !isMock) {
+    if (!apiKey) {
       return res.status(500).json({
         success: false,
         error: 'API key not configured. Please set MANDI_API_KEY in .env file.',
@@ -30,7 +30,7 @@ app.get('/api/mandi-prices', async (req, res) => {
 
     const response = await axios.get(MANDI_API_URL, {
       params: {
-        'api-key': apiKey || 'mock_key',
+        'api-key': apiKey,
         format: 'json',
         limit: 10,
         'filters[commodity]': commodity,
@@ -104,42 +104,145 @@ app.get('/api/mandi-prices', async (req, res) => {
   }
 });
 
-// Proxy farmers endpoints to Server 2 Mock Server
+// Farmers endpoints (PostgreSQL integration)
 app.get('/api/farmers', async (req, res) => {
+  if (!db) {
+    return res.status(500).json({ success: false, error: 'Database connection is not configured.' });
+  }
+
   try {
-    const mockUrl = process.env.MANDI_API_URL ? process.env.MANDI_API_URL.replace('/api/v1/mandi-prices', '/api/v1/farmers') : 'http://localhost:3002/api/v1/farmers';
-    const response = await axios.get(mockUrl, {
-      params: req.query
-    });
-    res.json(response.data);
+    const { state, serial_number } = req.query;
+    let sql = 'SELECT id AS "serial_number", name, state, "primaryCrop" AS commodity FROM "Farmer" WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
+    
+    if (state) {
+      sql += ` AND state ILIKE $${paramIndex}`;
+      params.push(state);
+      paramIndex++;
+    }
+    if (serial_number) {
+      sql += ` AND id = $${paramIndex}`;
+      params.push(serial_number);
+      paramIndex++;
+    }
+    
+    const result = await db.query(sql, params);
+    return res.json({ success: true, farmers: result.rows });
   } catch (error) {
-    console.error('Proxy farmers GET error:', error.message);
-    res.status(500).json({ success: false, error: 'Failed to fetch farmers from mock registry' });
+    console.error('PostgreSQL farmers GET error:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to fetch farmers from database' });
   }
 });
 
 app.post('/api/farmers', async (req, res) => {
+  const { serial_number, name, state, commodity } = req.body;
+  if (!serial_number || !name) {
+    return res.status(400).json({ success: false, error: 'serial_number and name are required fields' });
+  }
+
+  if (!db) {
+    return res.status(500).json({ success: false, error: 'Database connection is not configured.' });
+  }
+
   try {
-    const mockUrl = process.env.MANDI_API_URL ? process.env.MANDI_API_URL.replace('/api/v1/mandi-prices', '/api/v1/farmers') : 'http://localhost:3002/api/v1/farmers';
-    const response = await axios.post(mockUrl, req.body);
-    res.status(response.status).json(response.data);
+    const finalState = state || 'Rajasthan';
+    const finalCommodity = commodity || 'Potato';
+    const now = new Date();
+    
+    const sql = `
+      INSERT INTO "Farmer" (
+        "id", "accountNumber", "name", "state", "primaryCrop",
+        "isLocalFarmer", "openingBalance", "creditLimit", "interestRate",
+        "autoSmsReminder", "joinDate", "active", "createdAt", "updatedAt",
+        "coldStorageId", "consentGiven"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+    `;
+    const params = [
+      serial_number,                  // id ($1)
+      'CS-' + serial_number,          // accountNumber ($2)
+      name,                           // name ($3)
+      finalState,                     // state ($4)
+      finalCommodity,                 // primaryCrop ($5)
+      true,                           // isLocalFarmer ($6)
+      0.0,                            // openingBalance ($7)
+      10000.0,                        // creditLimit ($8)
+      0.0,                            // interestRate ($9)
+      false,                          // autoSmsReminder ($10)
+      now,                            // joinDate ($11)
+      true,                           // active ($12)
+      now,                            // createdAt ($13)
+      now,                            // updatedAt ($14)
+      'cmmp9txv0000ai3t4wush9trs',    // coldStorageId ($15) (SN Sharma Cold Storage ID)
+      true                            // consentGiven ($16)
+    ];
+    
+    await db.query(sql, params);
+    
+    const newFarmer = {
+      serial_number,
+      name,
+      state: finalState,
+      commodity: finalCommodity
+    };
+    return res.status(201).json({ success: true, farmer: newFarmer });
   } catch (error) {
-    console.error('Proxy farmers POST error:', error.message);
-    res.status(error.response?.status || 500).json(error.response?.data || { success: false, error: 'Failed to register farmer' });
+    console.error('PostgreSQL farmers POST error:', error.message);
+    if (error.code === '23505') {
+      return res.status(400).json({ success: false, error: `Farmer with serial number ${serial_number} already exists` });
+    }
+    return res.status(500).json({ success: false, error: error.message || 'Failed to register farmer in database' });
   }
 });
 
-// Proxy holdings endpoints to Server 2 Mock Server
+// Holdings endpoints (PostgreSQL integration)
 app.get('/api/holdings', async (req, res) => {
+  if (!db) {
+    return res.status(500).json({ success: false, error: 'Database connection is not configured.' });
+  }
+
   try {
-    const mockUrl = process.env.MANDI_API_URL ? process.env.MANDI_API_URL.replace('/api/v1/mandi-prices', '/api/v1/holdings') : 'http://localhost:3002/api/v1/holdings';
-    const response = await axios.get(mockUrl, {
-      params: req.query
+    const sql = `
+      SELECT 
+        a.id AS lot_id,
+        a.commodity AS crop,
+        a.kism AS variety,
+        c."displayName" AS cold_storage,
+        a."roomId" AS location,
+        a.packets AS bags,
+        a."weightQtl" || ' Qt' AS weight,
+        COALESCE(a."goodsCondition", 'Good') AS status,
+        a."amadDate",
+        a."farmerId" AS id
+      FROM "AmadLot" a
+      LEFT JOIN "ColdStorageOnboarding" c ON a."coldStorageId" = c.id
+    `;
+    const result = await db.query(sql);
+    
+    const holdings = result.rows.map(row => {
+      const amadDate = new Date(row.amadDate);
+      const diffTime = Math.abs(new Date() - amadDate);
+      const age_days = Math.floor(diffTime / (1000 * 60 * 60 * 24)) || 0;
+      
+      return {
+        id: row.id, // mapped to id (representing farmer_id) for frontend filtering
+        lot_id: row.lot_id,
+        crop: row.crop,
+        variety: row.variety || '-',
+        cold_storage: row.cold_storage || 'Default CS',
+        location: row.location || 'Section A',
+        bags: row.bags,
+        weight: row.weight,
+        age_days: age_days,
+        inbound_age: `${age_days}d`,
+        status: row.status
+      };
     });
-    res.json(response.data);
+    
+    return res.json({ success: true, holdings });
   } catch (error) {
-    console.error('Proxy holdings GET error:', error.message);
-    res.status(500).json({ success: false, error: 'Failed to fetch holdings from mock database' });
+    console.error('PostgreSQL holdings GET error:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to fetch holdings from database' });
   }
 });
 

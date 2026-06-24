@@ -18,6 +18,7 @@ import {
   Platform,
   Modal,
   FlatList,
+  Alert,
 } from 'react-native';
 import { fetchMandiPrices, fetchStates, fetchWeather, fetchFarmers, addFarmer, fetchHoldings } from '../services/api';
 import { COLORS, RADIUS, SPACING, SHADOWS } from '../theme';
@@ -90,6 +91,17 @@ export default function HomeScreen() {
   const [holdingsList, setHoldingsList] = useState([]);
   const [holdingsLoading, setHoldingsLoading] = useState(false);
   const [holdingsError, setHoldingsError] = useState(null);
+  const [dbFarmers, setDbFarmers] = useState([]);
+  const [dbFarmersLoading, setDbFarmersLoading] = useState(false);
+  const [farmerSearchQuery, setFarmerSearchQuery] = useState('');
+  
+  // Registration form states
+  const [registerModalVisible, setRegisterModalVisible] = useState(false);
+  const [newFarmerName, setNewFarmerName] = useState('');
+  const [newFarmerId, setNewFarmerId] = useState('');
+  const [newFarmerState, setNewFarmerState] = useState('Rajasthan');
+  const [newFarmerCrop, setNewFarmerCrop] = useState('Potato');
+  const [registerLoading, setRegisterLoading] = useState(false);
 
   // Load cities list automatically when state or commodity changes
   useEffect(() => {
@@ -121,7 +133,7 @@ export default function HomeScreen() {
   // Recalculate min/max prices reactively when selectedCity or allMandiRecords change
   useEffect(() => {
     if (allMandiRecords.length > 0) {
-      const filtered = selectedCity 
+      const filtered = selectedCity
         ? allMandiRecords.filter(r => r.market === selectedCity)
         : allMandiRecords;
 
@@ -139,6 +151,62 @@ export default function HomeScreen() {
       setMaxPrice(null);
     }
   }, [selectedCity, allMandiRecords]);
+
+  // Load database farmers automatically when entering storage tab
+  useEffect(() => {
+    if (activeTab === 'storage' && dbFarmers.length === 0) {
+      loadDbFarmers();
+    }
+  }, [activeTab]);
+
+  const loadDbFarmers = async () => {
+    setDbFarmersLoading(true);
+    try {
+      const farmers = await fetchFarmers();
+      setDbFarmers(farmers || []);
+      // Auto-select the first farmer if list is not empty
+      if (farmers && farmers.length > 0) {
+        handleSelectFarmer(farmers[0].serial_number);
+      }
+    } catch (err) {
+      console.warn("Failed to load database farmers:", err.message);
+    } finally {
+      setDbFarmersLoading(false);
+    }
+  };
+
+  const handleRegisterFarmer = async () => {
+    if (!newFarmerName.trim()) {
+      Alert.alert('Error', 'Farmer Name is required.');
+      return;
+    }
+    if (!newFarmerId.trim()) {
+      Alert.alert('Error', 'Farmer ID / Serial Number is required.');
+      return;
+    }
+    setRegisterLoading(true);
+    try {
+      const farmerData = {
+        serial_number: newFarmerId.trim(),
+        name: newFarmerName.trim(),
+        state: newFarmerState.trim(),
+        commodity: newFarmerCrop.trim()
+      };
+      await addFarmer(farmerData);
+      Alert.alert('Success', `Farmer "${newFarmerName}" registered successfully!`);
+      // Reset form
+      setNewFarmerName('');
+      setNewFarmerId('');
+      setRegisterModalVisible(false);
+      // Reload list and select the new farmer
+      await loadDbFarmers();
+      setSelectedFarmerId(farmerData.serial_number);
+    } catch (err) {
+      Alert.alert('Registration Failed', err.message);
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
 
   // Auto-fetch weather when entering weather tab for the first time
   useEffect(() => {
@@ -295,6 +363,12 @@ export default function HomeScreen() {
     }
     return "✅ Good conditions: Ideal for weeding, fertilizer application, and spraying.";
   };
+
+  // Filtered farmers list based on search query
+  const filteredDbFarmers = dbFarmers.filter(f => 
+    f.name.toLowerCase().includes(farmerSearchQuery.toLowerCase()) ||
+    (f.state && f.state.toLowerCase().includes(farmerSearchQuery.toLowerCase()))
+  );
 
   // ── Render ────────────────────────────────────
   return (
@@ -465,7 +539,7 @@ export default function HomeScreen() {
               {!loading && selectedState && (
                 <LinearGradient
                   colors={[COLORS.greenDeep, COLORS.greenMid]}
-                  style={StyleSheet.absoluteFillObject}
+                  style={[StyleSheet.absoluteFillObject, { borderRadius: 28 }]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 />
@@ -535,67 +609,6 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* ─── Detailed Market Deals List ─── */}
-            {minPrice !== null && maxPrice !== null && (
-              <View style={{ width: '100%', marginTop: 8 }}>
-                <Text style={styles.filterSectionLabel}>LIVE MARKET DEALS ({allMandiRecords.filter(r => !selectedCity || r.market === selectedCity).length})</Text>
-                {allMandiRecords
-                  .filter(r => !selectedCity || r.market === selectedCity)
-                  .map((record, index) => (
-                    <View key={index} style={styles.dealCard}>
-                      <View style={styles.dealCardHeader}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.dealMarket} numberOfLines={1}>📍 {record.market}</Text>
-                          <Text style={styles.dealVariety}>Variety: {record.variety} · {record.arrivalDate}</Text>
-                        </View>
-                        <View style={styles.dealModalBadge}>
-                          <Text style={styles.dealModalLabel}>AVG PRICE</Text>
-                          <Text style={styles.dealModalValue}>₹{record.modalPrice.toLocaleString('en-IN')}</Text>
-                        </View>
-                      </View>
-                      
-                      <View style={styles.dealDivider} />
-                      
-                      <View style={styles.dealPriceGrid}>
-                        <View style={styles.dealPriceItem}>
-                          <Text style={styles.dealPriceLabel}>Min Price</Text>
-                          <Text style={[styles.dealPriceValue, { color: COLORS.greenMid }]}>₹{record.minPrice.toLocaleString('en-IN')}</Text>
-                        </View>
-                        <View style={styles.dealPriceDivider} />
-                        <View style={styles.dealPriceItem}>
-                          <Text style={styles.dealPriceLabel}>Max Price</Text>
-                          <Text style={[styles.dealPriceValue, { color: COLORS.amber }]}>₹{record.maxPrice.toLocaleString('en-IN')}</Text>
-                        </View>
-                      </View>
-
-                      {/* Interactive Farmer Link */}
-                      {record.farmerName && record.farmerSerial && (
-                        <View style={styles.dealFarmerRow}>
-                          <TouchableOpacity 
-                            style={styles.dealFarmerTouch}
-                            onPress={() => {
-                              handleSelectFarmer(record.farmerSerial);
-                              setActiveTab('storage');
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <View style={styles.dealFarmerAvatar}>
-                              <Text style={{ fontSize: 13 }}>👨‍🌾</Text>
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.dealFarmerText}>
-                                Sold by <Text style={{ fontWeight: '700', color: COLORS.greenDeep }}>{record.farmerName}</Text> (ID: {record.farmerSerial})
-                              </Text>
-                              <Text style={styles.dealFarmerAction}>View stock & storage details ›</Text>
-                            </View>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-              </View>
-            )}
-
             {error && (
               <ErrorCard message={error} onRetry={handleFetch} />
             )}
@@ -606,48 +619,64 @@ export default function HomeScreen() {
             <Text style={styles.title}>Farmer & Storage Registry</Text>
             <Text style={styles.subtitle}>Browse active producers and audit storage stock holdings</Text>
 
+            {/* Farmer Search Bar & Register Trigger */}
+            <View style={[styles.searchContainer, { marginBottom: 12 }]}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search farmers..."
+                placeholderTextColor={COLORS.textLight}
+                value={farmerSearchQuery}
+                onChangeText={setFarmerSearchQuery}
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                style={[styles.searchButton, { backgroundColor: COLORS.greenDeep }]}
+                onPress={() => {
+                  const randomId = 'f_' + Math.random().toString(36).substring(2, 11);
+                  setNewFarmerId(randomId);
+                  setNewFarmerName('');
+                  setNewFarmerState('Rajasthan');
+                  setNewFarmerCrop('Potato');
+                  setRegisterModalVisible(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.searchButtonText}>➕ Register</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* ─── Premium Farmer Selector ─── */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.farmerSelectScroll}
-            >
-              {[
-                { id: '101', name: 'Daksh', emoji: '🧑‍🌾' },
-                { id: '102', name: 'Niharika', emoji: '👩‍🌾' },
-                { id: '103', name: 'Jatin', emoji: '👨‍🌾' },
-                { id: '104', name: 'Ikshita', emoji: '👩‍🌾' },
-              ].map((f) => {
-                const isActive = selectedFarmerId === f.id;
-                return (
-                  <TouchableOpacity
-                    key={f.id}
-                    style={[
-                      styles.farmerSelectCard,
-                      isActive && styles.farmerSelectCardActive
-                    ]}
-                    onPress={() => handleSelectFarmer(f.id)}
-                    activeOpacity={0.75}
-                  >
-                    <View style={[
-                      styles.farmerSelectAvatar,
-                      isActive && styles.farmerSelectAvatarActive
-                    ]}>
-                      <Text style={{ fontSize: 22 }}>{f.emoji}</Text>
-                      {isActive && (
-                        <View style={styles.farmerActiveBadge}>
-                          <Text style={{ color: '#fff', fontSize: 8, fontWeight: '900' }}>✓</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={[styles.farmerSelectName, isActive && styles.farmerSelectNameActive]}>
-                      {f.name}
-                    </Text>
-                    <Text style={styles.farmerSelectId}>ID: {f.id}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            {dbFarmersLoading ? (
+              <ActivityIndicator size="small" color={COLORS.greenDeep} style={{ marginVertical: 20 }} />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.farmerSelectScroll}
+              >
+                {filteredDbFarmers.map((f) => {
+                  const isActive = selectedFarmerId === f.serial_number;
+                  return (
+                    <TouchableOpacity
+                      key={f.serial_number}
+                      style={[
+                        styles.farmerSelectCard,
+                        isActive && styles.farmerSelectCardActive
+                      ]}
+                      onPress={() => handleSelectFarmer(f.serial_number)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[styles.farmerSelectName, isActive && styles.farmerSelectNameActive]} numberOfLines={1}>
+                        {f.name}
+                      </Text>
+                      <Text style={styles.farmerSelectId} numberOfLines={1}>
+                        ID: {f.serial_number.substring(0, 8)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
 
             {/* Empty State */}
             {!selectedFarmerId && (
@@ -682,9 +711,6 @@ export default function HomeScreen() {
                     end={{ x: 0, y: 1 }}
                   >
                     <View style={styles.farmerHeader}>
-                      <View style={styles.farmerAvatar}>
-                        <Text style={styles.farmerAvatarText}>👨‍🌾</Text>
-                      </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.farmerName}>{farmerData.name}</Text>
                         <Text style={styles.farmerSerial}>Verified Producer ID: {farmerData.serial_number}</Text>
@@ -728,10 +754,10 @@ export default function HomeScreen() {
                             <Text style={[styles.storageStatusText, { color: badgeText }]}>{h.status}</Text>
                           </View>
                         </View>
-                        
+
                         <Text style={styles.storageTitle}>{h.crop} — {h.variety}</Text>
                         <Text style={styles.storageFacility}>🏢 {h.cold_storage} · {h.location}</Text>
-                        
+
                         {/* Storage Capacity Bar */}
                         <View style={styles.storageMeterContainer}>
                           <View style={styles.storageMeterLabelRow}>
@@ -740,17 +766,17 @@ export default function HomeScreen() {
                           </View>
                           <View style={styles.storageMeterTrack}>
                             <View style={[
-                              styles.storageMeterFill, 
-                              { 
+                              styles.storageMeterFill,
+                              {
                                 width: `${Math.min(Math.round((h.bags / 400) * 100), 100)}%`,
-                                backgroundColor: isFresh ? COLORS.greenLight : COLORS.amber 
+                                backgroundColor: isFresh ? COLORS.greenLight : COLORS.amber
                               }
                             ]} />
                           </View>
                         </View>
 
                         <View style={styles.storageDivider} />
-                        
+
                         <View style={styles.storageMetaGrid}>
                           <View style={styles.storageMetaCol}>
                             <Text style={styles.storageMetaLabel}>Bags</Text>
@@ -769,10 +795,6 @@ export default function HomeScreen() {
                             <Text style={styles.storageMetaValue}>{h.inbound_age}</Text>
                           </View>
                         </View>
-
-                        <TouchableOpacity style={styles.outlinedActionBtn} activeOpacity={0.75}>
-                          <Text style={styles.outlinedActionBtnText}>Download Storage Receipt ›</Text>
-                        </TouchableOpacity>
                       </View>
                     );
                   })
@@ -839,14 +861,6 @@ export default function HomeScreen() {
                     </View>
                     <Text style={styles.weatherDesc}>{weatherData.description}</Text>
 
-                    {/* Agricultural Advice Banner */}
-                    <View style={styles.advisoryBanner}>
-                      <Text style={styles.advisoryTitle}>🌾 Farming Advisory</Text>
-                      <Text style={styles.advisoryText}>
-                        {getAgriAdvisory(weatherData.humidity, weatherData.windSpeed, weatherData.mainCondition)}
-                      </Text>
-                    </View>
-
                     <View style={styles.weatherDetails}>
                       <View style={styles.weatherDetailItem}>
                         <Text style={styles.weatherDetailLabel}>HUMIDITY</Text>
@@ -871,13 +885,13 @@ export default function HomeScreen() {
                       contentContainerStyle={styles.forecastScroll}
                     >
                       {weatherData.forecast.map((dayItem, idx) => (
-                        <View 
-                          key={dayItem.date + idx} 
+                        <View
+                          key={dayItem.date + idx}
                           style={[
-                            styles.forecastCard, 
-                            { 
+                            styles.forecastCard,
+                            {
                               backgroundColor: getWeatherBg(dayItem.conditionText),
-                              borderColor: getWeatherBorderColor(dayItem.conditionText) 
+                              borderColor: getWeatherBorderColor(dayItem.conditionText)
                             }
                           ]}
                         >
@@ -904,7 +918,7 @@ export default function HomeScreen() {
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          {activeTab === 'prices' ? 'Data directly from data.gov.in' : activeTab === 'storage' ? 'Data from cold storage mock DB' : 'Data directly from WeatherAPI.com'}
+          {activeTab === 'prices' ? 'Data directly from data.gov.in' : activeTab === 'storage' ? 'Data directly from PostgreSQL database' : 'Data directly from WeatherAPI.com'}
         </Text>
       </View>
 
@@ -1144,6 +1158,115 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ════════════ FARMER REGISTRATION MODAL ════════════ */}
+      <Modal
+        visible={registerModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setRegisterModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Register New Farmer</Text>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setRegisterModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Form Fields */}
+            <ScrollView style={{ padding: 24 }} contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
+              {/* Name Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Farmer Name *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter name (e.g. Dinesh Kumar)"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newFarmerName}
+                  onChangeText={setNewFarmerName}
+                />
+              </View>
+
+              {/* ID Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Farmer ID / Serial Number *</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TextInput
+                    style={[styles.formInput, { flex: 1 }]}
+                    placeholder="Enter unique ID"
+                    placeholderTextColor={COLORS.textLight}
+                    value={newFarmerId}
+                    onChangeText={setNewFarmerId}
+                  />
+                  <TouchableOpacity
+                    style={[styles.outlinedActionBtn, { marginTop: 0, paddingVertical: 12, justifyContent: 'center' }]}
+                    onPress={() => {
+                      const randomId = 'f_' + Math.random().toString(36).substring(2, 11);
+                      setNewFarmerId(randomId);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.outlinedActionBtnText}>🔄 Gen</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* State Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>State *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter State"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newFarmerState}
+                  onChangeText={setNewFarmerState}
+                />
+              </View>
+
+              {/* Crop Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Primary Crop *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter Primary Crop"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newFarmerCrop}
+                  onChangeText={setNewFarmerCrop}
+                />
+              </View>
+
+              {/* Submit Button */}
+              <TouchableOpacity
+                style={[styles.fetchActionBtn, registerLoading && styles.fetchActionBtnDisabled, { marginTop: 8, marginBottom: 30 }]}
+                onPress={handleRegisterFarmer}
+                disabled={registerLoading}
+                activeOpacity={0.85}
+              >
+                {!registerLoading && (
+                  <LinearGradient
+                    colors={[COLORS.greenDeep, COLORS.greenMid]}
+                    style={[StyleSheet.absoluteFillObject, { borderRadius: 28 }]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  />
+                )}
+                {registerLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.fetchActionBtnText}>Register Farmer</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -1200,7 +1323,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 30,
     padding: 4,
     width: '92%',
     maxWidth: 380,
@@ -1212,7 +1335,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 11,
     alignItems: 'center',
-    borderRadius: 13,
+    borderRadius: 26,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -1509,7 +1632,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: COLORS.white,
-    borderRadius: 14,
+    borderRadius: 28,
     borderWidth: 1,
     borderColor: '#E8E0CE',
     paddingHorizontal: 12,
@@ -1523,7 +1646,7 @@ const styles = StyleSheet.create({
   dropdownIconBadge: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 18,
     backgroundColor: '#F8F5EE',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1557,7 +1680,7 @@ const styles = StyleSheet.create({
   // Fetch Action Button
   fetchActionBtn: {
     width: '100%',
-    borderRadius: 14,
+    borderRadius: 28,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1851,7 +1974,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 28,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 14,
@@ -1862,7 +1985,7 @@ const styles = StyleSheet.create({
   },
   searchButton: {
     backgroundColor: COLORS.greenDeep,
-    borderRadius: 14,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 22,
@@ -2098,7 +2221,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     marginTop: 16,
     marginBottom: 8,
-    borderRadius: 14,
+    borderRadius: 28,
     paddingHorizontal: 14,
     paddingVertical: 4,
     borderWidth: 1,
@@ -2167,5 +2290,64 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     textAlign: 'center',
     paddingHorizontal: 24,
+  },
+  formGroup: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  formLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.greenDeep,
+    marginBottom: 6,
+  },
+  formInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAD9B0',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: COLORS.textDark,
+  },
+  outlinedActionBtn: {
+    borderWidth: 1.5,
+    borderColor: COLORS.greenDeep,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  outlinedActionBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.greenDeep,
+  },
+  fetchActionBtn: {
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.greenDeep,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  fetchActionBtnDisabled: {
+    backgroundColor: '#D1D5DB',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  fetchActionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    zIndex: 2,
   },
 });

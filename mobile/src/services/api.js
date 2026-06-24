@@ -4,7 +4,7 @@
 // =============================================
 
 const USE_BACKEND = true; // Route: App -> Server 1 -> Server 2 -> Server 1 -> App
-const BACKEND_URL = 'http://192.168.1.4:3001'; // Configured with local PC IP address
+const BACKEND_URL = 'http://192.168.29.206:3001'; // Configured with local PC IP address
 
 const API_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
 const API_KEY = '579b464db66ec23bdd0000011eca722018e9429560514de390d5bb1e';
@@ -50,13 +50,6 @@ export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'Pot
       throw new Error(`No mandi price data found for ${state}.`);
     }
 
-    const mockFarmersList = [
-      { name: 'Daksh', serial: '101' },
-      { name: 'Niharika', serial: '102' },
-      { name: 'Jatin', serial: '103' },
-      { name: 'Ikshita', serial: '104' },
-    ];
-
     const parsedRecords = records.map((r, idx) => ({
       commodity: r.commodity || r.Commodity || 'Unknown',
       market: r.market || r.Market || 'Unknown',
@@ -66,8 +59,8 @@ export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'Pot
       modalPrice: parseFloat(r.modal_price || r.Modal_Price || r.modal || 0),
       variety: r.variety || r.Variety || '-',
       arrivalDate: r.arrival_date || r.Arrival_Date || '-',
-      farmerName: r.farmer_name || r.farmerName || mockFarmersList[idx % mockFarmersList.length].name,
-      farmerSerial: r.farmer_serial || r.farmerSerial || mockFarmersList[idx % mockFarmersList.length].serial,
+      farmerName: r.farmer_name || r.farmerName || 'Unknown',
+      farmerSerial: r.farmer_serial || r.farmerSerial || 'N/A',
     })).filter((p) => p.minPrice > 0 || p.maxPrice > 0);
 
     if (parsedRecords.length === 0) {
@@ -181,32 +174,19 @@ export async function fetchStates() {
  */
 export async function fetchFarmers(state = '', serialNumber = '') {
   try {
-    if (USE_BACKEND) {
-      let url = `${BACKEND_URL}/api/farmers?`;
-      if (state) url += `state=${encodeURIComponent(state)}&`;
-      if (serialNumber) url += `serial_number=${encodeURIComponent(serialNumber)}&`;
-      
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Server returned status ${response.status}`);
-      }
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch farmers');
-      }
-      return data.farmers;
+    let url = `${BACKEND_URL}/api/farmers?`;
+    if (state) url += `state=${encodeURIComponent(state)}&`;
+    if (serialNumber) url += `serial_number=${encodeURIComponent(serialNumber)}&`;
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Server returned status ${response.status}`);
     }
-    // Fallback if backend is disabled/offline
-    return [
-      { serial_number: '101', name: 'Daksh', state: 'Rajasthan', commodity: 'Potato' },
-      { serial_number: '102', name: 'Niharika', state: 'Rajasthan', commodity: 'Tomato' },
-      { serial_number: '103', name: 'Jatin', state: 'Rajasthan', commodity: 'Ladyfinger' },
-      { serial_number: '104', name: 'Ikshita', state: 'Rajasthan', commodity: 'Potato' }
-    ].filter(f => {
-      const matchState = !state || f.state.toLowerCase() === state.toLowerCase();
-      const matchSerial = !serialNumber || f.serial_number === serialNumber;
-      return matchState && matchSerial;
-    });
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch farmers');
+    }
+    return data.farmers;
   } catch (err) {
     if (err.message.includes('Network request failed')) {
       throw new Error('Could not connect to backend server. Please verify if it is running.');
@@ -220,23 +200,20 @@ export async function fetchFarmers(state = '', serialNumber = '') {
  */
 export async function addFarmer(farmerData) {
   try {
-    if (USE_BACKEND) {
-      const url = `${BACKEND_URL}/api/farmers`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(farmerData),
-      });
+    const url = `${BACKEND_URL}/api/farmers`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(farmerData),
+    });
 
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to add farmer');
-      }
-      return data.farmer;
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Failed to add farmer');
     }
-    throw new Error('Cannot add farmer in offline mode (backend is disabled)');
+    return data.farmer;
   } catch (err) {
     if (err.message.includes('Network request failed')) {
       throw new Error('Could not connect to backend server. Please verify if it is running.');
@@ -250,45 +227,16 @@ export async function addFarmer(farmerData) {
  */
 export async function fetchHoldings() {
   try {
-    if (USE_BACKEND) {
-      const url = `${BACKEND_URL}/api/holdings`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Server returned status ${response.status}`);
-      }
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch holdings');
-      }
-      return data.holdings;
+    const url = `${BACKEND_URL}/api/holdings`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Server returned status ${response.status}`);
     }
-    // Fallback offline mock data matching the database exactly
-    return [
-      {
-        id: "AM-16288",
-        crop: "Potato",
-        variety: "Pukhraj",
-        cold_storage: "SN Sharma CS",
-        location: "Room 1 / K12",
-        bags: 300,
-        weight: "15 MT",
-        age_days: 7,
-        inbound_age: "7d",
-        status: "Fresh"
-      },
-      {
-        id: "AM-17885",
-        crop: "Potato",
-        variety: "Pukhraj",
-        cold_storage: "SN Sharma CS",
-        location: "Room 1 / B12",
-        bags: 50,
-        weight: "2.5 MT",
-        age_days: 55,
-        inbound_age: "55d",
-        status: "Good"
-      }
-    ];
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch holdings');
+    }
+    return data.holdings;
   } catch (err) {
     if (err.message.includes('Network request failed')) {
       throw new Error('Could not connect to backend server. Please verify if it is running.');
