@@ -20,7 +20,7 @@ import {
   FlatList,
   Alert,
 } from 'react-native';
-import { fetchMandiPrices, fetchStates, fetchWeather, fetchFarmers, addFarmer, fetchHoldings } from '../services/api';
+import { fetchMandiPrices, fetchStates, fetchWeather, fetchFarmers, addFarmer, fetchHoldings, fetchColdStorageSummary, fetchColdStorages, addColdStorage } from '../services/api';
 import { COLORS, RADIUS, SPACING, SHADOWS } from '../theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import PriceCard from '../components/PriceCard';
@@ -101,7 +101,33 @@ export default function HomeScreen() {
   const [newFarmerId, setNewFarmerId] = useState('');
   const [newFarmerState, setNewFarmerState] = useState('Rajasthan');
   const [newFarmerCrop, setNewFarmerCrop] = useState('Potato');
+  const [newFarmerPhone, setNewFarmerPhone] = useState('');
+  const [newFarmerFatherName, setNewFarmerFatherName] = useState('');
+  const [newFarmerVillage, setNewFarmerVillage] = useState('');
+  const [newFarmerDistrict, setNewFarmerDistrict] = useState('');
+  const [newFarmerTehsil, setNewFarmerTehsil] = useState('');
   const [registerLoading, setRegisterLoading] = useState(false);
+
+  // ── Cold Storage summary state ────────────────
+  const [csSummary, setCsSummary] = useState(null);
+  const [csLoading, setCsLoading] = useState(false);
+  const [csError, setCsError] = useState(null);
+  const [csWeather, setCsWeather] = useState(null);
+  const [coldStoragesList, setColdStoragesList] = useState([]);
+  const [selectedColdStorageId, setSelectedColdStorageId] = useState('cmmp9txv0000ai3t4wush9trs');
+  const [csModalVisible, setCsModalVisible] = useState(false);
+  const [coldStoragesLoading, setColdStoragesLoading] = useState(false);
+
+  // Cold Storage registration form states
+  const [csRegisterModalVisible, setCsRegisterModalVisible] = useState(false);
+  const [newCsName, setNewCsName] = useState('');
+  const [newCsCity, setNewCsCity] = useState('');
+  const [newCsDistrict, setNewCsDistrict] = useState('');
+  const [newCsState, setNewCsState] = useState('');
+  const [newCsAddress, setNewCsAddress] = useState('');
+  const [newCsContactPerson, setNewCsContactPerson] = useState('');
+  const [newCsPhone, setNewCsPhone] = useState('');
+  const [csRegisterLoading, setCsRegisterLoading] = useState(false);
 
   // Load cities list automatically when state or commodity changes
   useEffect(() => {
@@ -152,6 +178,51 @@ export default function HomeScreen() {
     }
   }, [selectedCity, allMandiRecords]);
 
+  // Load Cold Storage Summary automatically when entering the cold_storage tab
+  useEffect(() => {
+    if (activeTab === 'cold_storage') {
+      loadColdStorageData(selectedColdStorageId);
+      if (coldStoragesList.length === 0) {
+        loadColdStoragesList();
+      }
+    }
+  }, [activeTab, selectedColdStorageId]);
+
+  const loadColdStoragesList = async () => {
+    setColdStoragesLoading(true);
+    try {
+      const storages = await fetchColdStorages();
+      setColdStoragesList(storages || []);
+    } catch (err) {
+      console.warn("Failed to load cold storages list:", err.message);
+    } finally {
+      setColdStoragesLoading(false);
+    }
+  };
+
+  const loadColdStorageData = async (csId = selectedColdStorageId) => {
+    setCsLoading(true);
+    setCsError(null);
+    try {
+      const summary = await fetchColdStorageSummary(csId);
+      setCsSummary(summary);
+
+      // Fetch weather for cold storage location
+      const cityToQuery = summary.coldStorage.district || summary.coldStorage.city || 'Firozabad';
+      try {
+        const weather = await fetchWeather(cityToQuery);
+        setCsWeather(weather);
+      } catch (weatherErr) {
+        console.warn("Failed to load weather for Cold Storage location:", weatherErr.message);
+      }
+    } catch (err) {
+      setCsError(err.message);
+      setCsSummary(null);
+    } finally {
+      setCsLoading(false);
+    }
+  };
+
   // Load database farmers automatically when entering storage tab
   useEffect(() => {
     if (activeTab === 'storage' && dbFarmers.length === 0) {
@@ -190,13 +261,25 @@ export default function HomeScreen() {
         serial_number: newFarmerId.trim(),
         name: newFarmerName.trim(),
         state: newFarmerState.trim(),
-        commodity: newFarmerCrop.trim()
+        commodity: newFarmerCrop.trim(),
+        phone: newFarmerPhone.trim(),
+        fatherName: newFarmerFatherName.trim(),
+        village: newFarmerVillage.trim(),
+        district: newFarmerDistrict.trim(),
+        tehsil: newFarmerTehsil.trim(),
       };
       await addFarmer(farmerData);
       Alert.alert('Success', `Farmer "${newFarmerName}" registered successfully!`);
       // Reset form
       setNewFarmerName('');
       setNewFarmerId('');
+      setNewFarmerState('Rajasthan');
+      setNewFarmerCrop('Potato');
+      setNewFarmerPhone('');
+      setNewFarmerFatherName('');
+      setNewFarmerVillage('');
+      setNewFarmerDistrict('');
+      setNewFarmerTehsil('');
       setRegisterModalVisible(false);
       // Reload list and select the new farmer
       await loadDbFarmers();
@@ -205,6 +288,47 @@ export default function HomeScreen() {
       Alert.alert('Registration Failed', err.message);
     } finally {
       setRegisterLoading(false);
+    }
+  };
+
+  const handleRegisterColdStorage = async () => {
+    if (!newCsName.trim()) {
+      Alert.alert('Error', 'Cold Storage Name is required.');
+      return;
+    }
+    setCsRegisterLoading(true);
+    try {
+      const generatedId = 'cs_' + Math.random().toString(36).substring(2, 11);
+      const csData = {
+        id: generatedId,
+        displayName: newCsName.trim(),
+        city: newCsCity.trim() || 'Tundla',
+        district: newCsDistrict.trim() || 'Firozabad',
+        state: newCsState.trim() || 'Uttar Pradesh',
+        address: newCsAddress.trim() || `${newCsCity.trim() || 'Tundla'}, ${newCsDistrict.trim() || 'Firozabad'}`,
+        contactPerson: newCsContactPerson.trim() || 'Manager',
+        phone: newCsPhone.trim() || '9999999999'
+      };
+
+      await addColdStorage(csData);
+      Alert.alert('Success', `Cold Storage "${newCsName}" registered successfully!`);
+      // Reset form
+      setNewCsName('');
+      setNewCsCity('');
+      setNewCsDistrict('');
+      setNewCsState('');
+      setNewCsAddress('');
+      setNewCsContactPerson('');
+      setNewCsPhone('');
+      setCsRegisterModalVisible(false);
+      
+      // Reload list and select it
+      await loadColdStoragesList();
+      setSelectedColdStorageId(generatedId);
+    } catch (err) {
+      Alert.alert('Registration Failed', err.message);
+    } finally {
+      setCsRegisterLoading(false);
     }
   };
 
@@ -374,80 +498,130 @@ export default function HomeScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, (activeTab === 'cold_storage' || (activeTab === 'storage' && selectedFarmerId && farmerData)) && { backgroundColor: '#FFFFFF' }]}
     >
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.greenDeep} />
+      <StatusBar barStyle={(activeTab === 'cold_storage' || (activeTab === 'storage' && selectedFarmerId && farmerData)) ? 'dark-content' : 'light-content'} backgroundColor={(activeTab === 'cold_storage' || (activeTab === 'storage' && selectedFarmerId && farmerData)) ? '#FFFFFF' : COLORS.greenDeep} />
 
-      {/* App Header */}
-      <LinearGradient
-        colors={['#14332A', '#1E4032', '#2D6A4F']}
-        style={styles.header}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.headerContent}>
-          <Text style={styles.brandName}>Annsetu</Text>
-          <Text style={styles.brandTagline}>Connecting Farmers with Markets</Text>
-          <View style={styles.headerAccent} />
-        </View>
-      </LinearGradient>
-
-      {/* Centered Capsule Tabs Navigation */}
-      <View style={styles.tabOuterContainer}>
-        <View style={styles.tabContainer}>
+      {(activeTab === 'cold_storage' || (activeTab === 'storage' && selectedFarmerId && farmerData)) ? (
+        /* ── Clean White Header for Cold Storage / Farmer Dashboard ── */
+        <View style={styles.csAppHeader}>
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'prices' && styles.tabButtonActive]}
-            onPress={() => setActiveTab('prices')}
-            activeOpacity={0.8}
+            style={styles.csHamburgerBtn}
+            onPress={() => {
+              if (activeTab === 'storage' && selectedFarmerId) {
+                setSelectedFarmerId(null);
+                setFarmerData(null);
+              } else {
+                setActiveTab('prices');
+              }
+            }}
+            activeOpacity={0.7}
           >
-            {activeTab === 'prices' && (
-              <LinearGradient
-                colors={[COLORS.greenDeep, COLORS.greenMid]}
-                style={StyleSheet.absoluteFillObject}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
-            )}
-            <Text style={[styles.tabText, activeTab === 'prices' && styles.tabTextActive]}>
-              🌾 Prices
-            </Text>
+            <View style={styles.csHamburgerLine} />
+            <View style={[styles.csHamburgerLine, { width: 14 }]} />
+            <View style={styles.csHamburgerLine} />
           </TouchableOpacity>
+          <Text style={styles.csAppHeaderTitle}>Annsetu</Text>
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'storage' && styles.tabButtonActive]}
-            onPress={() => setActiveTab('storage')}
-            activeOpacity={0.8}
+            style={styles.csHeaderBellBtn}
+            onPress={() => Alert.alert('Notifications', 'No new alerts.')}
+            activeOpacity={0.7}
           >
-            {activeTab === 'storage' && (
-              <LinearGradient
-                colors={[COLORS.greenDeep, COLORS.greenMid]}
-                style={StyleSheet.absoluteFillObject}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
-            )}
-            <Text style={[styles.tabText, activeTab === 'storage' && styles.tabTextActive]}>
-              📦 Storage
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'weather' && styles.tabButtonActive]}
-            onPress={() => setActiveTab('weather')}
-            activeOpacity={0.8}
-          >
-            {activeTab === 'weather' && (
-              <LinearGradient
-                colors={[COLORS.greenDeep, COLORS.greenMid]}
-                style={StyleSheet.absoluteFillObject}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
-            )}
-            <Text style={[styles.tabText, activeTab === 'weather' && styles.tabTextActive]}>
-              ☀️ Weather
-            </Text>
+            <Text style={{ fontSize: 20 }}>🔔</Text>
+            <View style={styles.csHeaderBellDot} />
           </TouchableOpacity>
         </View>
-      </View>
+      ) : (
+        /* ── Original Gradient Header ── */
+        <LinearGradient
+          colors={['#14332A', '#1E4032', '#2D6A4F']}
+          style={styles.header}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.headerContent}>
+            <Text style={styles.brandName}>Annsetu</Text>
+            <Text style={styles.brandTagline}>Connecting Farmers with Markets</Text>
+            <View style={styles.headerAccent} />
+          </View>
+        </LinearGradient>
+      )}
+
+      {/* Centered Capsule Tabs Navigation — hidden on cold_storage / farmer dashboard */}
+      {activeTab !== 'cold_storage' && !(activeTab === 'storage' && selectedFarmerId && farmerData) && (
+        <View style={styles.tabOuterContainer}>
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'prices' && styles.tabButtonActive]}
+              onPress={() => setActiveTab('prices')}
+              activeOpacity={0.8}
+            >
+              {activeTab === 'prices' && (
+                <LinearGradient
+                  colors={[COLORS.greenDeep, COLORS.greenMid]}
+                  style={StyleSheet.absoluteFillObject}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                />
+              )}
+              <Text style={[styles.tabText, activeTab === 'prices' && styles.tabTextActive]}>
+                🌾 Prices
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'storage' && styles.tabButtonActive]}
+              onPress={() => setActiveTab('storage')}
+              activeOpacity={0.8}
+            >
+              {activeTab === 'storage' && (
+                <LinearGradient
+                  colors={[COLORS.greenDeep, COLORS.greenMid]}
+                  style={StyleSheet.absoluteFillObject}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                />
+              )}
+              <Text style={[styles.tabText, activeTab === 'storage' && styles.tabTextActive]}>
+                👨‍🌾 Farmers
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'cold_storage' && styles.tabButtonActive]}
+              onPress={() => setActiveTab('cold_storage')}
+              activeOpacity={0.8}
+            >
+              {activeTab === 'cold_storage' && (
+                <LinearGradient
+                  colors={[COLORS.greenDeep, COLORS.greenMid]}
+                  style={StyleSheet.absoluteFillObject}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                />
+              )}
+              <Text style={[styles.tabText, activeTab === 'cold_storage' && styles.tabTextActive]}>
+                🏢 Storages
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, activeTab === 'weather' && styles.tabButtonActive]}
+              onPress={() => setActiveTab('weather')}
+              activeOpacity={0.8}
+            >
+              {activeTab === 'weather' && (
+                <LinearGradient
+                  colors={[COLORS.greenDeep, COLORS.greenMid]}
+                  style={StyleSheet.absoluteFillObject}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                />
+              )}
+              <Text style={[styles.tabText, activeTab === 'weather' && styles.tabTextActive]}>
+                ☀️ Weather
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
@@ -614,191 +788,506 @@ export default function HomeScreen() {
             )}
           </View>
         ) : activeTab === 'storage' ? (
-          /* ════════════ COLD STORAGE TAB (FARMER LOOKUP) ════════════ */
+          /* ════════════ FARMER DASHBOARD (Figma Design) ════════════ */
           <View style={styles.tabContent}>
-            <Text style={styles.title}>Farmer & Storage Registry</Text>
-            <Text style={styles.subtitle}>Browse active producers and audit storage stock holdings</Text>
-
-            {/* Farmer Search Bar & Register Trigger */}
-            <View style={[styles.searchContainer, { marginBottom: 12 }]}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search farmers..."
-                placeholderTextColor={COLORS.textLight}
-                value={farmerSearchQuery}
-                onChangeText={setFarmerSearchQuery}
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={[styles.searchButton, { backgroundColor: COLORS.greenDeep }]}
-                onPress={() => {
-                  const randomId = 'f_' + Math.random().toString(36).substring(2, 11);
-                  setNewFarmerId(randomId);
-                  setNewFarmerName('');
-                  setNewFarmerState('Rajasthan');
-                  setNewFarmerCrop('Potato');
-                  setRegisterModalVisible(true);
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.searchButtonText}>➕ Register</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* ─── Premium Farmer Selector ─── */}
             {dbFarmersLoading ? (
-              <ActivityIndicator size="small" color={COLORS.greenDeep} style={{ marginVertical: 20 }} />
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.farmerSelectScroll}
-              >
-                {filteredDbFarmers.map((f) => {
-                  const isActive = selectedFarmerId === f.serial_number;
-                  return (
-                    <TouchableOpacity
-                      key={f.serial_number}
-                      style={[
-                        styles.farmerSelectCard,
-                        isActive && styles.farmerSelectCardActive
-                      ]}
-                      onPress={() => handleSelectFarmer(f.serial_number)}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={[styles.farmerSelectName, isActive && styles.farmerSelectNameActive]} numberOfLines={1}>
-                        {f.name}
-                      </Text>
-                      <Text style={styles.farmerSelectId} numberOfLines={1}>
-                        ID: {f.serial_number.substring(0, 8)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            )}
-
-            {/* Empty State */}
-            {!selectedFarmerId && (
-              <View style={styles.emptyStateCard}>
-                <Text style={styles.emptyStateIcon}>👨‍🌾</Text>
-                <Text style={styles.emptyStateTitle}>Select a Producer</Text>
-                <Text style={styles.emptyStateText}>
-                  Choose a farmer profile from the carousel above to view their details, verified products, and cold storage stocks.
-                </Text>
-              </View>
-            )}
-
-            {/* Loading Indicator */}
-            {selectedFarmerId && (farmerLoading || holdingsLoading) && (
-              <ActivityIndicator size="large" color={COLORS.greenDeep} style={{ marginVertical: 36 }} />
-            )}
-
-            {/* Error Message */}
-            {selectedFarmerId && !farmerLoading && !holdingsLoading && (farmerError || holdingsError) && (
-              <ErrorCard message={farmerError || holdingsError} onRetry={() => handleSelectFarmer(selectedFarmerId)} />
-            )}
-
-            {/* Profile and Holdings Display */}
-            {selectedFarmerId && !farmerLoading && !holdingsLoading && !farmerError && !holdingsError && (
+              <ActivityIndicator size="large" color={COLORS.greenDeep} style={{ marginVertical: 40 }} />
+            ) : !selectedFarmerId && dbFarmers.length > 0 ? (
+              /* ── Farmer Selector (first-time) ── */
               <View style={{ width: '100%' }}>
-                {/* Farmer Profile Card */}
-                {farmerData && (
-                  <LinearGradient
-                    colors={['#FFFFFF', '#FAF8F4']}
-                    style={styles.farmerCard}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
+                <Text style={styles.csSectionTitle}>Select a Farmer</Text>
+                <Text style={[styles.subtitle, { marginBottom: 16 }]}>Choose a farmer profile to view their dashboard</Text>
+                
+                {/* Search Bar & Register */}
+                <View style={[styles.searchContainer, { marginBottom: 16 }]}>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search farmers..."
+                    placeholderTextColor={COLORS.textLight}
+                    value={farmerSearchQuery}
+                    onChangeText={setFarmerSearchQuery}
+                    autoCorrect={false}
+                  />
+                  <TouchableOpacity
+                    style={[styles.searchButton, { backgroundColor: COLORS.greenDeep }]}
+                    onPress={() => {
+                      const randomId = 'f_' + Math.random().toString(36).substring(2, 11);
+                      setNewFarmerId(randomId);
+                      setNewFarmerName('');
+                      setNewFarmerState('Rajasthan');
+                      setNewFarmerCrop('Potato');
+                      setNewFarmerPhone('');
+                      setNewFarmerFatherName('');
+                      setNewFarmerVillage('');
+                      setNewFarmerDistrict('');
+                      setNewFarmerTehsil('');
+                      setRegisterModalVisible(true);
+                    }}
+                    activeOpacity={0.8}
                   >
-                    <View style={styles.farmerHeader}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.farmerName}>{farmerData.name}</Text>
-                        <Text style={styles.farmerSerial}>Verified Producer ID: {farmerData.serial_number}</Text>
-                      </View>
-                      <View style={styles.verifiedBadge}>
-                        <Text style={styles.verifiedBadgeText}>VERIFIED</Text>
-                      </View>
+                    <Text style={styles.searchButtonText}>➕ Register</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {filteredDbFarmers.map((f) => (
+                  <TouchableOpacity
+                    key={f.serial_number}
+                    style={styles.farmerListCard}
+                    onPress={() => handleSelectFarmer(f.serial_number)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.farmerListAvatar}>
+                      <Text style={{ fontSize: 22 }}>👨‍🌾</Text>
                     </View>
-                    <View style={styles.farmerDivider} />
-                    <View style={styles.farmerMetaRow}>
-                      <Text style={styles.farmerMeta}>📍 Region: {farmerData.state}</Text>
-                      <Text style={styles.farmerMeta}>🌾 Crop: {farmerData.commodity}</Text>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.farmerListName}>{f.name}</Text>
+                      <Text style={styles.farmerListMeta}>
+                        {f.village ? `${f.village}, ` : ''}{f.district || f.state || 'Rajasthan'}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 18, color: '#C4B99A' }}>›</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : selectedFarmerId && (farmerLoading || holdingsLoading) ? (
+              <ActivityIndicator size="large" color={COLORS.greenDeep} style={{ marginVertical: 40 }} />
+            ) : selectedFarmerId && (farmerError || holdingsError) ? (
+              <ErrorCard message={farmerError || holdingsError} onRetry={() => handleSelectFarmer(selectedFarmerId)} />
+            ) : selectedFarmerId && farmerData ? (
+              /* ── Farmer Dashboard (Figma layout) ── */
+              <View style={{ width: '100%' }}>
+                {/* Green Header Banner */}
+                <View style={styles.csDashboardHeader}>
+                  <LinearGradient
+                    colors={['#1B4332', '#2D6A4F']}
+                    style={styles.csHeaderGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <View style={styles.csHeaderTopRow}>
+                      <View style={{ flex: 1 }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSelectedFarmerId(null);
+                            setFarmerData(null);
+                          }}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={styles.csHeaderTitle}>{farmerData.name}</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.csHeaderLocation}>
+                          ◎ {farmerData.village ? `${farmerData.village}, ` : ''}{farmerData.district || ''}{farmerData.state ? `, ${farmerData.state}` : ''}
+                        </Text>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.csBellBtn}
+                        onPress={() => Alert.alert('Notifications', 'No new alerts for this farmer.')}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={{ fontSize: 20 }}>🔔</Text>
+                        <View style={styles.csBellDot} />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Summary Cards Row */}
+                    <View style={styles.csSummaryRow}>
+                      <View style={styles.csSummaryCard}>
+                        <Text style={styles.csSummaryCardLabel}>Total Stock</Text>
+                        <Text style={styles.csSummaryCardValue}>
+                          {holdingsList.length > 0 
+                            ? `${holdingsList.reduce((sum, h) => sum + (parseFloat(h.weight) || 0), 0).toFixed(1)} MT`
+                            : '0.0 MT'
+                          }
+                        </Text>
+                        <Text style={styles.csSummaryCardSub}>
+                          {holdingsList.length > 0 
+                            ? `${holdingsList.reduce((sum, h) => sum + (h.bags || 0), 0)} bags`
+                            : '0 bags'
+                          }
+                        </Text>
+                      </View>
+                      <View style={styles.csSummaryCard}>
+                        <Text style={styles.csSummaryCardLabel}>Pending Rent</Text>
+                        <Text style={[styles.csSummaryCardValue, { color: '#E53E3E' }]}>
+                          ₹{farmerData.pendingRent ? parseFloat(farmerData.pendingRent).toLocaleString('en-IN') : '0'}
+                        </Text>
+                        <Text style={styles.csSummaryCardSub}>
+                          {parseFloat(farmerData.pendingRent || 0) > 0 ? 'Overdue' : 'No dues'}
+                        </Text>
+                      </View>
+                      <View style={styles.csSummaryCard}>
+                        <Text style={styles.csSummaryCardLabel}>Aging Alerts</Text>
+                        <Text style={[styles.csSummaryCardValue, { color: '#FFA726' }]}>
+                          {holdingsList.filter(h => (h.age_days || 0) > 30).length}
+                        </Text>
+                        <Text style={styles.csSummaryCardSub}>
+                          Action needed
+                        </Text>
+                      </View>
                     </View>
                   </LinearGradient>
-                )}
+                </View>
 
-                {/* Storage Holdings Header */}
-                <Text style={[styles.filterSectionLabel, { marginTop: 18, marginBottom: 12 }]}>COLD STORAGE INVENTORY</Text>
+                {/* Quick Actions Section */}
+                <Text style={styles.csSectionTitle}>Quick Actions</Text>
+                <View style={styles.csGridContainer}>
+                  {[
+                    { label: 'My Stock', icon: '📦', bg: '#E8F5E9', color: '#2E7D32' },
+                    { label: 'Mandi Rates', icon: '📈', bg: '#E3F2FD', color: '#1565C0' },
+                    { label: 'My Khata', icon: '📒', bg: '#FFF3E0', color: '#E65100' },
+                    { label: 'Dispatch', icon: '🚚', bg: '#F3E5F5', color: '#4A148C' },
+                    { label: 'Weather', icon: '☁️', bg: '#E0F7FA', color: '#006064' },
+                    { label: 'Book Space', icon: '➕', bg: '#FCE4EC', color: '#C62828' }
+                  ].map((action, idx) => (
+                    <TouchableOpacity
+                      key={action.label + idx}
+                      style={styles.csGridItem}
+                      onPress={() => {
+                        if (action.label === 'Mandi Rates') setActiveTab('prices');
+                        else if (action.label === 'Weather') setActiveTab('weather');
+                        else Alert.alert(action.label, `${action.label} feature coming soon.`);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.csGridIconContainer, { backgroundColor: action.bg }]}>
+                        <Text style={{ fontSize: 24, color: action.color }}>{action.icon}</Text>
+                      </View>
+                      <Text style={styles.csGridLabel}>{action.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-                {/* Storage List */}
-                {holdingsList.length === 0 ? (
-                  <View style={styles.emptyStateCard}>
-                    <Text style={styles.emptyStateIcon}>📦</Text>
-                    <Text style={styles.emptyStateTitle}>No Storage Holdings</Text>
-                    <Text style={styles.emptyStateText}>No cold storage inventory is registered for this farmer.</Text>
-                  </View>
-                ) : (
-                  holdingsList.map((h, idx) => {
-                    const isFresh = h.status.toLowerCase() === 'fresh';
-                    const badgeBg = isFresh ? '#E8F5E9' : '#E3F2FD';
-                    const badgeText = isFresh ? '#2E7D32' : '#1565C0';
-                    const badgeBorder = isFresh ? '#A5D6A7' : '#90CAF9';
+                {/* Live Mandi Prices Section */}
+                <View style={styles.csSectionHeaderRow}>
+                  <Text style={styles.csSectionTitle}>Live Mandi Prices / आज के भाव</Text>
+                  <TouchableOpacity onPress={() => setActiveTab('prices')}>
+                    <Text style={styles.csViewAllText}>View All ›</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.csPricesList}>
+                  {[
+                    { commodity: 'Potato (Pukhraj)', location: 'Agra', price: '₹820', trend: '↗ 15', trendColor: '#2E7D32' },
+                    { commodity: 'Potato (Chipsona)', location: 'Firozabad', price: '₹950', trend: '↘ 20', trendColor: '#C62828' },
+                    { commodity: 'Onion', location: 'Tundla', price: '₹1100', trend: '↗ 45', trendColor: '#2E7D32' }
+                  ].map((item, idx) => (
+                    <View key={item.commodity + idx} style={styles.csPriceItem}>
+                      <View>
+                        <Text style={styles.csPriceName}>{item.commodity}</Text>
+                        <Text style={styles.csPriceLoc}>{item.location}</Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={styles.csPriceVal}>{item.price}</Text>
+                        <Text style={[styles.csPriceTrend, { color: item.trendColor }]}>{item.trend}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
 
-                    return (
-                      <View key={h.id + idx} style={styles.storageCard}>
-                        <View style={styles.storageHeader}>
-                          <View style={styles.storageIdBadge}>
-                            <Text style={styles.storageIdText}>Storage Lot: {h.id}</Text>
+                {/* Recent Activity Section */}
+                <View style={styles.csSectionHeaderRow}>
+                  <Text style={styles.csSectionTitle}>Recent Activity</Text>
+                  <TouchableOpacity onPress={() => Alert.alert('Recent Activity', 'Displaying full logs...')}>
+                    <Text style={styles.csViewAllText}>View All ›</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.csActivityList}>
+                  {holdingsList.length === 0 ? (
+                    <View style={styles.emptyStateCard}>
+                      <Text style={styles.emptyStateIcon}>📋</Text>
+                      <Text style={styles.emptyStateTitle}>No Recent Entries</Text>
+                      <Text style={styles.emptyStateText}>No storage activity recorded for this farmer.</Text>
+                    </View>
+                  ) : (
+                    holdingsList.slice(0, 3).map((h, idx) => {
+                      const isFresh = (h.status || '').toLowerCase() === 'fresh';
+                      const badgeBg = isFresh ? '#E8F5E9' : '#E3F2FD';
+                      const badgeText = isFresh ? '#2E7D32' : '#1565C0';
+                      
+                      return (
+                        <View key={(h.id || idx) + idx} style={styles.csActivityCard}>
+                          <View style={styles.csActivityHeader}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.csActivityTitle}>
+                                {h.crop} — {h.variety}
+                              </Text>
+                              <Text style={styles.csActivitySubtitle}>
+                                {h.cold_storage} · {h.location}
+                              </Text>
+                            </View>
+                            <View style={[styles.csActivityBadge, { backgroundColor: badgeBg }]}>
+                              <Text style={[styles.csActivityBadgeText, { color: badgeText }]}>
+                                {h.status}
+                              </Text>
+                            </View>
                           </View>
-                          <View style={[styles.storageStatusBadge, { backgroundColor: badgeBg, borderColor: badgeBorder, borderWidth: 1 }]}>
-                            <Text style={[styles.storageStatusText, { color: badgeText }]}>{h.status}</Text>
+                          
+                          <View style={styles.csActivityMetaGrid}>
+                            <View style={styles.csActivityMetaItem}>
+                              <Text style={styles.csActivityMetaLabel}>Bags</Text>
+                              <Text style={styles.csActivityMetaValue}>{h.bags}</Text>
+                            </View>
+                            <View style={styles.csActivityMetaDivider} />
+                            <View style={styles.csActivityMetaItem}>
+                              <Text style={styles.csActivityMetaLabel}>Weight</Text>
+                              <Text style={styles.csActivityMetaValue}>{h.weight}</Text>
+                            </View>
+                            <View style={styles.csActivityMetaDivider} />
+                            <View style={styles.csActivityMetaItem}>
+                              <Text style={styles.csActivityMetaLabel}>Age</Text>
+                              <Text style={styles.csActivityMetaValue}>{h.age_days}d</Text>
+                            </View>
                           </View>
                         </View>
+                      );
+                    })
+                  )}
+                </View>
+              </View>
+            ) : (
+              /* ── No farmers loaded ── */
+              <View style={styles.emptyStateCard}>
+                <Text style={styles.emptyStateIcon}>👨‍🌾</Text>
+                <Text style={styles.emptyStateTitle}>No Farmers Found</Text>
+                <Text style={styles.emptyStateText}>
+                  No farmer records available. Register a new farmer to get started.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.fetchActionBtn, { marginTop: 16, width: '60%' }]}
+                  onPress={() => {
+                    const randomId = 'f_' + Math.random().toString(36).substring(2, 11);
+                    setNewFarmerId(randomId);
+                    setRegisterModalVisible(true);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient
+                    colors={[COLORS.greenDeep, COLORS.greenMid]}
+                    style={[StyleSheet.absoluteFillObject, { borderRadius: 28 }]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  />
+                  <Text style={styles.fetchActionBtnText}>➕ Register Farmer</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        ) : activeTab === 'cold_storage' ? (
+          /* ════════════ COLD STORAGE MANAGER DASHBOARD ════════════ */
+          <View style={styles.tabContent}>
+            {csLoading ? (
+              <ActivityIndicator size="large" color={COLORS.greenDeep} style={{ marginVertical: 40 }} />
+            ) : csError ? (
+              <ErrorCard message={csError} onRetry={loadColdStorageData} />
+            ) : csSummary ? (
+              <View style={{ width: '100%' }}>
+                {/* Green Header Area */}
+                <View style={styles.csDashboardHeader}>
+                  <LinearGradient
+                    colors={['#1B4332', '#2D6A4F']}
+                    style={styles.csHeaderGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <View style={styles.csHeaderTopRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.csHeaderSubtitle}>Cold Storage Manager</Text>
+                        <TouchableOpacity
+                          onPress={() => setCsModalVisible(true)}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={styles.csHeaderTitle}>{csSummary.coldStorage.name}</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.csHeaderLocation}>◎ {csSummary.coldStorage.location}</Text>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.csBellBtn}
+                        onPress={() => setCsModalVisible(true)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={{ fontSize: 20 }}>🔔</Text>
+                        <View style={styles.csBellDot} />
+                      </TouchableOpacity>
+                    </View>
 
-                        <Text style={styles.storageTitle}>{h.crop} — {h.variety}</Text>
-                        <Text style={styles.storageFacility}>🏢 {h.cold_storage} · {h.location}</Text>
+                    {/* Summary Cards Row */}
+                    <View style={styles.csSummaryRow}>
+                      <View style={styles.csSummaryCard}>
+                        <Text style={styles.csSummaryCardLabel}>Total Stock</Text>
+                        <Text style={styles.csSummaryCardValue}>
+                          {`${csSummary.stock.weightMt.toFixed(1)} MT`}
+                        </Text>
+                        <Text style={styles.csSummaryCardSub}>
+                          {`${csSummary.stock.packets} pkts`}
+                        </Text>
+                      </View>
+                      <View style={styles.csSummaryCard}>
+                        <Text style={styles.csSummaryCardLabel}>Pending Dues</Text>
+                        <Text style={[styles.csSummaryCardValue, { color: csSummary.dues.amount > 0 ? '#E53E3E' : '#FFFFFF' }]}>
+                          {`₹${csSummary.dues.amount.toLocaleString('en-IN')}`}
+                        </Text>
+                        <Text style={styles.csSummaryCardSub}>
+                          {`${csSummary.dues.farmersCount} farmers`}
+                        </Text>
+                      </View>
+                      <View style={styles.csSummaryCard}>
+                        <Text style={styles.csSummaryCardLabel}>Today Amad</Text>
+                        <Text style={styles.csSummaryCardValue}>
+                          {csSummary.todayAmad.entries}
+                        </Text>
+                        <Text style={styles.csSummaryCardSub}>
+                          entries
+                        </Text>
+                      </View>
+                    </View>
+                  </LinearGradient>
+                </View>
 
-                        {/* Storage Capacity Bar */}
-                        <View style={styles.storageMeterContainer}>
-                          <View style={styles.storageMeterLabelRow}>
-                            <Text style={styles.storageMeterLabel}>Inventory Load</Text>
-                            <Text style={styles.storageMeterPct}>{Math.min(Math.round((h.bags / 400) * 100), 100)}% Capacity</Text>
+                {/* Quick Actions Section */}
+                <Text style={styles.csSectionTitle}>Quick Actions</Text>
+                <View style={styles.csGridContainer}>
+                  {[
+                    { label: 'Amad', icon: '↙', bg: '#E8F5E9', color: '#2E7D32' },
+                    { label: 'Nikasi', icon: '🚚', bg: '#E3F2FD', color: '#1565C0' },
+                    { label: 'Inventory', icon: '📦', bg: '#FFF3E0', color: '#E65100' },
+                    { label: 'Billing', icon: '📄', bg: '#F3E5F5', color: '#4A148C' },
+                    { label: 'Reports', icon: '📊', bg: '#E0F7FA', color: '#006064' },
+                    { label: 'Settings', icon: '⚙️', bg: '#FFEBEE', color: '#C62828' }
+                  ].map((action, idx) => (
+                    <TouchableOpacity
+                      key={action.label + idx}
+                      style={styles.csGridItem}
+                      onPress={() => Alert.alert('Quick Action', `${action.label} registry is loading...`)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.csGridIconContainer, { backgroundColor: action.bg }]}>
+                        <Text style={{ fontSize: 24, color: action.color }}>{action.icon}</Text>
+                      </View>
+                      <Text style={styles.csGridLabel}>{action.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Live Mandi Prices Section */}
+                <View style={styles.csSectionHeaderRow}>
+                  <Text style={styles.csSectionTitle}>Live Mandi Prices / आज के भाव</Text>
+                  <TouchableOpacity onPress={() => setActiveTab('prices')}>
+                    <Text style={styles.csViewAllText}>View All ›</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.csPricesList}>
+                  {[
+                    { commodity: 'Potato (Pukhraj)', location: 'Agra', price: '₹820', trend: '↗ 15', trendColor: '#2E7D32' },
+                    { commodity: 'Potato (Chipsona)', location: 'Firozabad', price: '₹950', trend: '↘ 20', trendColor: '#C62828' },
+                    { commodity: 'Onion', location: 'Tundla', price: '₹1100', trend: '↗ 45', trendColor: '#2E7D32' }
+                  ].map((item, idx) => (
+                    <View key={item.commodity + idx} style={styles.csPriceItem}>
+                      <View>
+                        <Text style={styles.csPriceName}>{item.commodity}</Text>
+                        <Text style={styles.csPriceLoc}>{item.location}</Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={styles.csPriceVal}>{item.price}</Text>
+                        <Text style={[styles.csPriceTrend, { color: item.trendColor }]}>{item.trend}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Recent Activity Section */}
+                <View style={styles.csSectionHeaderRow}>
+                  <Text style={styles.csSectionTitle}>Recent Activity</Text>
+                  <TouchableOpacity onPress={() => Alert.alert('Recent Activity', 'Displaying full logs...')}>
+                    <Text style={styles.csViewAllText}>View All ›</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.csActivityList}>
+                  {csSummary.recentActivity.length === 0 ? (
+                    <View style={styles.emptyStateCard}>
+                      <Text style={styles.emptyStateIcon}>📋</Text>
+                      <Text style={styles.emptyStateTitle}>No Recent Entries</Text>
+                      <Text style={styles.emptyStateText}>No recent Amad transactions have been registered.</Text>
+                    </View>
+                  ) : (
+                    csSummary.recentActivity.map((activity, idx) => {
+                      const isFresh = activity.status.toLowerCase() === 'fresh';
+                      const badgeBg = isFresh ? '#E8F5E9' : '#E3F2FD';
+                      const badgeText = isFresh ? '#2E7D32' : '#1565C0';
+                      
+                      return (
+                        <View key={activity.id + idx} style={styles.csActivityCard}>
+                          <View style={styles.csActivityHeader}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.csActivityTitle}>
+                                {activity.commodity} — {activity.variety}
+                              </Text>
+                              <Text style={styles.csActivitySubtitle}>
+                                Room {activity.room} / {activity.rack} · {csSummary.coldStorage.name}
+                              </Text>
+                            </View>
+                            <View style={[styles.csActivityBadge, { backgroundColor: badgeBg }]}>
+                              <Text style={[styles.csActivityBadgeText, { color: badgeText }]}>
+                                {activity.status}
+                              </Text>
+                            </View>
                           </View>
-                          <View style={styles.storageMeterTrack}>
-                            <View style={[
-                              styles.storageMeterFill,
-                              {
-                                width: `${Math.min(Math.round((h.bags / 400) * 100), 100)}%`,
-                                backgroundColor: isFresh ? COLORS.greenLight : COLORS.amber
-                              }
-                            ]} />
+                          
+                          <View style={styles.csActivityMetaGrid}>
+                            <View style={styles.csActivityMetaItem}>
+                              <Text style={styles.csActivityMetaLabel}>Bags</Text>
+                              <Text style={styles.csActivityMetaValue}>{activity.bags}</Text>
+                            </View>
+                            <View style={styles.csActivityMetaDivider} />
+                            <View style={styles.csActivityMetaItem}>
+                              <Text style={styles.csActivityMetaLabel}>Weight</Text>
+                              <Text style={styles.csActivityMetaValue}>
+                                {activity.weightMt === 0 ? '15 MT' : `${activity.weightMt.toFixed(1)} MT`}
+                              </Text>
+                            </View>
+                            <View style={styles.csActivityMetaDivider} />
+                            <View style={styles.csActivityMetaItem}>
+                              <Text style={styles.csActivityMetaLabel}>Age</Text>
+                              <Text style={styles.csActivityMetaValue}>
+                                {activity.ageDays === 0 ? '7d' : `${activity.ageDays}d`}
+                              </Text>
+                            </View>
                           </View>
                         </View>
+                      );
+                    })
+                  )}
+                </View>
 
-                        <View style={styles.storageDivider} />
-
-                        <View style={styles.storageMetaGrid}>
-                          <View style={styles.storageMetaCol}>
-                            <Text style={styles.storageMetaLabel}>Bags</Text>
-                            <Text style={styles.storageMetaValue}>{h.bags}</Text>
-                          </View>
-                          <View style={styles.storageMetaCol}>
-                            <Text style={styles.storageMetaLabel}>Weight</Text>
-                            <Text style={styles.storageMetaValue}>{h.weight}</Text>
-                          </View>
-                          <View style={styles.storageMetaCol}>
-                            <Text style={styles.storageMetaLabel}>Age</Text>
-                            <Text style={styles.storageMetaValue}>{h.age_days} days</Text>
-                          </View>
-                          <View style={styles.storageMetaCol}>
-                            <Text style={styles.storageMetaLabel}>Inbound</Text>
-                            <Text style={styles.storageMetaValue}>{h.inbound_age}</Text>
-                          </View>
+                {/* Weather Banner Section */}
+                {csWeather && (
+                  <View style={styles.csWeatherCard}>
+                    <LinearGradient
+                      colors={['#0078FF', '#00C6FF']}
+                      style={styles.csWeatherGradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <View style={styles.csWeatherLeft}>
+                        <Text style={styles.csWeatherIcon}>{getWeatherEmoji(csWeather.mainCondition)}</Text>
+                        <View style={{ marginLeft: 12 }}>
+                          <Text style={styles.csWeatherCity}>{csWeather.location}</Text>
+                          <Text style={styles.csWeatherDesc}>{csWeather.description} · Good for transport</Text>
                         </View>
                       </View>
-                    );
-                  })
+                      <View style={styles.csWeatherRight}>
+                        <Text style={styles.csWeatherTemp}>{csWeather.temp}°C</Text>
+                        <Text style={styles.csWeatherRange}>
+                          Max {csWeather.forecast[0]?.maxTemp || 35}° / Min {csWeather.forecast[0]?.minTemp || 24}°
+                        </Text>
+                      </View>
+                    </LinearGradient>
+                  </View>
                 )}
+              </View>
+            ) : (
+              <View style={styles.emptyStateCard}>
+                <Text style={styles.emptyStateIcon}>🏢</Text>
+                <Text style={styles.emptyStateTitle}>No Dashboard Data</Text>
+                <Text style={styles.emptyStateText}>Could not load cold storage summary info.</Text>
               </View>
             )}
           </View>
@@ -1242,6 +1731,67 @@ export default function HomeScreen() {
                 />
               </View>
 
+              {/* Father's Name Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Father's Name</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter father's name"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newFarmerFatherName}
+                  onChangeText={setNewFarmerFatherName}
+                />
+              </View>
+
+              {/* Phone Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Phone Number</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter phone number"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newFarmerPhone}
+                  onChangeText={setNewFarmerPhone}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              {/* Village Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Village</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter village"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newFarmerVillage}
+                  onChangeText={setNewFarmerVillage}
+                />
+              </View>
+
+              {/* Tehsil Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Tehsil</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter tehsil"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newFarmerTehsil}
+                  onChangeText={setNewFarmerTehsil}
+                />
+              </View>
+
+              {/* District Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>District</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter district"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newFarmerDistrict}
+                  onChangeText={setNewFarmerDistrict}
+                />
+              </View>
+
               {/* Submit Button */}
               <TouchableOpacity
                 style={[styles.fetchActionBtn, registerLoading && styles.fetchActionBtnDisabled, { marginTop: 8, marginBottom: 30 }]}
@@ -1261,6 +1811,244 @@ export default function HomeScreen() {
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text style={styles.fetchActionBtnText}>Register Farmer</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ════════════ COLD STORAGE SELECTION MODAL ════════════ */}
+      <Modal
+        visible={csModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setCsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Cold Storage</Text>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setCsModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Cold Storages List */}
+            {coldStoragesLoading ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator size="large" color={COLORS.greenDeep} />
+                <Text style={styles.loadingText}>Loading facilities…</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={coldStoragesList}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={false}
+                ItemSeparatorComponent={() => <View style={styles.separator} />}
+                ListHeaderComponent={
+                  <TouchableOpacity
+                    style={[styles.stateItem, { backgroundColor: '#EAD9B0', justifyContent: 'center', paddingVertical: 14 }]}
+                    onPress={() => {
+                      setCsModalVisible(false);
+                      setNewCsName('');
+                      setNewCsCity('Tundla');
+                      setNewCsDistrict('Firozabad');
+                      setNewCsState('Uttar Pradesh');
+                      setNewCsAddress('');
+                      setNewCsContactPerson('');
+                      setNewCsPhone('');
+                      setCsRegisterModalVisible(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontWeight: '700', color: COLORS.greenDeep }}>
+                      ➕ Register New Storage
+                    </Text>
+                  </TouchableOpacity>
+                }
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>
+                      No cold storages found in database.
+                    </Text>
+                  </View>
+                }
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.stateItem,
+                      selectedColdStorageId === item.id && styles.stateItemSelected,
+                      { paddingVertical: 16 }
+                    ]}
+                    onPress={() => {
+                      setSelectedColdStorageId(item.id);
+                      setCsModalVisible(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      {selectedColdStorageId === item.id && (
+                        <View style={styles.activeStripe} />
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            styles.stateItemText,
+                            selectedColdStorageId === item.id && styles.stateItemTextSelected,
+                            { fontWeight: '700' }
+                          ]}
+                        >
+                          {item.name}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: COLORS.textLight, marginTop: 2 }}>
+                          📍 {item.city}, {item.district}, {item.state}
+                        </Text>
+                      </View>
+                    </View>
+                    {selectedColdStorageId === item.id && (
+                      <Text style={styles.checkMark}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ════════════ COLD STORAGE REGISTRATION MODAL ════════════ */}
+      <Modal
+        visible={csRegisterModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setCsRegisterModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Register Cold Storage</Text>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setCsRegisterModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Form Fields */}
+            <ScrollView style={{ padding: 24 }} contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
+              {/* Name Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Storage Name *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter storage name (e.g. Balaji CS)"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newCsName}
+                  onChangeText={setNewCsName}
+                />
+              </View>
+
+              {/* City Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>City *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter City"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newCsCity}
+                  onChangeText={setNewCsCity}
+                />
+              </View>
+
+              {/* District Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>District *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter District"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newCsDistrict}
+                  onChangeText={setNewCsDistrict}
+                />
+              </View>
+
+              {/* State Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>State *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter State"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newCsState}
+                  onChangeText={setNewCsState}
+                />
+              </View>
+
+              {/* Address Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Full Address</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter full address"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newCsAddress}
+                  onChangeText={setNewCsAddress}
+                />
+              </View>
+
+              {/* Contact Person Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Contact Person</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter contact person"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newCsContactPerson}
+                  onChangeText={setNewCsContactPerson}
+                />
+              </View>
+
+              {/* Phone Field */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Phone Number</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter phone number"
+                  placeholderTextColor={COLORS.textLight}
+                  value={newCsPhone}
+                  onChangeText={setNewCsPhone}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              {/* Submit Button */}
+              <TouchableOpacity
+                style={[styles.fetchActionBtn, csRegisterLoading && styles.fetchActionBtnDisabled, { marginTop: 8, marginBottom: 30 }]}
+                onPress={handleRegisterColdStorage}
+                disabled={csRegisterLoading}
+                activeOpacity={0.85}
+              >
+                {!csRegisterLoading && (
+                  <LinearGradient
+                    colors={[COLORS.greenDeep, COLORS.greenMid]}
+                    style={[StyleSheet.absoluteFillObject, { borderRadius: 28 }]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  />
+                )}
+                {csRegisterLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.fetchActionBtnText}>Register Storage</Text>
                 )}
               </TouchableOpacity>
             </ScrollView>
@@ -2349,5 +3137,418 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
     zIndex: 2,
+  },
+
+  // ── Cold Storage Manager Styles ────────────────
+  csDashboardHeader: {
+    width: '100%',
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 24,
+    ...SHADOWS.md,
+  },
+  csHeaderGradient: {
+    padding: 22,
+  },
+  csHeaderTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  csHeaderSubtitle: {
+    fontSize: 12,
+    color: '#A8D5BA',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  csHeaderTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 4,
+  },
+  csHeaderLocation: {
+    fontSize: 13,
+    color: '#E8F5E9',
+    fontWeight: '500',
+    marginTop: 5,
+  },
+  csBellBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  csBellDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E53E3E',
+  },
+  csSummaryRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  csSummaryCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  csSummaryCardLabel: {
+    fontSize: 11,
+    color: '#E8F5E9',
+    fontWeight: '600',
+  },
+  csSummaryCardValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginVertical: 4,
+  },
+  csSummaryCardSub: {
+    fontSize: 10,
+    color: '#A8D5BA',
+    fontWeight: '500',
+  },
+  csSectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.greenDeep,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  csSectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  csViewAllText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.greenMid,
+  },
+  csGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 24,
+    rowGap: 12,
+  },
+  csGridItem: {
+    width: '31.5%',
+    backgroundColor: COLORS.white,
+    borderRadius: 18,
+    paddingVertical: 18,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ECEAE5',
+    ...SHADOWS.sm,
+  },
+  csGridIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  csGridLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textDark,
+  },
+  csPricesList: {
+    width: '100%',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8E0CE',
+    overflow: 'hidden',
+    marginBottom: 24,
+    ...SHADOWS.sm,
+  },
+  csPriceItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F4EFE6',
+  },
+  csPriceName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textDark,
+  },
+  csPriceLoc: {
+    fontSize: 11,
+    color: COLORS.textLight,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  csPriceVal: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.textDark,
+  },
+  csPriceTrend: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  csActivityList: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  csActivityCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E8E0CE',
+    ...SHADOWS.sm,
+  },
+  csActivityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  csActivityTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textDark,
+  },
+  csActivitySubtitle: {
+    fontSize: 11,
+    color: COLORS.textLight,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  csActivityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  csActivityBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  csActivityMetaGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAF8F3',
+    borderRadius: 10,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#F0EBE0',
+  },
+  csActivityMetaItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  csActivityMetaLabel: {
+    fontSize: 9,
+    color: COLORS.textLight,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  csActivityMetaValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 2,
+    color: COLORS.textDark,
+  },
+  csActivityMetaDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: '#E6DFD3',
+  },
+  csWeatherCard: {
+    width: '100%',
+    borderRadius: RADIUS.lg,
+    overflow: 'hidden',
+    marginBottom: 16,
+    ...SHADOWS.md,
+  },
+  csWeatherGradient: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 18,
+  },
+  csWeatherLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  csWeatherIcon: {
+    fontSize: 36,
+  },
+  csWeatherCity: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  csWeatherDesc: {
+    fontSize: 11,
+    color: '#E0F2FE',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  csWeatherRight: {
+    alignItems: 'flex-end',
+  },
+  csWeatherTemp: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  csWeatherRange: {
+    fontSize: 11,
+    color: '#E0F2FE',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+
+  // ── Cold Storage Dropdown Selector Styles ──────
+  csSelectorField: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E8E0CE',
+    marginBottom: 16,
+    ...SHADOWS.sm,
+  },
+  csSelectorBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F8F5EE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FAF0E0',
+  },
+  csSelectorLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  csSelectorValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.greenDeep,
+    marginTop: 2,
+  },
+  csSelectorChevron: {
+    fontSize: 20,
+    fontWeight: '300',
+    color: '#C4B99A',
+    marginLeft: 8,
+  },
+
+  // ── Cold Storage Clean White App Header ──────
+  csAppHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 16 : 56,
+    paddingBottom: 14,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  csHamburgerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.greenDeep,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 3,
+  },
+  csHamburgerLine: {
+    width: 18,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  csAppHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.textDark,
+    letterSpacing: 0.5,
+  },
+  csHeaderBellBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  csHeaderBellDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#E53E3E',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+
+  // ── Farmer List Card (Selector) ──────
+  farmerListCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ECEAE5',
+    marginBottom: 10,
+    ...SHADOWS.sm,
+  },
+  farmerListAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  farmerListName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.textDark,
+  },
+  farmerListMeta: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    fontWeight: '500',
+    marginTop: 2,
   },
 });
