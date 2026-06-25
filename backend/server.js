@@ -222,6 +222,47 @@ app.post('/api/farmers', async (req, res) => {
   }
 });
 
+// Amad (Crop Arrival) endpoints (PostgreSQL integration)
+app.post('/api/amad', async (req, res) => {
+  const { farmerId, commodity, kism, roomId, rackId, packets, weightQtl, goodsCondition } = req.body;
+  
+  if (!farmerId || !commodity || !packets || !weightQtl) {
+    return res.status(400).json({ success: false, error: 'farmerId, commodity, packets, and weightQtl are required fields.' });
+  }
+
+  if (!db) {
+    return res.status(500).json({ success: false, error: 'Database connection is not configured.' });
+  }
+
+  try {
+    const id = 'AM-' + Date.now();
+    const now = new Date();
+    // Link to the default registered Cold Storage ID
+    const coldStorageId = 'cmmp9txv0000ai3t4wush9trs'; 
+    
+    const sql = `
+      INSERT INTO "AmadLot" (
+        "id", "farmerId", "coldStorageId", "commodity", "kism", 
+        "roomId", "rackId", "packets", "weightQtl", "availablePackets", "availableWeightQtl", "goodsCondition", "amadDate"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      RETURNING *
+    `;
+    
+    const params = [
+      id, farmerId, coldStorageId, commodity, kism || null,
+      roomId || null, rackId || null, packets, weightQtl, 
+      packets, weightQtl, goodsCondition || 'Fresh', now
+    ];
+    
+    const result = await db.query(sql, params);
+    
+    return res.status(201).json({ success: true, lot: result.rows[0] });
+  } catch (error) {
+    console.error('PostgreSQL Amad POST error:', error.message);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to register Amad lot in database' });
+  }
+});
+
 // Holdings endpoints (PostgreSQL integration)
 app.get('/api/holdings', async (req, res) => {
   if (!db) {

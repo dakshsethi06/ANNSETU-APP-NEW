@@ -4,7 +4,7 @@
 // =============================================
 
 const USE_BACKEND = true; // Route: App -> Server 1 -> Server 2 -> Server 1 -> App
-const BACKEND_URL = 'http://10.59.21.6:3001'; // Configured with local PC IP address
+const BACKEND_URL = 'http://192.168.1.3:3001'; // Configured with local PC IP address
 
 const API_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
 const API_KEY = '579b464db66ec23bdd0000011eca722018e9429560514de390d5bb1e';

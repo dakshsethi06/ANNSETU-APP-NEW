@@ -21,6 +21,7 @@ import {
   Alert,
 } from 'react-native';
 import { fetchMandiPrices, fetchStates, fetchWeather, fetchFarmers, addFarmer, fetchHoldings, fetchColdStorageSummary, fetchColdStorages, addColdStorage, addAmad } from '../services/api';
+import { supabase } from '../services/supabase';
 import { COLORS, RADIUS, SPACING, SHADOWS } from '../theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import PriceCard from '../components/PriceCard';
@@ -625,11 +626,15 @@ export default function HomeScreen() {
           <Text style={styles.csAppHeaderTitle}>Annsetu</Text>
           <TouchableOpacity
             style={styles.csHeaderBellBtn}
-            onPress={() => Alert.alert('Notifications', 'No new alerts.')}
+            onPress={() => {
+              Alert.alert('Logout', 'Are you sure you want to sign out?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Sign Out', style: 'destructive', onPress: () => supabase.auth.signOut() }
+              ])
+            }}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 20 }}>🔔</Text>
-            <View style={styles.csHeaderBellDot} />
+            <Text style={{ fontSize: 16, color: '#D32F2F', fontWeight: 'bold' }}>Logout</Text>
           </TouchableOpacity>
         </View>
       ) : (
