@@ -20,7 +20,7 @@ import {
   FlatList,
   Alert,
 } from 'react-native';
-import { fetchMandiPrices, fetchStates, fetchWeather, fetchFarmers, addFarmer, fetchHoldings, fetchColdStorageSummary, fetchColdStorages, addColdStorage } from '../services/api';
+import { fetchMandiPrices, fetchStates, fetchWeather, fetchFarmers, addFarmer, fetchHoldings, fetchColdStorageSummary, fetchColdStorages, addColdStorage, addAmad } from '../services/api';
 import { COLORS, RADIUS, SPACING, SHADOWS } from '../theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import PriceCard from '../components/PriceCard';
@@ -94,6 +94,7 @@ export default function HomeScreen() {
   const [dbFarmers, setDbFarmers] = useState([]);
   const [dbFarmersLoading, setDbFarmersLoading] = useState(false);
   const [farmerSearchQuery, setFarmerSearchQuery] = useState('');
+  const [myStockModalVisible, setMyStockModalVisible] = useState(false);
   
   // Registration form states
   const [registerModalVisible, setRegisterModalVisible] = useState(false);
@@ -128,6 +129,23 @@ export default function HomeScreen() {
   const [newCsContactPerson, setNewCsContactPerson] = useState('');
   const [newCsPhone, setNewCsPhone] = useState('');
   const [csRegisterLoading, setCsRegisterLoading] = useState(false);
+
+  // Amad registration form states
+  const [amadModalVisible, setAmadModalVisible] = useState(false);
+  const [amadFarmerId, setAmadFarmerId] = useState('');
+  const [amadCommodity, setAmadCommodity] = useState('Potato');
+  const [amadKism, setAmadKism] = useState('Pukhraj');
+  const [amadRoomId, setAmadRoomId] = useState('Room 1');
+  const [amadRackId, setAmadRackId] = useState('Rack A');
+  const [amadPackets, setAmadPackets] = useState('');
+  const [amadWeightQtl, setAmadWeightQtl] = useState('');
+  const [amadGoodsCondition, setAmadGoodsCondition] = useState('Fresh');
+  const [amadSubmitLoading, setAmadSubmitLoading] = useState(false);
+
+  // Inventory list modal states
+  const [inventoryModalVisible, setInventoryModalVisible] = useState(false);
+  const [inventoryList, setInventoryList] = useState([]);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
 
   // Load cities list automatically when state or commodity changes
   useEffect(() => {
@@ -331,6 +349,89 @@ export default function HomeScreen() {
       setCsRegisterLoading(false);
     }
   };
+
+  const handleOpenAmadModal = async () => {
+    let farmersList = dbFarmers;
+    if (farmersList.length === 0) {
+      setDbFarmersLoading(true);
+      try {
+        const farmers = await fetchFarmers();
+        farmersList = farmers || [];
+        setDbFarmers(farmersList);
+      } catch (err) {
+        console.warn("Failed to load farmers for Amad:", err.message);
+      } finally {
+        setDbFarmersLoading(false);
+      }
+    }
+    
+    setAmadFarmerId(farmersList.length > 0 ? farmersList[0].serial_number : '');
+    setAmadCommodity('Potato');
+    setAmadKism('Pukhraj');
+    setAmadRoomId('Room 1');
+    setAmadRackId('Rack A');
+    setAmadPackets('');
+    setAmadWeightQtl('');
+    setAmadGoodsCondition('Fresh');
+    setAmadModalVisible(true);
+  };
+
+  const handleRegisterAmad = async () => {
+    if (!amadFarmerId) {
+      Alert.alert('Error', 'Please select a farmer.');
+      return;
+    }
+    if (!amadPackets || parseInt(amadPackets, 10) <= 0) {
+      Alert.alert('Error', 'Please enter a valid packet count.');
+      return;
+    }
+    if (!amadWeightQtl || parseFloat(amadWeightQtl) <= 0) {
+      Alert.alert('Error', 'Please enter a valid weight.');
+      return;
+    }
+    
+    setAmadSubmitLoading(true);
+    try {
+      const amadData = {
+        farmerId: amadFarmerId,
+        coldStorageId: selectedColdStorageId || 'cmmp9txv0000ai3t4wush9trs',
+        commodity: amadCommodity.trim(),
+        kism: amadKism.trim(),
+        roomId: amadRoomId.trim(),
+        rackId: amadRackId.trim(),
+        packets: parseInt(amadPackets, 10),
+        weightQtl: parseFloat(amadWeightQtl),
+        goodsCondition: amadGoodsCondition
+      };
+      
+      await addAmad(amadData);
+      Alert.alert('Success', 'Amad transaction recorded successfully!');
+      setAmadModalVisible(false);
+      
+      // Refresh summary
+      await loadColdStorageData(selectedColdStorageId);
+    } catch (err) {
+      Alert.alert('Failed to Add Amad', err.message);
+    } finally {
+      setAmadSubmitLoading(false);
+    }
+  };
+
+  const handleOpenInventoryModal = async () => {
+    setInventoryModalVisible(true);
+    setInventoryLoading(true);
+    try {
+      const holdings = await fetchHoldings();
+      const filtered = holdings.filter(h => h.coldStorageId === selectedColdStorageId);
+      setInventoryList(filtered);
+    } catch (err) {
+      console.warn("Failed to load inventory:", err.message);
+    } finally {
+      setInventoryLoading(false);
+    }
+  };
+
+
 
   // Auto-fetch weather when entering weather tab for the first time
   useEffect(() => {
@@ -943,7 +1044,8 @@ export default function HomeScreen() {
                       key={action.label + idx}
                       style={styles.csGridItem}
                       onPress={() => {
-                        if (action.label === 'Mandi Rates') setActiveTab('prices');
+                        if (action.label === 'My Stock') setMyStockModalVisible(true);
+                        else if (action.label === 'Mandi Rates') setActiveTab('prices');
                         else if (action.label === 'Weather') setActiveTab('weather');
                         else Alert.alert(action.label, `${action.label} feature coming soon.`);
                       }}
@@ -986,7 +1088,7 @@ export default function HomeScreen() {
                 {/* Recent Activity Section */}
                 <View style={styles.csSectionHeaderRow}>
                   <Text style={styles.csSectionTitle}>Recent Activity</Text>
-                  <TouchableOpacity onPress={() => Alert.alert('Recent Activity', 'Displaying full logs...')}>
+                  <TouchableOpacity onPress={() => setMyStockModalVisible(true)}>
                     <Text style={styles.csViewAllText}>View All ›</Text>
                   </TouchableOpacity>
                 </View>
@@ -1112,12 +1214,12 @@ export default function HomeScreen() {
                     {/* Summary Cards Row */}
                     <View style={styles.csSummaryRow}>
                       <View style={styles.csSummaryCard}>
-                        <Text style={styles.csSummaryCardLabel}>Total Stock</Text>
+                        <Text style={styles.csSummaryCardLabel}>Capacity</Text>
                         <Text style={styles.csSummaryCardValue}>
-                          {`${csSummary.stock.weightMt.toFixed(1)} MT`}
+                          {`${((csSummary.coldStorage.capacityQtl || 5000) * 0.1).toFixed(1)} MT`}
                         </Text>
                         <Text style={styles.csSummaryCardSub}>
-                          {`${csSummary.stock.packets} pkts`}
+                          {`${csSummary.coldStorage.roomCount || 10} rooms`}
                         </Text>
                       </View>
                       <View style={styles.csSummaryCard}>
@@ -1156,7 +1258,15 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       key={action.label + idx}
                       style={styles.csGridItem}
-                      onPress={() => Alert.alert('Quick Action', `${action.label} registry is loading...`)}
+                      onPress={() => {
+                        if (action.label === 'Amad') {
+                          handleOpenAmadModal();
+                        } else if (action.label === 'Inventory') {
+                          handleOpenInventoryModal();
+                        } else {
+                          Alert.alert('Quick Action', `${action.label} registry is loading...`);
+                        }
+                      }}
                       activeOpacity={0.7}
                     >
                       <View style={[styles.csGridIconContainer, { backgroundColor: action.bg }]}>
@@ -2052,6 +2162,368 @@ export default function HomeScreen() {
                 )}
               </TouchableOpacity>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ════════════ AMAD REGISTRATION MODAL ════════════ */}
+      <Modal
+        visible={amadModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setAmadModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Amad Lot Entry</Text>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setAmadModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Form Fields */}
+            <ScrollView style={{ padding: 24 }} contentContainerStyle={{ gap: 16 }} keyboardShouldPersistTaps="handled">
+              {/* Farmer Selector */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Select Farmer *</Text>
+                {dbFarmers.length === 0 ? (
+                  <View style={{ padding: 12, borderWidth: 1, borderColor: COLORS.errorRed, borderRadius: RADIUS.md }}>
+                    <Text style={{ color: COLORS.errorRed, fontSize: 14 }}>No registered farmers found. Please register a farmer first in the Farmer tab.</Text>
+                  </View>
+                ) : (
+                  <ScrollView 
+                    nestedScrollEnabled={true} 
+                    keyboardShouldPersistTaps="handled"
+                    style={{ maxHeight: 120, borderWidth: 1, borderColor: '#DDD', borderRadius: RADIUS.md, padding: 4 }}
+                  >
+                    {dbFarmers.map(f => (
+                      <TouchableOpacity
+                        key={f.serial_number}
+                        onPress={() => setAmadFarmerId(f.serial_number)}
+                        style={{
+                          padding: 10,
+                          backgroundColor: amadFarmerId === f.serial_number ? '#E8F5E9' : '#FFF',
+                          borderBottomWidth: 1,
+                          borderBottomColor: '#EEE',
+                          borderRadius: RADIUS.xs,
+                          flexDirection: 'row',
+                          justifyContent: 'space-between'
+                        }}
+                      >
+                        <Text style={{ fontWeight: amadFarmerId === f.serial_number ? 'bold' : 'normal', color: amadFarmerId === f.serial_number ? '#2E7D32' : '#333' }}>
+                          {f.name} ({f.serial_number})
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#666' }}>{f.village || 'No village'}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+
+              {/* Crop Selector */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Crop / Commodity *</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {['Potato', 'Tomato', 'Ladyfinger'].map(crop => (
+                    <TouchableOpacity
+                      key={crop}
+                      onPress={() => setAmadCommodity(crop)}
+                      style={{
+                        flex: 1,
+                        padding: 12,
+                        borderRadius: RADIUS.sm,
+                        borderWidth: 1,
+                        borderColor: amadCommodity === crop ? '#2E7D32' : '#CCC',
+                        backgroundColor: amadCommodity === crop ? '#E8F5E9' : '#FFF',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <Text style={{ fontWeight: '600', color: amadCommodity === crop ? '#2E7D32' : '#555' }}>
+                        {getCommodityIcon(crop)} {crop}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Variety (Kism) */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Variety (Kism) *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  placeholder="Enter crop variety (e.g. Pukhraj)"
+                  placeholderTextColor={COLORS.textLight}
+                  value={amadKism}
+                  onChangeText={setAmadKism}
+                />
+              </View>
+
+              {/* Location (Room & Rack) */}
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={styles.formLabel}>Room ID</Text>
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="e.g. Room 1"
+                    placeholderTextColor={COLORS.textLight}
+                    value={amadRoomId}
+                    onChangeText={setAmadRoomId}
+                  />
+                </View>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={styles.formLabel}>Rack ID</Text>
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="e.g. Rack A"
+                    placeholderTextColor={COLORS.textLight}
+                    value={amadRackId}
+                    onChangeText={setAmadRackId}
+                  />
+                </View>
+              </View>
+
+              {/* Packets & Weight */}
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={styles.formLabel}>Bags (Packets) *</Text>
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="e.g. 150"
+                    placeholderTextColor={COLORS.textLight}
+                    value={amadPackets}
+                    onChangeText={setAmadPackets}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={styles.formLabel}>Weight (Quintals) *</Text>
+                  <TextInput
+                    style={styles.formInput}
+                    placeholder="e.g. 75"
+                    placeholderTextColor={COLORS.textLight}
+                    value={amadWeightQtl}
+                    onChangeText={setAmadWeightQtl}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              {/* Condition */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Goods Condition</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {['Fresh', 'Good', 'Average'].map(cond => (
+                    <TouchableOpacity
+                      key={cond}
+                      onPress={() => setAmadGoodsCondition(cond)}
+                      style={{
+                        flex: 1,
+                        padding: 12,
+                        borderRadius: RADIUS.sm,
+                        borderWidth: 1,
+                        borderColor: amadGoodsCondition === cond ? '#2E7D32' : '#CCC',
+                        backgroundColor: amadGoodsCondition === cond ? '#E8F5E9' : '#FFF',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <Text style={{ fontWeight: '600', color: amadGoodsCondition === cond ? '#2E7D32' : '#555' }}>
+                        {cond}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Submit Button */}
+              <TouchableOpacity
+                style={[styles.fetchActionBtn, amadSubmitLoading && styles.fetchActionBtnDisabled, { marginTop: 8, marginBottom: 30 }]}
+                onPress={handleRegisterAmad}
+                disabled={amadSubmitLoading || dbFarmers.length === 0}
+                activeOpacity={0.85}
+              >
+                {!amadSubmitLoading && dbFarmers.length > 0 && (
+                  <LinearGradient
+                    colors={[COLORS.greenDeep, COLORS.greenMid]}
+                    style={[StyleSheet.absoluteFillObject, { borderRadius: 28 }]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  />
+                )}
+                {amadSubmitLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.fetchActionBtnText}>Record Amad Lot</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+           </View>
+        </View>
+      </Modal>
+
+      {/* ════════════ MY STOCK MODAL ════════════ */}
+      <Modal
+        visible={myStockModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setMyStockModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>My Stored Crops / मेरी फसलें</Text>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setMyStockModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* List of Holdings */}
+            <FlatList
+              data={holdingsList}
+              keyExtractor={(item, index) => (item.lot_id || index.toString()) + index}
+              contentContainerStyle={{ padding: 24, gap: 16 }}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No crop stock registered for this farmer.</Text>
+                </View>
+              }
+              renderItem={({ item }) => {
+                const isFresh = (item.status || '').toLowerCase() === 'fresh' || (item.status || '').toLowerCase() === 'stored';
+                const badgeBg = isFresh ? '#E8F5E9' : '#E3F2FD';
+                const badgeText = isFresh ? '#2E7D32' : '#1565C0';
+                
+                return (
+                  <View style={[styles.csActivityCard, { width: '100%', marginVertical: 0 }]}>
+                    <View style={styles.csActivityHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.csActivityTitle}>
+                          {item.crop} — {item.variety}
+                        </Text>
+                        <Text style={styles.csActivitySubtitle}>
+                          🏢 {item.cold_storage} · Location: {item.location}
+                        </Text>
+                      </View>
+                      <View style={[styles.csActivityBadge, { backgroundColor: badgeBg }]}>
+                        <Text style={[styles.csActivityBadgeText, { color: badgeText }]}>
+                          {item.status || 'Stored'}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.csActivityMetaGrid}>
+                      <View style={styles.csActivityMetaItem}>
+                        <Text style={styles.csActivityMetaLabel}>Bags</Text>
+                        <Text style={styles.csActivityMetaValue}>{item.bags}</Text>
+                      </View>
+                      <View style={styles.csActivityMetaDivider} />
+                      <View style={styles.csActivityMetaItem}>
+                        <Text style={styles.csActivityMetaLabel}>Weight</Text>
+                        <Text style={styles.csActivityMetaValue}>{item.weight}</Text>
+                      </View>
+                      <View style={styles.csActivityMetaDivider} />
+                      <View style={styles.csActivityMetaItem}>
+                        <Text style={styles.csActivityMetaLabel}>Storage Age</Text>
+                        <Text style={styles.csActivityMetaValue}>{item.inbound_age || `${item.age_days}d`}</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* ════════════ INVENTORY MODAL ════════════ */}
+      <Modal
+        visible={inventoryModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setInventoryModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Facility Inventory / गोदाम इन्वेंटरी</Text>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setInventoryModalVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* List of Holdings */}
+            {inventoryLoading ? (
+              <ActivityIndicator size="large" color={COLORS.greenDeep} style={{ marginVertical: 40 }} />
+            ) : (
+              <FlatList
+                data={inventoryList}
+                keyExtractor={(item, index) => (item.lot_id || index.toString()) + index}
+                contentContainerStyle={{ padding: 24, gap: 16 }}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No crop lots registered in this cold storage.</Text>
+                  </View>
+                }
+                renderItem={({ item }) => {
+                  const isFresh = (item.status || '').toLowerCase() === 'fresh' || (item.status || '').toLowerCase() === 'stored';
+                  const badgeBg = isFresh ? '#E8F5E9' : '#E3F2FD';
+                  const badgeText = isFresh ? '#2E7D32' : '#1565C0';
+                  
+                  return (
+                    <View style={[styles.csActivityCard, { width: '100%', marginVertical: 0 }]}>
+                      <View style={styles.csActivityHeader}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.csActivityTitle}>
+                            {item.crop} — {item.variety}
+                          </Text>
+                          <Text style={styles.csActivitySubtitle}>
+                            Location: {item.location} · Lot: {item.lot_id || 'N/A'}
+                          </Text>
+                        </View>
+                        <View style={[styles.csActivityBadge, { backgroundColor: badgeBg }]}>
+                          <Text style={[styles.csActivityBadgeText, { color: badgeText }]}>
+                            {item.status || 'Stored'}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.csActivityMetaGrid}>
+                        <View style={styles.csActivityMetaItem}>
+                          <Text style={styles.csActivityMetaLabel}>Bags</Text>
+                          <Text style={styles.csActivityMetaValue}>{item.bags}</Text>
+                        </View>
+                        <View style={styles.csActivityMetaDivider} />
+                        <View style={styles.csActivityMetaItem}>
+                          <Text style={styles.csActivityMetaLabel}>Weight</Text>
+                          <Text style={styles.csActivityMetaValue}>{item.weight}</Text>
+                        </View>
+                        <View style={styles.csActivityMetaDivider} />
+                        <View style={styles.csActivityMetaItem}>
+                          <Text style={styles.csActivityMetaLabel}>Storage Age</Text>
+                          <Text style={styles.csActivityMetaValue}>{item.inbound_age || `${item.age_days}d`}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                }}
+              />
+            )}
           </View>
         </View>
       </Modal>

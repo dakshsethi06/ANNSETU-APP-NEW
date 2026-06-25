@@ -4,7 +4,7 @@
 // =============================================
 
 const USE_BACKEND = true; // Route: App -> Server 1 -> Server 2 -> Server 1 -> App
-const BACKEND_URL = 'http://192.168.29.206:3001'; // Configured with local PC IP address
+const BACKEND_URL = 'http://10.59.21.6:3001'; // Configured with local PC IP address
 
 const API_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
 const API_KEY = '579b464db66ec23bdd0000011eca722018e9429560514de390d5bb1e';
@@ -219,6 +219,33 @@ export async function addFarmer(farmerData) {
       throw new Error(data.error || 'Failed to add farmer');
     }
     return data.farmer;
+  } catch (err) {
+    if (err.message.includes('Network request failed')) {
+      throw new Error('Could not connect to backend server. Please verify if it is running.');
+    }
+    throw err;
+  }
+}
+
+/**
+ * Adds a new Amad lot to the database.
+ */
+export async function addAmad(amadData) {
+  try {
+    const url = `${BACKEND_URL}/api/amad`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(amadData),
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Failed to add Amad lot');
+    }
+    return data.lot;
   } catch (err) {
     if (err.message.includes('Network request failed')) {
       throw new Error('Could not connect to backend server. Please verify if it is running.');
