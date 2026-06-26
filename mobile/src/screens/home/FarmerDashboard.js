@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import dashboardStyles from './styles/dashboardStyles';
 import styles from './styles/farmerDashboardStyles';
+import { supabase } from '../../services/supabase';
 
 
 export default function FarmerDashboard({
@@ -32,10 +33,28 @@ export default function FarmerDashboard({
           </TouchableOpacity>
           <Text style={styles.brandTitle}>Annsetu</Text>
         </View>
-        <TouchableOpacity style={styles.topBellBtn} onPress={onNotificationsPress} activeOpacity={0.8}>
-          <Feather name="bell" size={20} color="#1B4332" />
-          {activeAlertsCount > 0 && <View style={styles.topBellDot} />}
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity style={[styles.topBellBtn, { marginRight: 8 }]} onPress={onNotificationsPress} activeOpacity={0.8}>
+            <Feather name="bell" size={20} color="#1B4332" />
+            {activeAlertsCount > 0 && <View style={styles.topBellDot} />}
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => supabase.auth.signOut()} 
+            style={{ 
+              width: 40, 
+              height: 40, 
+              borderRadius: 20, 
+              backgroundColor: '#F0FDF4', 
+              borderWidth: 1, 
+              borderColor: '#DCFCE7', 
+              justifyContent: 'center', 
+              alignItems: 'center' 
+            }}
+            activeOpacity={0.7}
+          >
+            <Feather name="log-out" size={18} color="#1B4332" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* 2. Green Dashboard Profile Header */}

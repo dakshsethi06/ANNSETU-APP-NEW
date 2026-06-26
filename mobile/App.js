@@ -14,6 +14,9 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoadingSession(false);
+    }).catch(err => {
+      console.warn("Failed to get initial session:", err);
+      setLoadingSession(false);
     });
 
     // 2. Listen for auth changes (login, logout, token refresh)

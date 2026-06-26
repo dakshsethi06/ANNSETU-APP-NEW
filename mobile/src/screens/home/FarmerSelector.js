@@ -4,6 +4,8 @@ import { COLORS } from '../../theme';
 import layoutStyles from './styles/layoutStyles';
 import dashboardStyles from './styles/dashboardStyles';
 import storageStyles from './styles/storageStyles';
+import { Feather } from '@expo/vector-icons';
+import { supabase } from '../../services/supabase';
 
 export default function FarmerSelector({
   farmers,
@@ -20,6 +22,27 @@ export default function FarmerSelector({
 
   return (
     <View style={{ width: '100%' }}>
+      {/* Top Header Bar */}
+      <View style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 4,
+        borderBottomWidth: 1,
+        borderColor: '#E8E0CE',
+        marginBottom: 16,
+      }}>
+        <Text style={{ fontSize: 22, fontWeight: '800', color: COLORS.greenDeep }}>Annsetu</Text>
+        <TouchableOpacity 
+          onPress={() => supabase.auth.signOut()} 
+          style={{ padding: 10, backgroundColor: '#F0FDF4', borderRadius: 20, borderWidth: 1, borderColor: '#DCFCE7' }}
+          activeOpacity={0.7}
+        >
+          <Feather name="log-out" size={18} color={COLORS.greenDeep} />
+        </TouchableOpacity>
+      </View>
+
       <Text style={dashboardStyles.csSectionTitle}>Select a Farmer</Text>
       <Text style={[layoutStyles.subtitle, { marginBottom: 16, textAlign: 'left' }]}>
         Choose a farmer profile to view their dashboard

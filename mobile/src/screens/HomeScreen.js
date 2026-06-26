@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import { COLORS } from '../theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
+import { supabase } from '../services/supabase';
 
 // Service tab components
 import MandiTab from './home/MandiTab';
@@ -51,9 +53,20 @@ export default function HomeScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <View style={layoutStyles.headerContent}>
-              <Text style={layoutStyles.brandName}>Annsetu</Text>
-              <Text style={layoutStyles.brandTagline}>Empowering Indian Agrarian Cold Storage Systems</Text>
+            <View style={[layoutStyles.headerContent, { width: '100%' }]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={layoutStyles.brandName}>Annsetu</Text>
+                  <Text style={layoutStyles.brandTagline}>Empowering Indian Agrarian Cold Storage Systems</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => supabase.auth.signOut()} 
+                  style={{ padding: 10, backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 20, marginLeft: 12 }}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="log-out" size={18} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
               <View style={layoutStyles.headerAccent} />
             </View>
           </LinearGradient>

@@ -11,6 +11,9 @@ import InventoryModal from './modals/InventoryModal';
 import layoutStyles from './styles/layoutStyles';
 import dashboardStyles from './styles/dashboardStyles';
 import storageStyles from './styles/storageStyles';
+import { Feather } from '@expo/vector-icons';
+import { supabase } from '../../services/supabase';
+import ColdStorageMandiPrices from './ColdStorageMandiPrices';
 
 export default function ColdStorageTab({ setActiveTab }) {
   const [selectedColdStorageId, setSelectedColdStorageId] = useState('cmmp9txv0000ai3t4wush9trs');
@@ -97,10 +100,26 @@ export default function ColdStorageTab({ setActiveTab }) {
                   </TouchableOpacity>
                   <Text style={dashboardStyles.csHeaderLocation}>◎ {csSummary.coldStorage.location}</Text>
                 </View>
-                <TouchableOpacity style={dashboardStyles.csBellBtn} onPress={() => Alert.alert('Alerts', 'No new alerts.')}>
-                  <Text style={{ fontSize: 20 }}>🔔</Text>
-                  <View style={dashboardStyles.csBellDot} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TouchableOpacity style={[dashboardStyles.csBellBtn, { marginRight: 8 }]} onPress={() => Alert.alert('Alerts', 'No new alerts.')}>
+                    <Text style={{ fontSize: 20 }}>🔔</Text>
+                    <View style={dashboardStyles.csBellDot} />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => supabase.auth.signOut()} 
+                    style={{ 
+                      width: 40, 
+                      height: 40, 
+                      borderRadius: 20, 
+                      backgroundColor: 'rgba(255,255,255,0.15)', 
+                      justifyContent: 'center', 
+                      alignItems: 'center' 
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="log-out" size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={dashboardStyles.csSummaryRow}>
@@ -155,30 +174,7 @@ export default function ColdStorageTab({ setActiveTab }) {
           </View>
 
           {/* Live Mandi Prices */}
-          <View style={dashboardStyles.csSectionHeaderRow}>
-            <Text style={dashboardStyles.csSectionTitle}>Live Mandi Prices</Text>
-            <TouchableOpacity onPress={() => setActiveTab('prices')}>
-              <Text style={dashboardStyles.csViewAllText}>View All ›</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={storageStyles.csPricesList}>
-            {[
-              { commodity: 'Potato (Pukhraj)', location: 'Agra', price: '₹820', trend: '↗ 15', trendColor: '#2E7D32' },
-              { commodity: 'Potato (Chipsona)', location: 'Firozabad', price: '₹950', trend: '↘ 20', trendColor: '#C62828' },
-              { commodity: 'Onion', location: 'Tundla', price: '₹1100', trend: '↗ 45', trendColor: '#2E7D32' }
-            ].map((item, idx) => (
-              <View key={item.commodity + idx} style={storageStyles.csPriceItem}>
-                <View>
-                  <Text style={storageStyles.csPriceName}>{item.commodity}</Text>
-                  <Text style={storageStyles.csPriceLoc}>{item.location}</Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={storageStyles.csPriceVal}>{item.price}</Text>
-                  <Text style={[storageStyles.csPriceTrend, { color: item.trendColor }]}>{item.trend}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
+          <ColdStorageMandiPrices setActiveTab={setActiveTab} />
         </View>
       ) : null}
 
