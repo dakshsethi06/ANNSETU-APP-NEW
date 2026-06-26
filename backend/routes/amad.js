@@ -35,8 +35,41 @@ router.post('/amad', async (req, res) => {
     ];
     
     const result = await db.query(sql, params);
-    
-    return res.status(201).json({ success: true, lot: result.rows[0] });
+    const lot = result.rows[0];
+
+    // Trigger Amad booking notifications (outbound SMS log & in-app alert)
+    try {
+      const { logOutboundNotification, createAppNotification } = require('../lib/notifications');
+      
+      const farmerRes = await db.query('SELECT name, phone FROM "Farmer" WHERE id = $1', [farmerId]);
+      const farmer = farmerRes.rows[0] || { name: 'Farmer', phone: null };
+
+      await logOutboundNotification({
+        coldStorageId: coldStorageId,
+        channel: 'SMS',
+        eventType: 'AMAD_CREATED',
+        recipientPhone: farmer.phone,
+        recipientName: farmer.name,
+        message: `Dear ${farmer.name}, your inward stock booking is confirmed. Lot ID: ${lot.id.toUpperCase()}. Commodity: ${commodity}, Packets: ${packets} bags.`,
+        relatedModel: 'AmadLot',
+        relatedId: lot.id
+      });
+
+      await createAppNotification({
+        coldStorageId: coldStorageId,
+        userId: farmerId,
+        lotId: lot.id,
+        type: 'info',
+        title: 'New Stock Inward',
+        message: `Your stock of ${packets} bags of ${commodity} has been stored successfully in Room ${roomId || '-'}.`,
+        icon: 'inbox',
+        actionUrl: `/inventory`
+      });
+    } catch (notifErr) {
+      console.warn('Amad booking notifications failed to trigger:', notifErr.message);
+    }
+
+    return res.status(201).json({ success: true, lot });
   } catch (error) {
     console.error('PostgreSQL Amad POST error:', error.message);
     return res.status(500).json({ success: false, error: error.message || 'Failed to register Amad lot in database' });

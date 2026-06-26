@@ -99,6 +99,33 @@ router.post('/farmers', async (req, res) => {
     
     await db.query(sql, params);
     
+    // Trigger welcome notifications (outbound SMS log & in-app welcome alert)
+    try {
+      const { logOutboundNotification, createAppNotification } = require('../lib/notifications');
+      
+      await logOutboundNotification({
+        coldStorageId: 'cmmp9txv0000ai3t4wush9trs',
+        channel: 'SMS',
+        eventType: 'FARMER_REGISTERED',
+        recipientPhone: phone || null,
+        recipientName: name,
+        message: `Welcome ${name}! Your farmer account at SN Sharma Cold Storage has been registered. Account Number: CS-${serial_number}.`,
+        relatedModel: 'Farmer',
+        relatedId: serial_number
+      });
+
+      await createAppNotification({
+        coldStorageId: 'cmmp9txv0000ai3t4wush9trs',
+        userId: serial_number,
+        type: 'info',
+        title: 'Welcome to Annsetu',
+        message: `Welcome ${name}! Your account has been registered successfully.`,
+        icon: 'info'
+      });
+    } catch (notifErr) {
+      console.warn('Welcome notifications failed to trigger:', notifErr.message);
+    }
+    
     const newFarmer = {
       serial_number,
       name,
