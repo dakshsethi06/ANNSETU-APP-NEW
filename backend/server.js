@@ -14,6 +14,8 @@ app.use('/api', require('./routes/mandi'));
 app.use('/api', require('./routes/farmers'));
 app.use('/api', require('./routes/amad'));
 app.use('/api', require('./routes/storages'));
+app.use('/api', require('./routes/notifications'));
+
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'Annsetu Backend' }));

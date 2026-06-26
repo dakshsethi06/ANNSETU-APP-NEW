@@ -1,0 +1,133 @@
+import { StyleSheet } from 'react-native';
+import { COLORS } from '../../../theme';
+
+
+export default StyleSheet.create({
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    backgroundColor: '#FAF9F5',
+    marginBottom: 10,
+  },
+  topHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1B4332',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  brandTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1B4332',
+  },
+  topBellBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#EAE7D6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  topBellDot: {
+    position: 'absolute',
+    top: 9,
+    right: 9,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: '#E53E3E',
+    borderWidth: 1.5,
+    borderColor: '#FAF9F5', // topHeader background color
+  },
+  profileHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  farmerLabel: {
+    fontSize: 12,
+    color: '#D4EBE0',
+    fontWeight: '600',
+  },
+  farmerName: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginTop: 2,
+  },
+  farmerLocation: {
+    fontSize: 13,
+    color: '#A8D5BA',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  greenBellBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  greenBellDot: {
+    position: 'absolute',
+    top: 11,
+    right: 12,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: '#E53E3E',
+    borderWidth: 1.5,
+    borderColor: '#1D4936', // match circular button background
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+    justifyContent: 'space-between',
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 10,
+    alignItems: 'center',
+    shadowColor: '#1E4032',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  summaryCardLabel: {
+    fontSize: 9,
+    color: '#777777',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  summaryCardValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1B4332',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  summaryCardSub: {
+    fontSize: 10,
+    color: '#777777',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+});
