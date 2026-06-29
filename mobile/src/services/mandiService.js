@@ -74,34 +74,3 @@ export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'Pot
     throw err;
   }
 }
-
-/**
- * Fetches the list of Indian states for Mandi price lookups.
- * Returns an array of standard states.
- */
-export async function fetchStates() {
-  return [
-    'Andhra Pradesh',
-    'Assam',
-    'Bihar',
-    'Chhattisgarh',
-    'Gujarat',
-    'Haryana',
-    'Himachal Pradesh',
-    'Jammu and Kashmir',
-    'Jharkhand',
-    'Karnataka',
-    'Kerala',
-    'Madhya Pradesh',
-    'Maharashtra',
-    'Odisha',
-    'Punjab',
-    'Rajasthan',
-    'Tamil Nadu',
-    'Telangana',
-    'Tripura',
-    'Uttar Pradesh',
-    'Uttarakhand',
-    'West Bengal'
-  ];
-}

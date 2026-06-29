@@ -1,72 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { fetchMandiPrices } from '../../services/api';
 import { COLORS } from '../../theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import PriceCard from '../../components/PriceCard';
 import ErrorCard from '../../components/ErrorCard';
-import { getCommodityIcon, getCommodityTranslation, calculatePrices } from './helpers';
+import { getCommodityIcon, getCommodityTranslation } from './helpers';
 import StateModal from './modals/StateModal';
 import CityModal from './modals/CityModal';
 import CommodityModal from './modals/CommodityModal';
 import commonStyles from './styles/commonStyles';
 import mandiStyles from './styles/mandiStyles';
+import { useMandiDashboard } from '../../hooks/useMandiDashboard';
 
 export default function MandiTab() {
-  const [loading, setLoading] = useState(false);
-  const [minPrice, setMinPrice] = useState(null);
-  const [maxPrice, setMaxPrice] = useState(null);
-  const [error, setError] = useState(null);
-  const [selectedState, setSelectedState] = useState(null);
-  const [selectedCity, setSelectedCity] = useState(null);
-  const [selectedCommodity, setSelectedCommodity] = useState('Potato');
-  const [stateModalVisible, setStateModalVisible] = useState(false);
-  const [cityModalVisible, setCityModalVisible] = useState(false);
-  const [commodityModalVisible, setCommodityModalVisible] = useState(false);
-  const [citiesList, setCitiesList] = useState([]);
-  const [citiesLoading, setCitiesLoading] = useState(false);
-  const [allMandiRecords, setAllMandiRecords] = useState([]);
-
-  useEffect(() => {
-    if (selectedState) loadCitiesForState(selectedState, selectedCommodity);
-  }, [selectedState, selectedCommodity]);
-
-  const loadCitiesForState = async (state, commodity) => {
-    setCitiesLoading(true);
-    try {
-      const result = await fetchMandiPrices(state, commodity);
-      const records = result.records || [];
-      setAllMandiRecords(records);
-      const uniqueCities = [...new Set(records.map((r) => r.market))];
-      setCitiesList(uniqueCities);
-      setSelectedCity(uniqueCities.length > 0 ? uniqueCities[0] : null);
-    } catch (err) {
-      console.warn('Failed to load cities:', err.message);
-    } finally {
-      setCitiesLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const { minPrice: computedMin, maxPrice: computedMax } = calculatePrices(allMandiRecords, selectedCity);
-    setMinPrice(computedMin);
-    setMaxPrice(computedMax);
-  }, [selectedCity, allMandiRecords]);
-
-  const handleFetch = async () => {
-    if (!selectedState) return setError('Please select a state first.');
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await fetchMandiPrices(selectedState, selectedCommodity);
-      setAllMandiRecords(result.records || []);
-    } catch (err) {
-      setError(err.message);
-      setAllMandiRecords([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    loading, minPrice, maxPrice, error, selectedState, setSelectedState,
+    selectedCity, setSelectedCity, selectedCommodity, setSelectedCommodity,
+    stateModalVisible, setStateModalVisible, cityModalVisible, setCityModalVisible,
+    commodityModalVisible, setCommodityModalVisible, citiesList, citiesLoading, handleFetch
+  } = useMandiDashboard();
 
   return (
     <View style={commonStyles.tabContent}>
@@ -84,20 +36,12 @@ export default function MandiTab() {
           <Text style={mandiStyles.dropdownChevron}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[mandiStyles.dropdownField, !selectedState && mandiStyles.dropdownFieldDisabled]}
-          onPress={() => setCityModalVisible(true)}
-          disabled={!selectedState || citiesLoading}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={[mandiStyles.dropdownField, !selectedState && mandiStyles.dropdownFieldDisabled]} onPress={() => setCityModalVisible(true)} disabled={!selectedState || citiesLoading} activeOpacity={0.7}>
           <View style={mandiStyles.dropdownIconBadge}><Text style={{ fontSize: 16 }}>📍</Text></View>
           <View style={mandiStyles.dropdownFieldInner}>
             <Text style={mandiStyles.dropdownLabel}>City / Market</Text>
-            {citiesLoading ? (
-              <ActivityIndicator size="small" color={COLORS.greenMid} style={{ alignSelf: 'flex-start' }} />
-            ) : (
-              <Text style={mandiStyles.dropdownValue} numberOfLines={1}>{selectedCity || 'Select state first'}</Text>
-            )}
+            {citiesLoading ? <ActivityIndicator size="small" color={COLORS.greenMid} style={{ alignSelf: 'flex-start' }} />
+            : <Text style={mandiStyles.dropdownValue} numberOfLines={1}>{selectedCity || 'Select state first'}</Text>}
           </View>
           <Text style={mandiStyles.dropdownChevron}>›</Text>
         </TouchableOpacity>
@@ -112,28 +56,11 @@ export default function MandiTab() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity
-        style={[mandiStyles.fetchActionBtn, (loading || !selectedState) && mandiStyles.fetchActionBtnDisabled]}
-        onPress={handleFetch}
-        disabled={loading || !selectedState}
-        activeOpacity={0.85}
-      >
-        {!loading && selectedState && (
-          <LinearGradient
-            colors={[COLORS.greenDeep, COLORS.greenMid]}
-            style={[StyleSheet.absoluteFillObject, { borderRadius: 28 }]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          />
-        )}
+      <TouchableOpacity style={[mandiStyles.fetchActionBtn, (loading || !selectedState) && mandiStyles.fetchActionBtnDisabled]} onPress={handleFetch} disabled={loading || !selectedState} activeOpacity={0.85}>
+        {!loading && selectedState && <LinearGradient colors={[COLORS.greenDeep, COLORS.greenMid]} style={[StyleSheet.absoluteFillObject, { borderRadius: 28 }]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />}
         {loading ? (
-          <View style={mandiStyles.loadingRow}>
-            <ActivityIndicator size="small" color="#fff" />
-            <Text style={mandiStyles.fetchActionBtnText}>Fetching…</Text>
-          </View>
-        ) : (
-          <Text style={mandiStyles.fetchActionBtnText}>🔍  Fetch Market Prices</Text>
-        )}
+          <View style={mandiStyles.loadingRow}><ActivityIndicator size="small" color="#fff" /><Text style={mandiStyles.fetchActionBtnText}>Fetching…</Text></View>
+        ) : <Text style={mandiStyles.fetchActionBtnText}>🔍  Fetch Market Prices</Text>}
       </TouchableOpacity>
 
       {!selectedState && !minPrice ? (
@@ -167,12 +94,7 @@ export default function MandiTab() {
                 <Text style={mandiStyles.spreadGaugeMax}>₹{maxPrice.toLocaleString('en-IN')}</Text>
               </View>
               <View style={mandiStyles.spreadGaugeTrack}>
-                <LinearGradient
-                  colors={[COLORS.greenLight, COLORS.amber, COLORS.errorRed]}
-                  style={StyleSheet.absoluteFillObject}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                />
+                <LinearGradient colors={[COLORS.greenLight, COLORS.amber, COLORS.errorRed]} style={StyleSheet.absoluteFillObject} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
               </View>
             </View>
           </View>
@@ -180,7 +102,6 @@ export default function MandiTab() {
       )}
 
       {error && <ErrorCard message={error} onRetry={handleFetch} />}
-
       <StateModal visible={stateModalVisible} onClose={() => setStateModalVisible(false)} selectedState={selectedState} onSelectState={setSelectedState} />
       <CityModal visible={cityModalVisible} onClose={() => setCityModalVisible(false)} selectedCity={selectedCity} onSelectCity={setSelectedCity} citiesList={citiesList} citiesLoading={citiesLoading} />
       <CommodityModal visible={commodityModalVisible} onClose={() => setCommodityModalVisible(false)} selectedCommodity={selectedCommodity} onSelectCommodity={setSelectedCommodity} />

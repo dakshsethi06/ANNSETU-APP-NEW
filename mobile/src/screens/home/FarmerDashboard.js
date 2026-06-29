@@ -1,36 +1,22 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { COLORS } from '../../theme';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import dashboardStyles from './styles/dashboardStyles';
 import styles from './styles/farmerDashboardStyles';
 import { supabase } from '../../services/supabase';
+import FarmerProfile from '../../components/FarmerProfile';
 
-
-export default function FarmerDashboard({
-  farmerData,
-  holdingsList,
-  notifications,
-  onBackPress,
-  onNotificationsPress,
-  onActionPress,
-}) {
+export default function FarmerDashboard({ farmerData, holdingsList, notifications, onBackPress, onNotificationsPress, onActionPress }) {
   const activeAlertsCount = notifications.length;
-
   const totalStockMt = holdingsList.reduce((sum, h) => sum + (parseFloat(h.weight) || 0), 0) * 0.1;
   const totalBags = holdingsList.reduce((sum, h) => sum + (h.bags || 0), 0);
-
   const pendingRent = parseFloat(farmerData.pendingRent || 0);
 
   return (
     <View style={{ width: '100%' }}>
-      {/* 1. Top White Header Bar */}
       <View style={styles.topHeader}>
         <View style={styles.topHeaderLeft}>
-          <TouchableOpacity style={styles.menuButton} onPress={onBackPress}>
-            <Feather name="menu" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuButton} onPress={onBackPress}><Feather name="menu" size={20} color="#FFFFFF" /></TouchableOpacity>
           <Text style={styles.brandTitle}>Annsetu</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -38,73 +24,14 @@ export default function FarmerDashboard({
             <Feather name="bell" size={20} color="#1B4332" />
             {activeAlertsCount > 0 && <View style={styles.topBellDot} />}
           </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => supabase.auth.signOut()} 
-            style={{ 
-              width: 40, 
-              height: 40, 
-              borderRadius: 20, 
-              backgroundColor: '#F0FDF4', 
-              borderWidth: 1, 
-              borderColor: '#DCFCE7', 
-              justifyContent: 'center', 
-              alignItems: 'center' 
-            }}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity onPress={() => supabase.auth.signOut()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#DCFCE7', justifyContent: 'center', alignItems: 'center' }} activeOpacity={0.7}>
             <Feather name="log-out" size={18} color="#1B4332" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* 2. Green Dashboard Profile Header */}
-      <View style={dashboardStyles.csDashboardHeader}>
-        <LinearGradient colors={['#1B4332', '#2D6A4F']} style={dashboardStyles.csHeaderGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-          <View style={styles.profileHeaderRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.farmerLabel}>Farmer / किसान</Text>
-              <Text style={styles.farmerName}>{farmerData.name}</Text>
-              <Text style={styles.farmerLocation}>
-                <Feather name="map-pin" size={12} color="#A8D5BA" /> {farmerData.village ? `${farmerData.village}, ` : ''}{farmerData.district || 'Firozabad'}, {farmerData.state || 'UP'}
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.greenBellBtn} onPress={onNotificationsPress} activeOpacity={0.8}>
-              <Feather name="bell" size={22} color="#FFFFFF" />
-              {activeAlertsCount > 0 && <View style={styles.greenBellDot} />}
-            </TouchableOpacity>
-          </View>
+      <FarmerProfile farmerData={farmerData} totalStockMt={totalStockMt} totalBags={totalBags} pendingRent={pendingRent} activeAlertsCount={activeAlertsCount} onNotificationsPress={onNotificationsPress} />
 
-          {/* 3. Summary Cards Row (Total Stock, Pending Rent, Aging Alerts) */}
-          <View style={styles.summaryRow}>
-            {/* Total Stock */}
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryCardLabel}>Total Stock</Text>
-              <Text style={styles.summaryCardValue}>{totalStockMt.toFixed(1)} MT</Text>
-              <Text style={styles.summaryCardSub}>{totalBags} bags</Text>
-            </View>
-
-            {/* Pending Rent */}
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryCardLabel}>Pending Rent</Text>
-              <Text style={[styles.summaryCardValue, { color: '#E53E3E' }]}>
-                ₹{pendingRent.toLocaleString('en-IN')}
-              </Text>
-              <Text style={styles.summaryCardSub}>{pendingRent > 0 ? 'Overdue' : 'No dues'}</Text>
-            </View>
-
-            {/* Aging Alerts */}
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryCardLabel}>Aging Alerts</Text>
-              <Text style={[styles.summaryCardValue, { color: activeAlertsCount > 0 ? '#DD6B20' : COLORS.greenDeep }]}>
-                {activeAlertsCount}
-              </Text>
-              <Text style={styles.summaryCardSub}>{activeAlertsCount > 0 ? 'Action needed' : 'All good'}</Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </View>
-
-      {/* 4. Quick Actions */}
       <Text style={dashboardStyles.csSectionTitle}>Quick Actions</Text>
       <View style={dashboardStyles.csGridContainer}>
         {[
@@ -115,15 +42,8 @@ export default function FarmerDashboard({
           { label: 'Weather', icon: '☁️', bg: '#E0F7FA', color: '#006064' },
           { label: 'Book Space', icon: '➕', bg: '#FCE4EC', color: '#C62828' }
         ].map((action, idx) => (
-          <TouchableOpacity
-            key={action.label + idx}
-            style={dashboardStyles.csGridItem}
-            onPress={() => onActionPress(action.label)}
-            activeOpacity={0.7}
-          >
-            <View style={[dashboardStyles.csGridIconContainer, { backgroundColor: action.bg }]}>
-              <Text style={{ fontSize: 24 }}>{action.icon}</Text>
-            </View>
+          <TouchableOpacity key={action.label + idx} style={dashboardStyles.csGridItem} onPress={() => onActionPress(action.label)} activeOpacity={0.7}>
+            <View style={[dashboardStyles.csGridIconContainer, { backgroundColor: action.bg }]}><Text style={{ fontSize: 24 }}>{action.icon}</Text></View>
             <Text style={dashboardStyles.csGridLabel}>{action.label}</Text>
           </TouchableOpacity>
         ))}
@@ -131,4 +51,3 @@ export default function FarmerDashboard({
     </View>
   );
 }
-
