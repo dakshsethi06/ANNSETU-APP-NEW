@@ -16,6 +16,7 @@ app.use('/api', require('./routes/amad'));
 app.use('/api', require('./routes/storages'));
 app.use('/api', require('./routes/notifications'));
 app.use('/api', require('./routes/cron'));
+app.use('/api', require('./routes/dispatches'));
 
 
 // Health check

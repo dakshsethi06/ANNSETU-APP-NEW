@@ -5,8 +5,8 @@ import { BACKEND_URL } from './config';
  */
 export async function fetchColdStorageSummary(coldStorageId = 'cmmp9txv0000ai3t4wush9trs') {
   try {
-    const url = `${BACKEND_URL}/api/cold-storage/summary?coldStorageId=${encodeURIComponent(coldStorageId)}`;
-    const response = await fetch(url);
+    const url = `${BACKEND_URL}/api/cold-storage/summary?coldStorageId=${encodeURIComponent(coldStorageId)}&t=${Date.now()}`;
+    const response = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } });
     if (!response.ok) {
       throw new Error(`Server returned status ${response.status}`);
     }
@@ -28,8 +28,8 @@ export async function fetchColdStorageSummary(coldStorageId = 'cmmp9txv0000ai3t4
  */
 export async function fetchColdStorages() {
   try {
-    const url = `${BACKEND_URL}/api/cold-storages`;
-    const response = await fetch(url);
+    const url = `${BACKEND_URL}/api/cold-storages?t=${Date.now()}`;
+    const response = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } });
     if (!response.ok) {
       throw new Error(`Server returned status ${response.status}`);
     }

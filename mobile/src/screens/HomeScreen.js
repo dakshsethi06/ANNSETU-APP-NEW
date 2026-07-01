@@ -14,6 +14,7 @@ import BookStorageTab from './home/BookStorageTab';
 import ErrorCard from '../components/ErrorCard';
 import RegisterFarmerModal from './home/modals/RegisterFarmerModal';
 import NotificationsTab from './home/NotificationsTab';
+import DispatchTab from './home/DispatchTab';
 
 import { useStorageTabDashboard } from '../hooks/useStorageTabDashboard';
 import layoutStyles from './home/styles/layoutStyles';
@@ -49,6 +50,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
     else if (label === 'Profile') setActiveTab('profile');
     else if (label === 'Weather') setActiveTab('weather');
     else if (label === 'Book Space') setActiveTab('book');
+    else if (label === 'Dispatch') setActiveTab('dispatch');
     else {
       console.log(label);
     }
@@ -127,6 +129,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
               <NotificationsTab
                 farmerId={selectedFarmerId}
                 onBack={() => setActiveTab('home')}
+                onNavigateToTab={(tabName) => setActiveTab(tabName)}
               />
             )}
 
@@ -167,6 +170,13 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 }}
               />
             )}
+
+            {activeTab === 'dispatch' && (
+              <DispatchTab
+                farmerId={selectedFarmerId}
+                onBackPress={() => setActiveTab('home')}
+              />
+            )}
           </View>
 
           {/* ─── Elevated Bottom Tab Navigation ─── */}
@@ -196,7 +206,19 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 <Text style={[layoutStyles.bottomNavLabel, activeTab === 'stock' && layoutStyles.bottomNavLabelActive]}>My Stock</Text>
               </TouchableOpacity>
 
-              {/* Tab 3: Market */}
+              {/* Tab 3: Dispatch */}
+              <TouchableOpacity
+                style={layoutStyles.bottomNavTab}
+                onPress={() => setActiveTab('dispatch')}
+                activeOpacity={0.7}
+              >
+                <View style={[layoutStyles.iconWrapper, activeTab === 'dispatch' && layoutStyles.iconWrapperActive]}>
+                  <Feather name="truck" size={activeTab === 'dispatch' ? 20 : 19} color={activeTab === 'dispatch' ? '#1E5C2E' : '#71717A'} />
+                </View>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'dispatch' && layoutStyles.bottomNavLabelActive]}>Dispatch</Text>
+              </TouchableOpacity>
+
+              {/* Tab 4: Market */}
               <TouchableOpacity
                 style={layoutStyles.bottomNavTab}
                 onPress={() => setActiveTab('market')}
@@ -208,7 +230,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 <Text style={[layoutStyles.bottomNavLabel, activeTab === 'market' && layoutStyles.bottomNavLabelActive]}>Market</Text>
               </TouchableOpacity>
 
-              {/* Tab 4: Khata */}
+              {/* Tab 5: Khata */}
               <TouchableOpacity
                 style={layoutStyles.bottomNavTab}
                 onPress={() => setActiveTab('khata')}
@@ -220,7 +242,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 <Text style={[layoutStyles.bottomNavLabel, activeTab === 'khata' && layoutStyles.bottomNavLabelActive]}>Khata</Text>
               </TouchableOpacity>
 
-              {/* Tab 5: Profile */}
+              {/* Tab 6: Profile */}
               <TouchableOpacity
                 style={layoutStyles.bottomNavTab}
                 onPress={() => setActiveTab('profile')}

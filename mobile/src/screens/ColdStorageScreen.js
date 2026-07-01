@@ -9,7 +9,8 @@ import KhataTab from './home/KhataTab';
 import NotificationsTab from './home/NotificationsTab';
 import ProfileTab from './home/ProfileTab';
 import CreateRequestTab from './home/CreateRequestTab';
-import { fetchMandiPrices, fetchWeather } from '../services/api';
+import { fetchWeather } from '../services/api';
+import MandiPricePreview from '../components/MandiPricePreview';
 import styles from './home/styles/farmerDashboardStyles';
 import layoutStyles from './home/styles/layoutStyles';
 import { FONTS } from '../theme';
@@ -23,6 +24,13 @@ const QUICK_ACTIONS = [
   { label: 'Gate Pass', icon: 'clipboard', bg: '#FEF2F2', color: '#B91C1C' },
 ];
 
+const statusConfig = {
+  fresh: { label: 'Fresh', color: '#047857', bg: '#ECFDF5' },
+  good: { label: 'Good', color: '#1D4ED8', bg: '#EFF6FF' },
+  warning: { label: 'Warning', color: '#B45309', bg: '#FFFBEB' },
+  danger: { label: 'Critical', color: '#B91C1C', bg: '#FEF2F2' },
+};
+
 export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogout }) {
   const [activeTab, setActiveTab] = useState('home');
   const [loading, setLoading] = useState(true);
@@ -32,24 +40,19 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
   const [ledgerList, setLedgerList] = useState([]);
   
   const [profile, setProfile] = useState({
-    name: 'SN Sharma Cold Storage',
-    location: 'Tundla, Firozabad, UP',
+    id: 'cmmp9txv0000ai3t4wush9trs',
+    name: 'Loading...',
+    location: 'Loading...',
     state: 'Uttar Pradesh',
   });
   const [stats, setStats] = useState({
-    totalStockText: '42.5 MT',
-    totalStockSub: '850 pkts',
-    pendingDuesText: '₹2,99,525',
-    pendingDuesSub: '5 farmers',
+    totalStockText: '0 MT',
+    totalStockSub: '0 pkts',
+    pendingDuesText: '₹0',
+    pendingDuesSub: '0 farmers',
     todayAmadText: '0',
     todayAmadSub: 'entries',
   });
-
-  const [mandiPrices, setMandiPrices] = useState([
-    { id: '1', commodity: 'Potato', variety: 'Pukhraj', mandi: 'Agra', price: 820, change: 15 },
-    { id: '2', commodity: 'Potato', variety: 'Chipsona', mandi: 'Firozabad', price: 950, change: -20 },
-    { id: '3', commodity: 'Onion', variety: '', mandi: 'Tundla', price: 1100, change: 45 },
-  ]);
 
   useEffect(() => {
     async function loadAllData() {
@@ -61,22 +64,47 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
         
         const list = await fetchColdStorages();
         
-        let targetId = 'cmmp9txv0000ai3t4wush9trs'; // default fallback
+        let targetId = null;
         let locationName = 'Tundla';
+
+        console.log('[DEBUG] loggedInPhone received:', loggedInPhone);
+        console.log('[DEBUG] cold storages list:', list.map(cs => ({ id: cs.id, phone: cs.phone })));
 
         if (loggedInPhone) {
           const cleanPhone = loggedInPhone.replace('+91', '').trim();
+          console.log('[DEBUG] cleanPhone:', cleanPhone);
           const matched = list.find(cs => cs.phone && cs.phone.trim() === cleanPhone);
+          console.log('[DEBUG] matched cold storage:', matched);
           if (matched) {
             targetId = matched.id;
             locationName = matched.city || matched.district || 'Tundla';
           }
         }
 
-        const [summary, potatoData, onionData, weather, holdings, notifs, ledger] = await Promise.all([
+        if (!targetId) {
+          setProfile({
+            id: 'NEW_CS',
+            name: 'New Cold Storage',
+            location: 'Not Assigned',
+            state: 'Uttar Pradesh',
+          });
+          setStats({
+            totalStockText: '0 MT',
+            totalStockSub: '0 pkts',
+            pendingDuesText: '₹0',
+            pendingDuesSub: '0 farmers',
+            todayAmadText: '0',
+            todayAmadSub: 'entries',
+          });
+          setHoldingsList([]);
+          setNotifications([]);
+          setLedgerList([]);
+          setLoading(false);
+          return;
+        }
+
+        const [summary, weather, holdings, notifs, ledger] = await Promise.all([
           fetchColdStorageSummary(targetId).catch(() => null),
-          fetchMandiPrices('Uttar Pradesh', 'Potato').catch(() => null),
-          fetchMandiPrices('Uttar Pradesh', 'Onion').catch(() => null),
           fetchWeather(locationName).catch(() => null),
           fetchHoldings().catch(() => []),
           fetchNotifications(targetId).catch(() => []),
@@ -85,6 +113,7 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
 
         if (summary) {
           setProfile({
+            id: summary.coldStorage.id,
             name: summary.coldStorage.name,
             location: `${summary.coldStorage.city || 'Tundla'}, ${summary.coldStorage.district || 'Firozabad'}, ${summary.coldStorage.state || 'UP'}`,
             state: summary.coldStorage.state || 'Uttar Pradesh',
@@ -99,59 +128,30 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
           });
         }
 
-        const filteredHoldings = (holdings || []).map((h, index) => {
-          let statusStr = 'fresh';
-          const age = h.age_days || 7;
-          if (age >= 90) statusStr = 'danger';
-          else if (age >= 70) statusStr = 'warning';
-          else if (age >= 30) statusStr = 'good';
-          return {
-            ...h,
-            id: h.lot_id || `AM-${16288 + index}`,
-            commodity: h.crop || 'Potato',
-            variety: h.variety || 'Pukhraj',
-            location: h.location || 'Room 1 / K12',
-            cold_storage: h.cold_storage || (summary ? summary.coldStorage.name : 'SN Sharma CS'),
-            bags: h.bags || 300,
-            weight: h.weight || `${(h.bags || 300) * 0.05} MT`,
-            age_days: age,
-            status: statusStr,
-          };
-        });
+        const filteredHoldings = (holdings || [])
+          .filter(h => h.cold_storage_id === targetId)
+          .map((h, index) => {
+            let statusStr = 'fresh';
+            const age = h.age_days || 7;
+            if (age >= 90) statusStr = 'danger';
+            else if (age >= 70) statusStr = 'warning';
+            else if (age >= 30) statusStr = 'good';
+            return {
+              ...h,
+              id: h.lot_id || `AM-${16288 + index}`,
+              commodity: h.crop || 'Potato',
+              variety: h.variety || 'Pukhraj',
+              location: h.location || 'Room 1 / K12',
+              cold_storage: h.cold_storage || (summary ? summary.coldStorage.name : 'SN Sharma CS'),
+              bags: h.bags || 300,
+              weight: h.weight || `${(h.bags || 300) * 0.05} MT`,
+              age_days: age,
+              status: statusStr,
+            };
+          });
         setHoldingsList(filteredHoldings);
         setNotifications(notifs || []);
         setLedgerList(ledger || []);
-
-        const updatedPrices = [...mandiPrices];
-        if (potatoData && potatoData.records) {
-          const records = potatoData.records;
-          const agraRec = records.find(r => 
-            r.market.toLowerCase().includes('agra') && 
-            r.variety.toLowerCase().includes('pukhraj')
-          ) || records.find(r => r.market.toLowerCase().includes('agra'));
-          
-          if (agraRec) {
-            updatedPrices[0].price = agraRec.modalPrice || agraRec.maxPrice || 820;
-          }
-          
-          const firozabadRec = records.find(r => 
-            r.market.toLowerCase().includes('firozabad') && 
-            r.variety.toLowerCase().includes('chipsona')
-          ) || records.find(r => r.market.toLowerCase().includes('firozabad'));
-          
-          if (firozabadRec) {
-            updatedPrices[1].price = firozabadRec.modalPrice || firozabadRec.maxPrice || 950;
-          }
-        }
-
-        if (onionData && onionData.records) {
-          const records = onionData.records;
-          const tundlaRec = records.find(r => r.market.toLowerCase().includes('tundla')) || records[0];
-          if (tundlaRec) {
-            updatedPrices[2].price = tundlaRec.modalPrice || tundlaRec.maxPrice || 1100;
-          }
-        }
-        setMandiPrices(updatedPrices);
 
         if (weather) {
           setWeatherData(weather);
@@ -281,33 +281,11 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
                   ))}
                 </View>
 
-                {/* Live Mandi Prices List */}
-                <View style={styles.mandiSection}>
-                  <View style={styles.mandiSectionHeader}>
-                    <Text style={styles.mandiSectionTitle}>Live Mandi Prices / आज के भाव</Text>
-                    <TouchableOpacity onPress={() => setActiveTab('market')} activeOpacity={0.7}>
-                      <Text style={styles.mandiViewAll}>View All &gt;</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {mandiPrices.map((item) => {
-                    const isTrendUp = item.change > 0;
-                    return (
-                      <View key={item.id} style={styles.mandiPriceCard}>
-                        <View>
-                          <Text style={styles.mandiPriceName}>{item.commodity}{item.variety ? ` (${item.variety})` : ''}</Text>
-                          <Text style={styles.mandiPriceLoc}>{item.mandi} Mandi</Text>
-                        </View>
-                        <View style={styles.mandiPriceRight}>
-                          <Text style={styles.mandiPriceVal}>₹{item.price}</Text>
-                          <Text style={[styles.mandiPriceTrend, { color: isTrendUp ? '#047857' : '#B91C1C' }]}>
-                            {isTrendUp ? `↗ +${item.change}` : `↙ -${Math.abs(item.change)}`}
-                          </Text>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
+                {/* Live Mandi Prices */}
+                <MandiPricePreview
+                  farmerState={profile.state || 'Uttar Pradesh'}
+                  onViewAll={() => setActiveTab('market')}
+                />
 
                 {/* Recent Activity Section */}
                 <View style={styles.recentActivityHeader}>
@@ -317,32 +295,53 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
                   </TouchableOpacity>
                 </View>
                 
-                <View style={styles.activityCard}>
-                  <View style={styles.activityHeader}>
-                    <View>
-                      <Text style={styles.activityTitleText}>Potato — Pukhraj</Text>
-                      <Text style={styles.activitySubtitleText}>Chamber 2 / Lot 15 · SN Sharma CS</Text>
-                    </View>
-                    <View style={[styles.activityBadge, { backgroundColor: '#ECFDF5' }]}>
-                      <Text style={[styles.activityBadgeText, { color: '#047857' }]}>Fresh</Text>
-                    </View>
+                {holdingsList.length === 0 ? (
+                  <View style={{
+                    padding: 24,
+                    backgroundColor: '#ffffff',
+                    borderRadius: 16,
+                    borderStyle: 'dashed',
+                    borderWidth: 1,
+                    borderColor: 'rgba(30, 92, 46, 0.15)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginTop: 8,
+                  }}>
+                    <Text style={{ fontSize: 13, color: '#6B7B6B', fontWeight: '500' }}>No recent activity / कोई हालिया गतिविधि नहीं</Text>
                   </View>
+                ) : (
+                  holdingsList.slice(0, 2).map((act) => {
+                    const cfg = statusConfig[act.status] || statusConfig.fresh;
+                    return (
+                      <View key={act.id} style={styles.activityCard}>
+                        <View style={styles.activityHeader}>
+                          <View>
+                            <Text style={styles.activityTitleText}>{act.commodity} — {act.variety}</Text>
+                            <Text style={styles.activitySubtitleText}>{act.location} · {act.cold_storage}</Text>
+                          </View>
+                          <View style={[styles.activityBadge, { backgroundColor: cfg.bg }]}>
+                            <Text style={[styles.activityBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
+                          </View>
+                        </View>
 
-                  <View style={styles.activityStatsGrid}>
-                    <View style={styles.activityStatCol}>
-                      <Text style={styles.activityStatLabel}>Bags</Text>
-                      <Text style={styles.activityStatValue}>300 bags</Text>
-                    </View>
-                    <View style={styles.activityStatCol}>
-                      <Text style={styles.activityStatLabel}>Weight</Text>
-                      <Text style={styles.activityStatValue}>15.0 MT</Text>
-                    </View>
-                    <View style={styles.activityStatCol}>
-                      <Text style={styles.activityStatLabel}>Age</Text>
-                      <Text style={styles.activityStatValue}>5d</Text>
-                    </View>
-                  </View>
-                </View>
+                        <View style={styles.activityStatsGrid}>
+                          <View style={styles.activityStatCol}>
+                            <Text style={styles.activityStatLabel}>Bags</Text>
+                            <Text style={styles.activityStatValue}>{act.bags} bags</Text>
+                          </View>
+                          <View style={styles.activityStatCol}>
+                            <Text style={styles.activityStatLabel}>Weight</Text>
+                            <Text style={styles.activityStatValue}>{act.weight}</Text>
+                          </View>
+                          <View style={styles.activityStatCol}>
+                            <Text style={styles.activityStatLabel}>Age</Text>
+                            <Text style={styles.activityStatValue}>{act.age_days}d</Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
 
                 {/* Weather Widget */}
                 <TouchableOpacity 
@@ -381,7 +380,7 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
               </ScrollView>
             </>
           ) : activeTab === 'createRequest' ? (
-            <CreateRequestTab onBackPress={() => setActiveTab('home')} />
+            <CreateRequestTab onBackPress={() => setActiveTab('home')} coldStorageId={profile.id} />
           ) : activeTab === 'stock' ? (
             <StockTab holdingsList={holdingsList} disableFallback={true} />
           ) : activeTab === 'market' ? (

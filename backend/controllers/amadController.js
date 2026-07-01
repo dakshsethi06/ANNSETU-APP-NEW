@@ -42,7 +42,7 @@ async function getHoldings(req, res) {
       const age_days = Math.floor(Math.abs(new Date() - amadDate) / (1000 * 60 * 60 * 24)) || 0;
       return {
         id: row.id, lot_id: row.lot_id, crop: row.crop, variety: row.variety || '-',
-        cold_storage: row.cold_storage || 'Default CS', location: row.location || 'Section A',
+        cold_storage: row.cold_storage || 'Default CS', cold_storage_id: row.cold_storage_id, location: row.location || 'Section A',
         bags: row.bags, weight: row.weight, age_days: age_days, inbound_age: `${age_days}d`, status: row.status
       };
     });

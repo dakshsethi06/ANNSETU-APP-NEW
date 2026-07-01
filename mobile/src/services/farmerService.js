@@ -48,8 +48,8 @@ export async function fetchFarmerLedger(farmerId) {
 
 export async function fetchUserRole(phone) {
   try {
-    const url = `${BACKEND_URL}/api/user-role?phone=${encodeURIComponent(phone)}`;
-    const response = await fetch(url);
+    const url = `${BACKEND_URL}/api/user-role?phone=${encodeURIComponent(phone)}&t=${Date.now()}`;
+    const response = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } });
     if (!response.ok) throw new Error(`Server returned status ${response.status}`);
     const data = await response.json();
     if (!data.success) throw new Error(data.error || 'Failed to check user role');

@@ -24,6 +24,7 @@ async function getHoldingsData() {
       a.commodity AS crop,
       a.kism AS variety,
       c."displayName" AS cold_storage,
+      a."coldStorageId" AS cold_storage_id,
       a."roomId" AS location,
       a.packets AS bags,
       a."weightQtl" || ' Qt' AS weight,

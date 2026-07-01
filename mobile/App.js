@@ -64,11 +64,13 @@ export default function App() {
 
   useEffect(() => {
     if (session && session.user && session.user.phone) {
-      determineRole(session.user.phone);
+      if (role === 'Farmer') {
+        determineRole(session.user.phone);
+      }
     } else {
       setRole('Farmer');
     }
-  }, [session]);
+  }, [session, role]);
 
   useEffect(() => {
     // 1. Fetch initial session

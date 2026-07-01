@@ -5,7 +5,7 @@ import { FONTS } from '../../theme';
 import { fetchNotifications } from '../../services/notificationService';
 import { fetchFarmers } from '../../services/api';
 
-export default function NotificationsTab({ farmerId, onBack }) {
+export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,12 +46,26 @@ export default function NotificationsTab({ farmerId, onBack }) {
       iconName = 'wallet-outline';
       iconColor = '#DC2626'; // Error red
       iconBg = '#FEE2E2';
+    } else if (item.title.toLowerCase().includes('approval') || item.title.toLowerCase().includes('authorize') || item.type === 'warning') {
+      iconName = 'lock';
+      iconColor = '#F59E0B'; // Lock orange
+      iconBg = '#FFFBEB';
     }
 
     const isUnread = !item.isRead;
 
+    const handlePressNotification = () => {
+      if (onNavigateToTab && (item.title.toLowerCase().includes('approval') || item.title.toLowerCase().includes('authorize'))) {
+        onNavigateToTab('dispatch');
+      }
+    };
+
     return (
-      <View style={s.card}>
+      <TouchableOpacity 
+        style={s.card} 
+        onPress={handlePressNotification} 
+        activeOpacity={0.7}
+      >
         <View style={s.cardContent}>
           {/* Left Column: Unread dot + Icon Badge */}
           <View style={s.cardLeft}>
@@ -74,7 +88,7 @@ export default function NotificationsTab({ farmerId, onBack }) {
             <Text style={s.messageText}>{item.message}</Text>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
