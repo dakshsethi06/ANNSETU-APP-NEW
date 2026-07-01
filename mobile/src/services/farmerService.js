@@ -32,3 +32,16 @@ export async function addFarmer(farmerData) {
     throw err;
   }
 }
+
+export async function fetchFarmerLedger(farmerId) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/farmers/${encodeURIComponent(farmerId)}/ledger`);
+    if (!response.ok) throw new Error(`Server returned status ${response.status}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to fetch ledger');
+    return data.ledger;
+  } catch (err) {
+    if (err.message.includes('Network request failed')) throw new Error('Could not connect to backend server.');
+    throw err;
+  }
+}

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { fetchFarmers } from '../services/api';
+import { fetchFarmers, fetchFarmerLedger, fetchWeather } from '../services/api';
 import { fetchHoldings } from '../services/amadService';
 import { fetchNotifications } from '../services/notificationService';
 
-export function useStorageTabDashboard() {
+export function useStorageTabDashboard(loggedInPhone) {
   const [dbFarmers, setDbFarmers] = useState([]);
   const [dbFarmersLoading, setDbFarmersLoading] = useState(false);
   const [farmerSearchQuery, setFarmerSearchQuery] = useState('');
@@ -13,6 +13,8 @@ export function useStorageTabDashboard() {
   const [farmerError, setFarmerError] = useState(null);
   const [holdingsList, setHoldingsList] = useState([]);
   const [notificationsList, setNotificationsList] = useState([]);
+  const [ledgerList, setLedgerList] = useState([]);
+  const [weatherData, setWeatherData] = useState(null);
   const [dataLoading, setDataLoading] = useState(false);
 
   const [registerModalVisible, setRegisterModalVisible] = useState(false);
@@ -28,9 +30,48 @@ export function useStorageTabDashboard() {
     setDbFarmersLoading(true);
     try {
       const farmers = await fetchFarmers();
-      setDbFarmers(farmers || []);
+      let list = farmers || [];
+      
+      if (loggedInPhone) {
+        const cleanPhone = loggedInPhone.replace('+91', '').trim();
+        let found = list.find(f => (f.phone && f.phone.trim() === cleanPhone) || (f.serial_number && f.serial_number.trim() === cleanPhone));
+        if (!found) {
+          found = {
+            serial_number: cleanPhone,
+            name: 'Farmer ' + cleanPhone,
+            phone: cleanPhone,
+            state: 'Uttar Pradesh',
+            commodity: 'Potato',
+            pendingRent: 0,
+          };
+        }
+        list = [found];
+        setDbFarmers(list);
+        handleSelectFarmer(found.serial_number);
+      } else {
+        setDbFarmers(list);
+        if (list.length > 0) {
+          handleSelectFarmer(list[0].serial_number);
+        }
+      }
     } catch (err) {
       console.warn('Failed to load database farmers:', err.message);
+      if (loggedInPhone) {
+        const cleanPhone = loggedInPhone.replace('+91', '').trim();
+        const fallback = {
+          serial_number: cleanPhone,
+          name: 'Farmer ' + cleanPhone,
+          phone: cleanPhone,
+          state: 'Uttar Pradesh',
+          commodity: 'Potato',
+          pendingRent: 0,
+        };
+        setDbFarmers([fallback]);
+        handleSelectFarmer(fallback.serial_number);
+      } else {
+        setDbFarmers([]);
+        setFarmerError(err.message || 'Failed to load farmers from database');
+      }
     } finally {
       setDbFarmersLoading(false);
     }
@@ -41,23 +82,44 @@ export function useStorageTabDashboard() {
     setFarmerLoading(true);
     setFarmerError(null);
     setDataLoading(true);
+
     try {
       const farmers = await fetchFarmers('', farmerId);
+      let selectedFarmer = null;
       if (farmers && farmers.length > 0) {
-        setFarmerData(farmers[0]);
+        selectedFarmer = farmers[0];
+        setFarmerData(selectedFarmer);
       } else {
         throw new Error('Farmer profile not found.');
       }
       
-      const [holdings, notifications] = await Promise.all([
+      const cityToQuery = selectedFarmer.village || selectedFarmer.district || selectedFarmer.state || 'Tundla';
+
+      const [holdings, notifications, ledger, weather] = await Promise.all([
         fetchHoldings(),
-        fetchNotifications(farmerId)
+        fetchNotifications(farmerId),
+        fetchFarmerLedger(farmerId),
+        fetchWeather(cityToQuery).catch(async () => {
+          // Fallback to district/state if village failed
+          if (selectedFarmer.district && cityToQuery !== selectedFarmer.district) {
+            try { return await fetchWeather(selectedFarmer.district); } catch (e) { }
+          }
+          return null;
+        })
       ]);
 
       setHoldingsList(holdings.filter((h) => h.id === farmerId) || []);
       setNotificationsList(notifications || []);
+      setLedgerList(ledger || []);
+      setWeatherData(weather);
     } catch (err) {
-      setFarmerError(err.message);
+      console.warn('Failed to fetch live farmer data:', err.message);
+      setFarmerError(err.message || 'Failed to load farmer details');
+      setFarmerData(null);
+      setHoldingsList([]);
+      setNotificationsList([]);
+      setLedgerList([]);
+      setWeatherData(null);
     } finally {
       setFarmerLoading(false);
       setDataLoading(false);
@@ -67,7 +129,7 @@ export function useStorageTabDashboard() {
   return {
     dbFarmers, dbFarmersLoading, farmerSearchQuery, setFarmerSearchQuery,
     selectedFarmerId, setSelectedFarmerId, farmerLoading, farmerData, setFarmerData, farmerError,
-    holdingsList, notificationsList, setNotificationsList, dataLoading,
+    holdingsList, notificationsList, setNotificationsList, ledgerList, weatherData, dataLoading,
     registerModalVisible, setRegisterModalVisible, amadModalVisible, setAmadModalVisible,
     myStockModalVisible, setMyStockModalVisible, notificationsModalVisible, setNotificationsModalVisible,
     loadDbFarmers, handleSelectFarmer

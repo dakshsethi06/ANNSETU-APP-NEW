@@ -1,47 +1,63 @@
 import { BACKEND_URL, USE_BACKEND, API_URL, API_KEY } from './config';
 
 /**
- * Fetches potato mandi prices for a specific state
- * Returns { minPrice, maxPrice }
+ * Fetches live mandi prices for a specific state, commodity, and market city.
+ * Bypasses backend to request Government API directly if the backend is blocked.
+ * Queries up to 1000 records to fetch all crops and mandis available.
  */
-export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'Potato') {
+export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'All', market = '') {
+  // Option A: Try to fetch from local backend
+  if (USE_BACKEND) {
+    try {
+      const url = `${BACKEND_URL}/api/mandi-prices?state=${encodeURIComponent(state)}&commodity=${encodeURIComponent(commodity)}&market=${encodeURIComponent(market)}`;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout limit for backend connection
+
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.success) {
+          return {
+            minPrice: data.summary.minPrice,
+            maxPrice: data.summary.maxPrice,
+            records: data.records || [],
+          };
+        }
+      }
+    } catch (err) {
+      console.log('Mobile client: Backend fetch failed/timed out, attempting direct query:', err.message);
+    }
+  }
+
+  // Option B: Fallback to querying the Government API directly from the mobile client
   try {
-    if (USE_BACKEND) {
-      const url = `${BACKEND_URL}/api/mandi-prices?state=${encodeURIComponent(state)}&commodity=${encodeURIComponent(commodity)}`;
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        let errMsg = `Backend server returned status ${response.status}`;
-        try {
-          const errData = await response.json();
-          if (errData && errData.error) errMsg = errData.error;
-        } catch (_) {}
-        throw new Error(errMsg);
-      }
-
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch mandi prices from backend');
-      }
-
-      return {
-        minPrice: data.summary.minPrice,
-        maxPrice: data.summary.maxPrice,
-        records: data.records,
-      };
+    let url = `${API_URL}?api-key=${API_KEY}&format=json&limit=1000`; // Fetch up to 1000 records to get all data
+    if (state && state !== 'All') {
+      url += `&filters[state]=${encodeURIComponent(state)}`;
+    }
+    if (commodity && commodity !== 'All') {
+      url += `&filters[commodity]=${encodeURIComponent(commodity)}`;
+    }
+    if (market && market !== 'All') {
+      url += `&filters[market]=${encodeURIComponent(market)}`;
     }
 
-    const url = `${API_URL}?api-key=${API_KEY}&format=json&limit=10&filters[commodity]=${encodeURIComponent(commodity)}&filters[state]=${encodeURIComponent(state)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout limit for API response
 
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Government API returned HTTP status ${response.status}`);
+    }
+
     const data = await response.json();
-
-    const records = data?.records;
-
-    if (!records || records.length === 0) {
-      throw new Error(`No mandi price data found for ${state}.`);
-    }
-
+    const records = data?.records || [];
+    
     const parsedRecords = records.map((r) => ({
       commodity: r.commodity || r.Commodity || 'Unknown',
       market: r.market || r.Market || 'Unknown',
@@ -51,26 +67,18 @@ export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'Pot
       modalPrice: parseFloat(r.modal_price || r.Modal_Price || r.modal || 0),
       variety: r.variety || r.Variety || '-',
       arrivalDate: r.arrival_date || r.Arrival_Date || '-',
-      farmerName: r.farmer_name || r.farmerName || 'Unknown',
-      farmerSerial: r.farmer_serial || r.farmerSerial || 'N/A',
     })).filter((p) => p.minPrice > 0 || p.maxPrice > 0);
-
-    if (parsedRecords.length === 0) {
-      throw new Error('Could not read prices from the data.');
-    }
 
     const minPrices = parsedRecords.map(p => p.minPrice);
     const maxPrices = parsedRecords.map(p => p.maxPrice);
 
     return {
-      minPrice: Math.min(...minPrices),
-      maxPrice: Math.max(...maxPrices),
+      minPrice: minPrices.length > 0 ? Math.min(...minPrices) : 0,
+      maxPrice: maxPrices.length > 0 ? Math.max(...maxPrices) : 0,
       records: parsedRecords,
     };
   } catch (err) {
-    if (err.message.includes('Network request failed')) {
-      throw new Error('Could not connect to backend server. Please verify if it is running.');
-    }
-    throw err;
+    console.error('Direct Government API query failed:', err.message);
+    throw new Error('Live Mandi API request failed. Please check your internet connection and try again.');
   }
 }

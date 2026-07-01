@@ -23,7 +23,7 @@ export function useStateModal(visible) {
     }
   };
 
-  const filteredStates = statesList.filter((s) => s.toLowerCase().includes(stateSearch.toLowerCase()));
+  const filteredStates = ['All', ...statesList.filter((s) => s.toLowerCase().includes(stateSearch.toLowerCase()))];
 
   return { stateSearch, setStateSearch, statesLoading, filteredStates };
 }

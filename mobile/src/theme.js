@@ -4,6 +4,8 @@
 // Matching the agrarian visual identity
 // =============================================
 
+import { Platform } from 'react-native';
+
 export const COLORS = {
   wheat: '#F5EDD6',
   wheatDark: '#EAD9B0',
@@ -22,10 +24,20 @@ export const COLORS = {
 };
 
 export const FONTS = {
-  regular: 'System',
-  bold: 'System',
-  // Expo Google Fonts can be added later for Playfair Display + Inter
+  regular: Platform.select({
+    web: "'Noto Sans', 'Noto Sans Devanagari', sans-serif",
+    default: 'NotoSansDevanagari-Regular',
+  }),
+  bold: Platform.select({
+    web: "'Noto Sans', 'Noto Sans Devanagari', sans-serif",
+    default: 'NotoSansDevanagari-Bold',
+  }),
+  mono: Platform.select({
+    web: "'DM Mono', monospace",
+    default: 'DMMono-Regular',
+  }),
 };
+
 
 export const SPACING = {
   xs: 4,
