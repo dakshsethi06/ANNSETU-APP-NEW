@@ -97,10 +97,10 @@ export default function HomeScreen({ loggedInPhone }) {
             </View>
           )}
 
-          <RegisterFarmerModal 
-            visible={registerModalVisible} 
-            onClose={() => setRegisterModalVisible(false)} 
-            onRegisterSuccess={loadDbFarmers} 
+          <RegisterFarmerModal
+            visible={registerModalVisible}
+            onClose={() => setRegisterModalVisible(false)}
+            onRegisterSuccess={loadDbFarmers}
           />
         </View>
       ) : (
@@ -122,7 +122,7 @@ export default function HomeScreen({ loggedInPhone }) {
             )}
 
             {activeTab === 'stock' && (
-              <StockTab 
+              <StockTab
                 holdingsList={holdingsList}
               />
             )}
@@ -145,9 +145,9 @@ export default function HomeScreen({ loggedInPhone }) {
             )}
 
             {activeTab === 'book' && (
-              <BookStorageTab 
-                farmerData={farmerData} 
-                onBackPress={() => setActiveTab('home')} 
+              <BookStorageTab
+                farmerData={farmerData}
+                onBackPress={() => setActiveTab('home')}
                 onBookingSuccess={() => {
                   handleSelectFarmer(selectedFarmerId);
                   setActiveTab('home');
@@ -159,66 +159,66 @@ export default function HomeScreen({ loggedInPhone }) {
           {/* ─── Elevated Bottom Tab Navigation ─── */}
           {activeTab !== 'weather' && activeTab !== 'book' && (
             <View style={layoutStyles.bottomNav}>
-            {/* Tab 1: Home */}
-            <TouchableOpacity 
-              style={layoutStyles.bottomNavTab} 
-              onPress={() => setActiveTab('home')}
-              activeOpacity={0.7}
-            >
-              <View style={[layoutStyles.iconWrapper, activeTab === 'home' && layoutStyles.iconWrapperActive]}>
-                <Feather name="home" size={activeTab === 'home' ? 20 : 19} color={activeTab === 'home' ? '#1E5C2E' : '#71717A'} />
-              </View>
-              <Text style={[layoutStyles.bottomNavLabel, activeTab === 'home' && layoutStyles.bottomNavLabelActive]}>Home</Text>
-            </TouchableOpacity>
+              {/* Tab 1: Home */}
+              <TouchableOpacity
+                style={layoutStyles.bottomNavTab}
+                onPress={() => setActiveTab('home')}
+                activeOpacity={0.7}
+              >
+                <View style={[layoutStyles.iconWrapper, activeTab === 'home' && layoutStyles.iconWrapperActive]}>
+                  <Feather name="home" size={activeTab === 'home' ? 20 : 19} color={activeTab === 'home' ? '#1E5C2E' : '#71717A'} />
+                </View>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'home' && layoutStyles.bottomNavLabelActive]}>Home</Text>
+              </TouchableOpacity>
 
-            {/* Tab 2: My Stock */}
-            <TouchableOpacity 
-              style={layoutStyles.bottomNavTab} 
-              onPress={() => setActiveTab('stock')}
-              activeOpacity={0.7}
-            >
-              <View style={[layoutStyles.iconWrapper, activeTab === 'stock' && layoutStyles.iconWrapperActive]}>
-                <Feather name="package" size={activeTab === 'stock' ? 20 : 19} color={activeTab === 'stock' ? '#1E5C2E' : '#71717A'} />
-              </View>
-              <Text style={[layoutStyles.bottomNavLabel, activeTab === 'stock' && layoutStyles.bottomNavLabelActive]}>My Stock</Text>
-            </TouchableOpacity>
+              {/* Tab 2: My Stock */}
+              <TouchableOpacity
+                style={layoutStyles.bottomNavTab}
+                onPress={() => setActiveTab('stock')}
+                activeOpacity={0.7}
+              >
+                <View style={[layoutStyles.iconWrapper, activeTab === 'stock' && layoutStyles.iconWrapperActive]}>
+                  <Feather name="package" size={activeTab === 'stock' ? 20 : 19} color={activeTab === 'stock' ? '#1E5C2E' : '#71717A'} />
+                </View>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'stock' && layoutStyles.bottomNavLabelActive]}>My Stock</Text>
+              </TouchableOpacity>
 
-            {/* Tab 3: Market */}
-            <TouchableOpacity 
-              style={layoutStyles.bottomNavTab} 
-              onPress={() => setActiveTab('market')}
-              activeOpacity={0.7}
-            >
-              <View style={[layoutStyles.iconWrapper, activeTab === 'market' && layoutStyles.iconWrapperActive]}>
-                <Feather name="trending-up" size={activeTab === 'market' ? 20 : 19} color={activeTab === 'market' ? '#1E5C2E' : '#71717A'} />
-              </View>
-              <Text style={[layoutStyles.bottomNavLabel, activeTab === 'market' && layoutStyles.bottomNavLabelActive]}>Market</Text>
-            </TouchableOpacity>
+              {/* Tab 3: Market */}
+              <TouchableOpacity
+                style={layoutStyles.bottomNavTab}
+                onPress={() => setActiveTab('market')}
+                activeOpacity={0.7}
+              >
+                <View style={[layoutStyles.iconWrapper, activeTab === 'market' && layoutStyles.iconWrapperActive]}>
+                  <Feather name="trending-up" size={activeTab === 'market' ? 20 : 19} color={activeTab === 'market' ? '#1E5C2E' : '#71717A'} />
+                </View>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'market' && layoutStyles.bottomNavLabelActive]}>Market</Text>
+              </TouchableOpacity>
 
-            {/* Tab 4: Khata */}
-            <TouchableOpacity 
-              style={layoutStyles.bottomNavTab} 
-              onPress={() => setActiveTab('khata')}
-              activeOpacity={0.7}
-            >
-              <View style={[layoutStyles.iconWrapper, activeTab === 'khata' && layoutStyles.iconWrapperActive]}>
-                <Feather name="book-open" size={activeTab === 'khata' ? 20 : 19} color={activeTab === 'khata' ? '#1E5C2E' : '#71717A'} />
-              </View>
-              <Text style={[layoutStyles.bottomNavLabel, activeTab === 'khata' && layoutStyles.bottomNavLabelActive]}>Khata</Text>
-            </TouchableOpacity>
+              {/* Tab 4: Khata */}
+              <TouchableOpacity
+                style={layoutStyles.bottomNavTab}
+                onPress={() => setActiveTab('khata')}
+                activeOpacity={0.7}
+              >
+                <View style={[layoutStyles.iconWrapper, activeTab === 'khata' && layoutStyles.iconWrapperActive]}>
+                  <Feather name="book-open" size={activeTab === 'khata' ? 20 : 19} color={activeTab === 'khata' ? '#1E5C2E' : '#71717A'} />
+                </View>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'khata' && layoutStyles.bottomNavLabelActive]}>Khata</Text>
+              </TouchableOpacity>
 
-            {/* Tab 5: Profile */}
-            <TouchableOpacity 
-              style={layoutStyles.bottomNavTab} 
-              onPress={() => setActiveTab('profile')}
-              activeOpacity={0.7}
-            >
-              <View style={[layoutStyles.iconWrapper, activeTab === 'profile' && layoutStyles.iconWrapperActive]}>
-                <Feather name="user" size={activeTab === 'profile' ? 20 : 19} color={activeTab === 'profile' ? '#1E5C2E' : '#71717A'} />
-              </View>
-              <Text style={[layoutStyles.bottomNavLabel, activeTab === 'profile' && layoutStyles.bottomNavLabelActive]}>Profile</Text>
-            </TouchableOpacity>
-          </View>
+              {/* Tab 5: Profile */}
+              <TouchableOpacity
+                style={layoutStyles.bottomNavTab}
+                onPress={() => setActiveTab('profile')}
+                activeOpacity={0.7}
+              >
+                <View style={[layoutStyles.iconWrapper, activeTab === 'profile' && layoutStyles.iconWrapperActive]}>
+                  <Feather name="user" size={activeTab === 'profile' ? 20 : 19} color={activeTab === 'profile' ? '#1E5C2E' : '#71717A'} />
+                </View>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'profile' && layoutStyles.bottomNavLabelActive]}>Profile</Text>
+              </TouchableOpacity>
+            </View>
         </View>
       )}
     </KeyboardAvoidingView>
