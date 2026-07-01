@@ -45,3 +45,17 @@ export async function fetchFarmerLedger(farmerId) {
     throw err;
   }
 }
+
+export async function fetchUserRole(phone) {
+  try {
+    const url = `${BACKEND_URL}/api/user-role?phone=${encodeURIComponent(phone)}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Server returned status ${response.status}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to check user role');
+    return data.role;
+  } catch (err) {
+    console.warn('fetchUserRole failed:', err.message);
+    return 'ColdStorage'; // fallback
+  }
+}

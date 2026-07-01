@@ -1,7 +1,7 @@
 const db = require('../db');
 
 async function getColdStorages() {
-  const result = await db.query('SELECT id, "displayName" AS name, city, district, state FROM "ColdStorageOnboarding" ORDER BY "displayName" ASC');
+  const result = await db.query('SELECT id, "displayName" AS name, phone, city, district, state FROM "ColdStorageOnboarding" ORDER BY "displayName" ASC');
   return result.rows;
 }
 

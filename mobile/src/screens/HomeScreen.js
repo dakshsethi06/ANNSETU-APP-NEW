@@ -13,12 +13,14 @@ import WeatherTab from './home/WeatherTab';
 import BookStorageTab from './home/BookStorageTab';
 import ErrorCard from '../components/ErrorCard';
 import RegisterFarmerModal from './home/modals/RegisterFarmerModal';
+import NotificationsTab from './home/NotificationsTab';
 
 import { useStorageTabDashboard } from '../hooks/useStorageTabDashboard';
 import layoutStyles from './home/styles/layoutStyles';
 import HomeHeader from '../components/HomeHeader';
+import { supabase } from '../services/supabase';
 
-export default function HomeScreen({ loggedInPhone }) {
+export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
   // Navigation: 'home', 'stock', 'market', 'khata', 'profile'
   const [activeTab, setActiveTab] = useState('home');
 
@@ -114,10 +116,17 @@ export default function HomeScreen({ loggedInPhone }) {
                 notifications={notificationsList}
                 weatherData={weatherData}
                 onBackPress={loggedInPhone ? null : handleBackToSelector}
-                onNotificationsPress={() => setActiveTab('profile')}
+                onNotificationsPress={() => setActiveTab('notifications')}
                 onActionPress={handleActionPress}
                 manualStockMt={displayStockMt}
                 manualBags={displayBags}
+              />
+            )}
+
+            {activeTab === 'notifications' && (
+              <NotificationsTab
+                farmerId={selectedFarmerId}
+                onBack={() => setActiveTab('home')}
               />
             )}
 
@@ -137,7 +146,11 @@ export default function HomeScreen({ loggedInPhone }) {
             )}
 
             {activeTab === 'profile' && (
-              <ProfileTab farmerData={farmerData} onBackPress={loggedInPhone ? null : handleBackToSelector} />
+              <ProfileTab 
+                farmerData={farmerData} 
+                onSwitchRole={onSwitchRole} 
+                onLogout={onLogout} 
+              />
             )}
 
             {activeTab === 'weather' && (
@@ -219,6 +232,7 @@ export default function HomeScreen({ loggedInPhone }) {
                 <Text style={[layoutStyles.bottomNavLabel, activeTab === 'profile' && layoutStyles.bottomNavLabelActive]}>Profile</Text>
               </TouchableOpacity>
             </View>
+          )}
         </View>
       )}
     </KeyboardAvoidingView>

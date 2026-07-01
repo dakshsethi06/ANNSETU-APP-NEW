@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Platform, Alert, ActivityIndicator, Image, ScrollView, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Platform, Alert, ActivityIndicator, Image, ScrollView, StatusBar, KeyboardAvoidingView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import styles from './styles/authStyles';
@@ -7,12 +7,18 @@ import { COLORS } from '../theme';
 import RegisterScreen from './RegisterScreen';
 import OTPScreen from './OtpScreen';
 
-export default function LoginScreen({ onLoginSuccess }) {
+export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
   const [currentScreen, setCurrentScreen] = useState('login'); // 'login' | 'register' | 'otp'
   const [phone, setPhone] = useState('');
   const [lang, setLang] = useState('en');
   const [loading, setLoading] = useState(false);
   const [registrationData, setRegistrationData] = useState(null);
+
+  useEffect(() => {
+    if (onHidePreviewChange) {
+      onHidePreviewChange(currentScreen === 'register' || currentScreen === 'otp');
+    }
+  }, [currentScreen, onHidePreviewChange]);
 
   const handleGetOTP = async () => {
     if (phone.length < 10) {
@@ -61,20 +67,35 @@ export default function LoginScreen({ onLoginSuccess }) {
     if (registrationData) {
       setLoading(true);
       try {
-        const { addFarmer } = require('../services/api');
-        // Register the farmer in the real Postgres database
-        await addFarmer({
-          serial_number: registrationData.phone,
-          name: registrationData.name,
-          state: registrationData.state || 'Uttar Pradesh',
-          commodity: 'Potato',
-          phone: registrationData.phone,
-          fatherName: registrationData.fatherName || 'Father Name',
-          village: registrationData.village || '',
-          district: registrationData.district || '',
-          tehsil: registrationData.district || '',
-        });
-        Alert.alert('Success', `Farmer "${registrationData.name}" registered successfully!`);
+        if (registrationData.role === 'coldstorage') {
+          const { addColdStorage } = require('../services/storageService');
+          await addColdStorage({
+            id: registrationData.phone,
+            displayName: registrationData.storageName || registrationData.name,
+            city: registrationData.village || 'Tundla',
+            district: registrationData.district || 'Firozabad',
+            state: registrationData.state || 'Uttar Pradesh',
+            address: `${registrationData.village || 'Tundla'}, ${registrationData.district || 'Firozabad'}`,
+            contactPerson: registrationData.name,
+            phone: registrationData.phone,
+          });
+          Alert.alert('Success', `Cold Storage "${registrationData.storageName || registrationData.name}" registered successfully!`);
+        } else {
+          const { addFarmer } = require('../services/api');
+          // Register the farmer in the real Postgres database
+          await addFarmer({
+            serial_number: registrationData.phone,
+            name: registrationData.name,
+            state: registrationData.state || 'Uttar Pradesh',
+            commodity: 'Potato',
+            phone: registrationData.phone,
+            fatherName: registrationData.fatherName || 'Father Name',
+            village: registrationData.village || '',
+            district: registrationData.district || '',
+            tehsil: registrationData.district || '',
+          });
+          Alert.alert('Success', `Farmer "${registrationData.name}" registered successfully!`);
+        }
       } catch (err) {
         console.warn('Backend database registration failed, but proceeding to dashboard:', err.message);
       } finally {
@@ -83,7 +104,7 @@ export default function LoginScreen({ onLoginSuccess }) {
     }
 
     if (onLoginSuccess) {
-      onLoginSuccess(verifiedPhone);
+      onLoginSuccess(verifiedPhone, registrationData?.role);
     }
   };
 
@@ -97,7 +118,11 @@ export default function LoginScreen({ onLoginSuccess }) {
 
   // Login Screen ("Welcome Back")
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#1E5C2E" />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
@@ -181,6 +206,6 @@ export default function LoginScreen({ onLoginSuccess }) {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

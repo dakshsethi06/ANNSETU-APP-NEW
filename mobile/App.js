@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, View, ActivityIndicator, Platform } from 'react-native';
+import { Alert, View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, Keyboard } from 'react-native';
 import * as Updates from 'expo-updates';
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
+import VendorScreen from './src/screens/VendorScreen';
 import { supabase } from './src/services/supabase';
+import ColdStorageScreen from './src/screens/ColdStorageScreen';
+import { Feather } from '@expo/vector-icons';
 
 // Expo Google Fonts loader
 import { useFonts } from 'expo-font';
@@ -30,11 +33,13 @@ if (Platform.OS === 'web') {
   document.head.appendChild(style);
 }
 
-
-
 export default function App() {
   const [session, setSession] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [role, setRole] = useState('Farmer'); // 'Farmer', 'Vendor', 'ColdStorage'
+  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const [hidePreviewFromLogin, setHidePreviewFromLogin] = useState(false);
 
   // Load custom fonts for native Android / iOS builds (APK/IPA)
   const [fontsLoaded] = useFonts({
@@ -45,6 +50,25 @@ export default function App() {
     'DMMono-Regular': DMMono_400Regular,
   });
 
+  const determineRole = async (phone) => {
+    if (!phone) return;
+    try {
+      const { fetchUserRole } = require('./src/services/api');
+      const detectedRole = await fetchUserRole(phone);
+      setRole(detectedRole);
+    } catch (e) {
+      console.warn('Error determining role:', e);
+      setRole('ColdStorage');
+    }
+  };
+
+  useEffect(() => {
+    if (session && session.user && session.user.phone) {
+      determineRole(session.user.phone);
+    } else {
+      setRole('Farmer');
+    }
+  }, [session]);
 
   useEffect(() => {
     // 1. Fetch initial session
@@ -80,10 +104,22 @@ export default function App() {
     }
     checkUpdates();
 
+    // 4. Keyboard listeners to hide preview bar when typing
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
     return () => {
       if (authListener && authListener.subscription) {
         authListener.subscription.unsubscribe();
       }
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
     };
   }, []);
 
@@ -95,19 +131,146 @@ export default function App() {
     );
   }
 
-
-  const handleLoginSuccess = (phone) => {
+  const handleLoginSuccess = (phone, registrationRole) => {
     setSession({
       user: {
         phone: '+91' + phone,
       }
     });
+    
+    if (registrationRole === 'coldstorage') {
+      setRole('ColdStorageFacility');
+    } else if (registrationRole === 'vendor') {
+      setRole('Vendor');
+    } else if (registrationRole === 'farmer') {
+      setRole('ColdStorage');
+    } else {
+      // Normal login without explicit registration role
+      determineRole('+91' + phone);
+    }
   };
 
-  // Conditionally render based on authentication status
-  if (!session) {
-    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
-  }
+  const handleLogout = () => {
+    supabase.auth.signOut();
+    setSession(null);
+    setRole('Farmer');
+    setShowRoleSwitcher(false);
+  };
 
-  return <HomeScreen loggedInPhone={session?.user?.phone} />;
+  const renderScreen = () => {
+    switch (role) {
+      case 'Farmer':
+        return (
+          <LoginScreen 
+            onLoginSuccess={handleLoginSuccess} 
+            onHidePreviewChange={setHidePreviewFromLogin}
+          />
+        );
+      case 'Vendor':
+        return (
+          <VendorScreen 
+            onSwitchRole={() => setShowRoleSwitcher(true)}
+            onLogout={handleLogout}
+          />
+        );
+      case 'ColdStorage':
+        return (
+          <HomeScreen 
+            loggedInPhone={session?.user?.phone} 
+            onSwitchRole={() => setShowRoleSwitcher(true)}
+            onLogout={handleLogout}
+          />
+        );
+      case 'ColdStorageFacility':
+        return (
+          <ColdStorageScreen 
+            loggedInPhone={session?.user?.phone}
+            onSwitchRole={() => setShowRoleSwitcher(true)}
+            onLogout={handleLogout}
+          />
+        );
+      default:
+        return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+    }
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      {renderScreen()}
+
+      {/* Persistent Floating UI Preview Navigation Bar */}
+      {((role !== 'Vendor' && role !== 'ColdStorage' && role !== 'ColdStorageFacility') || showRoleSwitcher) && !isKeyboardVisible && !hidePreviewFromLogin && (
+        <View style={barStyles.previewBar}>
+          <Text style={barStyles.previewLabel}>
+            📱 Preview: <Text style={{ fontWeight: 'bold' }}>{role === 'ColdStorage' ? 'Farmer' : role === 'Farmer' ? 'Login' : role === 'ColdStorageFacility' ? 'Cold Storage' : role}</Text>
+          </Text>
+          <Text style={barStyles.separator}>·</Text>
+          <View style={barStyles.linkGroup}>
+            <TouchableOpacity onPress={() => { setRole('Farmer'); setShowRoleSwitcher(false); }} activeOpacity={0.8}>
+              <Text style={[barStyles.linkLabel, role === 'Farmer' && barStyles.linkLabelActive]}>Login</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={() => { setRole('ColdStorage'); setShowRoleSwitcher(false); }} activeOpacity={0.8}>
+              <Text style={[barStyles.linkLabel, role === 'ColdStorage' && barStyles.linkLabelActive]}>Farmer</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => { setRole('Vendor'); setShowRoleSwitcher(false); }} activeOpacity={0.8}>
+              <Text style={[barStyles.linkLabel, role === 'Vendor' && barStyles.linkLabelActive]}>Vendor</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => { setRole('ColdStorageFacility'); setShowRoleSwitcher(false); }} activeOpacity={0.8}>
+              <Text style={[barStyles.linkLabel, role === 'ColdStorageFacility' && barStyles.linkLabelActive]}>Cold Storage</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </View>
+  );
 }
+
+const barStyles = StyleSheet.create({
+  previewBar: {
+    position: 'absolute',
+    bottom: 30,
+    alignSelf: 'center',
+    backgroundColor: '#2E3D34',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#415549',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 10,
+    zIndex: 9999,
+  },
+  previewLabel: {
+    fontSize: 10,
+    color: '#D8E2DC',
+    fontWeight: '500',
+  },
+  separator: {
+    color: '#D8E2DC',
+    fontSize: 10,
+    marginHorizontal: 6,
+  },
+  linkGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  linkLabel: {
+    fontSize: 10,
+    color: '#9CA8A0',
+    fontWeight: '600',
+    marginHorizontal: 6,
+  },
+  linkLabelActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    textDecorationLine: 'underline',
+  },
+});

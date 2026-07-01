@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Platform, StatusBar, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Platform, StatusBar, SafeAreaView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { FONTS } from '../../theme';
+import AnnsetuLogo from '../../components/AnnsetuLogo';
 
-export default function StockTab({ holdingsList = [] }) {
+export default function StockTab({ holdingsList = [], manualStockMt, manualBags, onUpdateStockPress, disableFallback = false }) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Map holdingsList directly from database, default to empty array if empty
+  // Graceful fallback for mock stock data if database is empty
   const stockData = holdingsList && holdingsList.length > 0 
     ? holdingsList.map((item, index) => {
         let statusStr = 'fresh';
@@ -29,8 +30,8 @@ export default function StockTab({ holdingsList = [] }) {
     : [];
 
   // Calculations for summary stats
-  const totalBags = stockData.reduce((sum, item) => sum + item.bags, 0);
-  const totalWeightMt = stockData.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
+  const totalBags = manualBags !== undefined && manualBags !== null ? manualBags : stockData.reduce((sum, item) => sum + item.bags, 0);
+  const totalWeightMt = manualStockMt !== undefined && manualStockMt !== null ? manualStockMt : stockData.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
   const agingAlertsCount = stockData.filter(item => item.age >= 70).length;
 
   // Filter list by search query
@@ -69,7 +70,7 @@ export default function StockTab({ holdingsList = [] }) {
         <Text style={s.cardTitle}>{item.commodity} — {item.variety}</Text>
         <Text style={s.cardSubtitle}>{item.storage} · {item.room}</Text>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - 4 Columns matching Mockup */}
         <View style={s.gridRow}>
           <View style={s.gridCol}>
             <Text style={s.gridLabel}>Bags</Text>
@@ -78,6 +79,10 @@ export default function StockTab({ holdingsList = [] }) {
           <View style={s.gridCol}>
             <Text style={s.gridLabel}>Weight</Text>
             <Text style={s.gridValue}>{item.weight}</Text>
+          </View>
+          <View style={s.gridCol}>
+            <Text style={s.gridLabel}>Age</Text>
+            <Text style={s.gridValue}>{item.age} days</Text>
           </View>
           <View style={s.gridCol}>
             <Text style={s.gridLabel}>Age</Text>
@@ -120,15 +125,13 @@ export default function StockTab({ holdingsList = [] }) {
   };
 
   return (
-    <View style={s.container}>
+    <SafeAreaView style={s.container}>
       {/* ─── Top Brand Header ─── */}
       <View style={s.topHeader}>
         <View style={s.topHeaderLeft}>
-          <Image 
-            source={require('../../../assets/ann_setu_logo.png')} 
-            style={s.shieldIcon} 
-            resizeMode="contain"
-          />
+          <View style={s.shieldIcon}>
+            <AnnsetuLogo size={22} backgroundColor="transparent" iconColor="#FFFFFF" />
+          </View>
           <Text style={s.brandTitle}>Annsetu</Text>
         </View>
         <TouchableOpacity 
@@ -154,11 +157,15 @@ export default function StockTab({ holdingsList = [] }) {
           <View style={s.listHeader}>
             {/* ── Summary Stats ── */}
             <View style={s.summaryRow}>
-              <View style={s.statCard}>
+              <TouchableOpacity 
+                style={s.statCard} 
+                onPress={onUpdateStockPress}
+                activeOpacity={0.8}
+              >
                 <Text style={s.statLabel}>Total Stock</Text>
                 <Text style={s.statValue}>{totalWeightMt.toFixed(1)} MT</Text>
                 <Text style={s.statSub}>{totalBags} bags</Text>
-              </View>
+              </TouchableOpacity>
 
               <View style={[s.statCard, s.statCardAccent]}>
                 <Text style={s.statLabelAccent}>Aging Alerts</Text>
@@ -203,28 +210,29 @@ export default function StockTab({ holdingsList = [] }) {
         ListEmptyComponent={
           <View style={s.emptyState}>
             <Feather name="package" size={40} color="#A1A1AA" />
-            <Text style={s.emptyText}>No inventory records match your search</Text>
+            <Text style={s.emptyText}>
+              {stockData.length === 0 ? 'No stock data available' : 'No inventory records match your search'}
+            </Text>
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7F0',
+    backgroundColor: '#F5F3EE',
   },
-  // Top Header styling matching mockup
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 56,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ? StatusBar.currentHeight + 8 : 24) : 8,
     paddingBottom: 12,
     paddingHorizontal: 20,
-    backgroundColor: '#FAF7F0',
+    backgroundColor: '#F5F3EE',
   },
   topHeaderLeft: {
     flexDirection: 'row',
@@ -234,6 +242,9 @@ const s = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12, // squircle rounded-xl
+    backgroundColor: '#1E5C2E',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 10,
   },
   brandTitle: {
@@ -264,7 +275,6 @@ const s = StyleSheet.create({
   summaryRow: {
     flexDirection: 'row',
     gap: 12,
-    paddingHorizontal: 20,
     marginBottom: 16,
   },
   statCard: {
@@ -324,7 +334,6 @@ const s = StyleSheet.create({
 
   // Search input and filter btn row
   searchContainer: {
-    paddingHorizontal: 20,
     marginBottom: 14,
   },
   searchBar: {
@@ -367,7 +376,6 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     flexWrap: 'wrap',
-    paddingHorizontal: 20,
     marginBottom: 16,
   },
   legendItem: {
