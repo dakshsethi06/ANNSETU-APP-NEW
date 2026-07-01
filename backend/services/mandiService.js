@@ -2,20 +2,34 @@ const axios = require('axios');
 
 const MANDI_API_URL = process.env.MANDI_API_URL || 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
 
-async function fetchMandiPrices(apiKey, state, commodity) {
+async function fetchMandiPrices(apiKey, state, commodity, market) {
+  const params = {
+    'api-key': apiKey,
+    format: 'json',
+    limit: 1000, // Query up to 1000 records to fetch all crops/mandis
+  };
+
+  if (state && state !== 'All') {
+    params['filters[state]'] = state;
+  }
+  
+  if (commodity && commodity !== 'All') {
+    params['filters[commodity]'] = commodity;
+  }
+
+  if (market && market !== 'All') {
+    params['filters[market]'] = market;
+  }
+
   const response = await axios.get(MANDI_API_URL, {
-    params: {
-      'api-key': apiKey,
-      format: 'json',
-      limit: 10,
-      'filters[commodity]': commodity,
-      'filters[state]': state,
-    },
-    timeout: 15000,
+    params,
+    timeout: 15000, // 15 seconds standard government API timeout
   });
 
   const records = response.data?.records;
-  if (!records || records.length === 0) return null;
+  if (!records || records.length === 0) {
+    return [];
+  }
 
   const prices = records.map((r) => ({
     commodity: r.commodity || r.Commodity || 'Unknown',

@@ -4,11 +4,12 @@ async function getMandiPrices(req, res) {
   try {
     const apiKey = process.env.MANDI_API_KEY;
     const state = req.query.state || 'Uttar Pradesh';
-    const commodity = req.query.commodity || 'Potato';
+    const commodity = req.query.commodity || 'All';
+    const market = req.query.market || '';
 
     if (!apiKey) return res.status(500).json({ success: false, error: 'API key not configured. Please set MANDI_API_KEY in .env file.' });
 
-    const prices = await mandiService.fetchMandiPrices(apiKey, state, commodity);
+    const prices = await mandiService.fetchMandiPrices(apiKey, state, commodity, market);
 
     if (!prices) {
       return res.status(404).json({ success: false, error: 'No mandi price data found from the API.' });

@@ -42,4 +42,63 @@ async function createFarmerRecord(params) {
   await db.query(sql, params);
 }
 
-module.exports = { getFarmersData, createFarmerRecord };
+async function getFarmerLedger(farmerId) {
+  // 1. Fetch Nikasi bills
+  const nikasiRes = await db.query(`
+    SELECT 
+      id,
+      'Rent Bill - Nikasi #' || "nikasiNumber" AS title,
+      "createdAt" AS date,
+      -"totalBillAmount" AS amount
+    FROM "NikasiTransaction"
+    WHERE "farmerId" = $1
+  `, [farmerId]);
+
+  // 2. Fetch Manual Billing entries
+  const billingRes = await db.query(`
+    SELECT 
+      id,
+      "chargeType" || ' - ' || "invoiceNumber" AS title,
+      "createdAt" AS date,
+      -amount AS amount
+    FROM "BillingEntry"
+    WHERE "farmerId" = $1
+  `, [farmerId]);
+
+  // 3. Fetch Payments
+  const paymentRes = await db.query(`
+    SELECT 
+      id,
+      COALESCE(note, 'Payment Received (' || "paymentMode" || ')') AS title,
+      "createdAt" AS date,
+      amount AS amount
+    FROM "Payment"
+    WHERE "farmerId" = $1
+  `, [farmerId]);
+
+  // Combine and sort by date descending
+  const entries = [
+    ...nikasiRes.rows.map(r => ({ ...r, amount: parseFloat(r.amount) })),
+    ...billingRes.rows.map(r => ({ ...r, amount: parseFloat(r.amount) })),
+    ...paymentRes.rows.map(r => ({ ...r, amount: parseFloat(r.amount) }))
+  ];
+
+  // Sort ascending by date to compute rolling balance
+  entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  let runningBalance = 0;
+  const entriesWithRunning = entries.map(entry => {
+    // If it's a charge (negative amount), it increases the dues (balance)
+    // If it's a payment (positive amount), it decreases the dues
+    runningBalance += (-entry.amount); 
+    return {
+      ...entry,
+      balance: runningBalance
+    };
+  });
+
+  // Return descending (most recent first)
+  return entriesWithRunning.reverse();
+}
+
+module.exports = { getFarmersData, createFarmerRecord, getFarmerLedger };
