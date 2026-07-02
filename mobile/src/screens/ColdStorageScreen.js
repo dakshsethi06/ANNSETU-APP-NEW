@@ -20,7 +20,7 @@ const QUICK_ACTIONS = [
   { label: 'Nikasi', icon: 'truck', bg: '#EFF6FF', color: '#1D4ED8' },
   { label: 'Inventory', icon: 'package', bg: '#FFFBEB', color: '#B45309' },
   { label: 'Billing', icon: 'file-text', bg: '#F5F3FF', color: '#7C3AED' },
-  { label: 'Create Request', icon: 'plus', bg: '#FFF1F2', color: '#E11D48' },
+  { label: 'Manage Request', icon: 'plus', bg: '#FFF1F2', color: '#E11D48' },
   { label: 'Gate Pass', icon: 'clipboard', bg: '#FEF2F2', color: '#B91C1C' },
 ];
 
@@ -166,8 +166,24 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
     loadAllData();
   }, [loggedInPhone]);
 
+  useEffect(() => {
+    if (!profile.id || profile.id === 'Loading...' || profile.id === 'NEW_CS') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const { fetchNotifications } = require('../services/notificationService');
+        const list = await fetchNotifications(profile.id);
+        setNotifications(list || []);
+      } catch (err) {
+        console.warn('ColdStorageScreen background notification poll failed:', err.message);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [profile.id]);
+
   const handleQuickAction = (label) => {
-    if (label === 'Create Request') {
+    if (label === 'Manage Request') {
       setActiveTab('createRequest');
     } else {
       Alert.alert(label, `${label} action clicked!`);
@@ -233,7 +249,10 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
                     
                     <TouchableOpacity 
                       style={localStyles.bellButton} 
-                      onPress={() => setActiveTab('notifications')}
+                      onPress={() => {
+                        setActiveTab('notifications');
+                        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                      }}
                       activeOpacity={0.8}
                     >
                       <Feather name="bell" size={18} color="#FFFFFF" />
@@ -391,7 +410,7 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
               ledgerList={ledgerList} 
             />
           ) : activeTab === 'notifications' ? (
-            <NotificationsTab onBack={() => setActiveTab('home')} />
+            <NotificationsTab farmerId={profile.id} onBack={() => setActiveTab('home')} />
           ) : activeTab === 'profile' ? (
             <ProfileTab 
               farmerData={{ name: profile.name, phone: loggedInPhone }} 

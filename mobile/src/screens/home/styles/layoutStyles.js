@@ -93,7 +93,7 @@ export default StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F4F4F5',
-    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 6,
     paddingTop: 8,
     alignItems: 'center',
     justifyContent: 'space-between',

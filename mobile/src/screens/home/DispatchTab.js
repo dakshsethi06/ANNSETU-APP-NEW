@@ -11,6 +11,7 @@ export default function DispatchTab({ farmerId, onBackPress }) {
   const [selectedDispatch, setSelectedDispatch] = useState(null);
   const [otpText, setOtpText] = useState('');
   const [submittingOtp, setSubmittingOtp] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   useEffect(() => {
     loadDispatches();
@@ -39,8 +40,8 @@ export default function DispatchTab({ farmerId, onBackPress }) {
   };
 
   const handleConfirmOtp = async () => {
-    if (otpText.length < 6) {
-      Alert.alert('Invalid OTP', 'Please enter the complete 6-digit authorization code.');
+    if (otpText.length < 4) {
+      Alert.alert('Invalid MPIN', 'Please enter the complete 4-digit security MPIN.');
       return;
     }
     setSubmittingOtp(true);
@@ -48,8 +49,12 @@ export default function DispatchTab({ farmerId, onBackPress }) {
       const response = await fetch(`${BACKEND_URL}/api/dispatches/${encodeURIComponent(selectedDispatch.id)}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mpin: otpText }),
       });
-      if (!response.ok) throw new Error(`Server returned status ${response.status}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server returned status ${response.status}`);
+      }
       const data = await response.json();
       if (!data.success) throw new Error(data.error || 'Approval failed');
       
@@ -67,6 +72,7 @@ export default function DispatchTab({ farmerId, onBackPress }) {
   const totals = dispatches.reduce(
     (acc, d) => {
       if (d.status === 'CREATED') acc.pending++;
+      else if (d.status === 'IN_TRANSIT') acc.intransit++;
       else if (d.status === 'DISPATCHED') acc.delivered++;
       return acc;
     },
@@ -76,13 +82,20 @@ export default function DispatchTab({ farmerId, onBackPress }) {
   const getStatusConfig = (status) => {
     switch (status) {
       case 'CREATED':
-        return { label: 'Pending OTP', color: '#B45309', bg: '#FFFBEB', icon: 'clock' };
+        return { label: 'Pending', color: '#B45309', bg: '#FFFBEB', icon: 'clock' };
+      case 'IN_TRANSIT':
+        return { label: 'In Transit', color: '#1D4ED8', bg: '#EFF6FF', icon: 'truck' };
       case 'DISPATCHED':
         return { label: 'Delivered', color: '#047857', bg: '#ECFDF5', icon: 'check-circle' };
       default:
         return { label: 'Cancelled', color: '#B91C1C', bg: '#FEF2F2', icon: 'x-circle' };
     }
   };
+
+  const filteredDispatches = dispatches.filter(d => {
+    if (statusFilter === 'ALL') return true;
+    return d.status === statusFilter;
+  });
 
   return (
     <View style={s.container}>
@@ -103,28 +116,49 @@ export default function DispatchTab({ farmerId, onBackPress }) {
         <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Summary stats */}
           <View style={s.summaryContainer}>
-            <View style={s.summaryCard}>
+            <TouchableOpacity 
+              style={[
+                s.summaryCard, 
+                statusFilter === 'IN_TRANSIT' && { borderColor: '#1D4ED8', borderWidth: 2, backgroundColor: '#EFF6FF' }
+              ]}
+              onPress={() => setStatusFilter(statusFilter === 'IN_TRANSIT' ? 'ALL' : 'IN_TRANSIT')}
+              activeOpacity={0.7}
+            >
               <Text style={[s.summaryValue, { color: '#1D4ED8' }]}>{totals.intransit}</Text>
               <Text style={s.summaryLabel}>In Transit</Text>
-            </View>
-            <View style={s.summaryCard}>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                s.summaryCard, 
+                statusFilter === 'CREATED' && { borderColor: '#B45309', borderWidth: 2, backgroundColor: '#FFFBEB' }
+              ]}
+              onPress={() => setStatusFilter(statusFilter === 'CREATED' ? 'ALL' : 'CREATED')}
+              activeOpacity={0.7}
+            >
               <Text style={[s.summaryValue, { color: '#B45309' }]}>{totals.pending}</Text>
-              <Text style={s.summaryLabel}>Pending OTP</Text>
-            </View>
-            <View style={s.summaryCard}>
+              <Text style={s.summaryLabel}>Pending</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                s.summaryCard, 
+                statusFilter === 'DISPATCHED' && { borderColor: '#047857', borderWidth: 2, backgroundColor: '#ECFDF5' }
+              ]}
+              onPress={() => setStatusFilter(statusFilter === 'DISPATCHED' ? 'ALL' : 'DISPATCHED')}
+              activeOpacity={0.7}
+            >
               <Text style={[s.summaryValue, { color: '#047857' }]}>{totals.delivered}</Text>
               <Text style={s.summaryLabel}>Delivered</Text>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Cards List */}
-          {dispatches.length === 0 ? (
+          {filteredDispatches.length === 0 ? (
             <View style={s.emptyState}>
               <Feather name="truck" size={48} color="#A1A1AA" />
               <Text style={s.emptyText}>No dispatch entries found / कोई निकासी प्रविष्टि नहीं मिली</Text>
             </View>
           ) : (
-            dispatches.map((item) => {
+            filteredDispatches.map((item) => {
               const cfg = getStatusConfig(item.status);
               const formattedDate = new Date(item.date).toLocaleDateString('en-IN', {
                 day: '2-digit',
@@ -166,8 +200,15 @@ export default function DispatchTab({ farmerId, onBackPress }) {
                       activeOpacity={0.8}
                     >
                       <Feather name="lock" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
-                      <Text style={s.approveBtnText}>Approve via OTP</Text>
+                      <Text style={s.approveBtnText}>Approve via MPIN</Text>
                     </TouchableOpacity>
+                  )}
+
+                  {item.status === 'IN_TRANSIT' && (
+                    <View style={s.transitRow}>
+                      <Feather name="truck" size={14} color="#1D4ED8" style={{ marginRight: 6 }} />
+                      <Text style={s.transitText}>In Transit / मार्ग में</Text>
+                    </View>
                   )}
 
                   {item.status === 'DISPATCHED' && (
@@ -213,15 +254,15 @@ export default function DispatchTab({ farmerId, onBackPress }) {
                   </View>
                 )}
 
-                <Text style={s.otpInstructions}>OTP sent to your registered mobile number</Text>
+                <Text style={s.otpInstructions}>Enter your 4-digit security MPIN to authorize</Text>
                 
-                {/* OTP Input fields */}
+                {/* MPIN Input fields */}
                 <View style={s.otpInputRow}>
-                  {[0, 1, 2, 3, 4, 5].map((index) => {
-                    const char = otpText[index] || '';
+                  {[0, 1, 2, 3].map((index) => {
+                    const char = otpText[index] ? '●' : '';
                     return (
                       <View key={index} style={[s.otpBox, otpText.length === index && s.otpBoxActive]}>
-                        <Text style={s.otpCharText}>{char}</Text>
+                        <Text style={[s.otpCharText, { fontSize: 18 }]}>{char}</Text>
                       </View>
                     );
                   })}
@@ -230,7 +271,7 @@ export default function DispatchTab({ farmerId, onBackPress }) {
                     value={otpText}
                     onChangeText={setOtpText}
                     keyboardType="number-pad"
-                    maxLength={6}
+                    maxLength={4}
                     caretHidden
                   />
                 </View>
@@ -439,6 +480,16 @@ const s = StyleSheet.create({
   },
   deliveredText: {
     color: '#047857',
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: FONTS.bold,
+  },
+  transitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  transitText: {
+    color: '#1D4ED8',
     fontSize: 12,
     fontWeight: '600',
     fontFamily: FONTS.bold,

@@ -24,8 +24,11 @@ const BOTTOM_TABS = [
   { key: 'profile', label: 'Profile', icon: 'user' },
 ];
 
-export default function FarmerDashboard({ farmerData, holdingsList = [], notifications, weatherData, onBackPress, onNotificationsPress, onActionPress, manualStockMt, manualBags, onUpdateStockPress }) {
-  const activeAlertsCount = (notifications || []).filter(n => n.type === 'aging' || n.type === 'warning').length;
+export default function FarmerDashboard({ farmerData, holdingsList = [], notifications, hasUnreadNotifications, weatherData, onBackPress, onNotificationsPress, onActionPress, manualStockMt, manualBags, onUpdateStockPress }) {
+  const activeAlertsCount = (notifications || []).filter(n => 
+    n.type === 'aging' || 
+    (n.type === 'warning' && n.title.toLowerCase().includes('crop'))
+  ).length;
   const totalStockMt = holdingsList.reduce((sum, h) => sum + (parseFloat(h.weight) || 0), 0) * 0.1;
   const totalBags = holdingsList.reduce((sum, h) => sum + (h.bags || 0), 0);
   const pendingRent = parseFloat(farmerData.pendingRent || 0);
@@ -88,6 +91,7 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
           totalBags={manualBags !== undefined ? manualBags : totalBags}
           pendingRent={pendingRent}
           activeAlertsCount={activeAlertsCount}
+          hasUnreadNotifications={hasUnreadNotifications}
           onNotificationsPress={onNotificationsPress}
           onUpdateStockPress={onUpdateStockPress}
         />

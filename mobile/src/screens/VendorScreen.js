@@ -13,6 +13,7 @@ const { width } = Dimensions.get('window');
 
 export default function VendorScreen({ onSwitchRole, onLogout }) {
   const [activeTab, setActiveTab] = useState('home');
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
 
   const [mandiPrices, setMandiPrices] = useState([
     { id: '1', commodity: 'Potato', variety: 'Pukhraj', mandi: 'Agra', price: 820, change: 15 },
@@ -85,6 +86,23 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
     loadLivePrices();
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const { fetchNotifications } = require('../services/notificationService');
+        const list = await fetchNotifications('default_vendor');
+        if (list && list.length > 0) {
+          const hasUnread = list.some(n => !n.isRead);
+          setHasUnreadNotifications(hasUnread);
+        }
+      } catch (err) {
+        console.warn('VendorScreen background notification poll failed:', err.message);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const renderTabIcon = (name, tabName) => {
     const isActive = activeTab === tabName;
     return (
@@ -134,9 +152,16 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
                 </View>
               </View>
             </View>
-            <TouchableOpacity style={styles.notificationBtn} onPress={() => setActiveTab('notifications')} activeOpacity={0.8}>
+            <TouchableOpacity 
+              style={styles.notificationBtn} 
+              onPress={() => {
+                setActiveTab('notifications');
+                setHasUnreadNotifications(false);
+              }} 
+              activeOpacity={0.8}
+            >
               <Feather name="bell" size={18} color="#FFFFFF" />
-              <View style={styles.badgeDot} />
+              {hasUnreadNotifications && <View style={styles.badgeDot} />}
             </TouchableOpacity>
           </View>
 
@@ -340,7 +365,7 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
       ) : activeTab === 'market' ? (
         <MarketTab />
       ) : activeTab === 'notifications' ? (
-        <NotificationsTab onBack={() => setActiveTab('home')} />
+        <NotificationsTab farmerId="default_vendor" onBack={() => setActiveTab('home')} />
       ) : activeTab === 'profile' ? (
         <ProfileTab onSwitchRole={onSwitchRole} onLogout={onLogout} />
       ) : (

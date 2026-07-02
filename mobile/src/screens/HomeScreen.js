@@ -24,6 +24,7 @@ import { supabase } from '../services/supabase';
 export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
   // Navigation: 'home', 'stock', 'market', 'khata', 'profile'
   const [activeTab, setActiveTab] = useState('home');
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
 
   // Load the shared database state for the active farmer
   const {
@@ -31,6 +32,37 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
     farmerLoading, farmerData, setFarmerData, farmerError, holdingsList, ledgerList, notificationsList, setNotificationsList, weatherData, dataLoading,
     registerModalVisible, setRegisterModalVisible, loadDbFarmers, handleSelectFarmer
   } = useStorageTabDashboard(loggedInPhone);
+
+  useEffect(() => {
+    if (notificationsList && notificationsList.length > 0) {
+      const hasUnread = notificationsList.some(n => !n.isRead);
+      setHasUnreadNotifications(hasUnread);
+    } else {
+      setHasUnreadNotifications(false);
+    }
+  }, [notificationsList]);
+
+  useEffect(() => {
+    if (activeTab === 'notifications') {
+      setHasUnreadNotifications(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!selectedFarmerId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const { fetchNotifications } = require('../services/notificationService');
+        const list = await fetchNotifications(selectedFarmerId);
+        setNotificationsList(list || []);
+      } catch (err) {
+        console.warn('HomeScreen background notification poll failed:', err.message);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [selectedFarmerId]);
 
   // If a farmer is selected and loaded successfully, we show the bottom nav dashboard view.
   const hasSelectedFarmer = !!selectedFarmerId && !!farmerData && !farmerLoading && !dataLoading && !farmerError;
@@ -75,7 +107,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={layoutStyles.container}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={layoutStyles.container}>
       <StatusBar barStyle={getStatusStyle()} backgroundColor={getStatusColor()} />
 
       {/* ─── Case A: Selecting a Farmer ─── */}
@@ -116,6 +148,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 farmerData={farmerData}
                 holdingsList={holdingsList}
                 notifications={notificationsList}
+                hasUnreadNotifications={hasUnreadNotifications}
                 weatherData={weatherData}
                 onBackPress={loggedInPhone ? null : handleBackToSelector}
                 onNotificationsPress={() => setActiveTab('notifications')}
@@ -206,19 +239,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 <Text style={[layoutStyles.bottomNavLabel, activeTab === 'stock' && layoutStyles.bottomNavLabelActive]}>My Stock</Text>
               </TouchableOpacity>
 
-              {/* Tab 3: Dispatch */}
-              <TouchableOpacity
-                style={layoutStyles.bottomNavTab}
-                onPress={() => setActiveTab('dispatch')}
-                activeOpacity={0.7}
-              >
-                <View style={[layoutStyles.iconWrapper, activeTab === 'dispatch' && layoutStyles.iconWrapperActive]}>
-                  <Feather name="truck" size={activeTab === 'dispatch' ? 20 : 19} color={activeTab === 'dispatch' ? '#1E5C2E' : '#71717A'} />
-                </View>
-                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'dispatch' && layoutStyles.bottomNavLabelActive]}>Dispatch</Text>
-              </TouchableOpacity>
-
-              {/* Tab 4: Market */}
+              {/* Tab 3: Market */}
               <TouchableOpacity
                 style={layoutStyles.bottomNavTab}
                 onPress={() => setActiveTab('market')}

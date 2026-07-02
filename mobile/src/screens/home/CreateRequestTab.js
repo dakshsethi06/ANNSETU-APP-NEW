@@ -62,6 +62,36 @@ export default function CreateRequestTab({ onBackPress, coldStorageId }) {
     }
   };
 
+  const handleDeliver = async (dispatchId) => {
+    Alert.alert(
+      'Confirm Delivery',
+      'Are you sure you want to mark this dispatch as Delivered?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Delivered',
+          onPress: async () => {
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/dispatches/${encodeURIComponent(dispatchId)}/deliver`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+              });
+              if (!response.ok) throw new Error(`HTTP status ${response.status}`);
+              const data = await response.json();
+              if (!data.success) throw new Error(data.error || 'Delivery update failed');
+              
+              Alert.alert('Success', 'Dispatch marked as Delivered successfully!');
+              loadHistory();
+            } catch (err) {
+              console.warn('Failed to mark dispatch delivered:', err.message);
+              Alert.alert('Error', err.message || 'Failed to update dispatch status.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleSubmit = async () => {
     if (!farmerId.trim() || !farmerName.trim() || !commodity.trim() || !bags.trim()) {
       Alert.alert('Missing Fields', 'Please fill in all form details before submitting.');
@@ -111,7 +141,7 @@ export default function CreateRequestTab({ onBackPress, coldStorageId }) {
         <TouchableOpacity style={s.backBtn} onPress={onBackPress} activeOpacity={0.7}>
           <Feather name="arrow-left" size={20} color="#1E5C2E" />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>{step === 1 ? 'Create Request' : 'Request created successfully'}</Text>
+        <Text style={s.headerTitle}>{step === 1 ? 'Manage Request' : 'Request created successfully'}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -229,7 +259,11 @@ export default function CreateRequestTab({ onBackPress, coldStorageId }) {
                     let statusBg = '#FFFBEB';
                     let statusColor = '#B45309';
                     let statusLabel = 'Pending OTP';
-                    if (item.status === 'DISPATCHED') {
+                    if (item.status === 'IN_TRANSIT') {
+                      statusBg = '#EFF6FF';
+                      statusColor = '#1D4ED8';
+                      statusLabel = 'In Transit';
+                    } else if (item.status === 'DISPATCHED') {
                       statusBg = '#ECFDF5';
                       statusColor = '#047857';
                       statusLabel = 'Delivered';
@@ -264,6 +298,17 @@ export default function CreateRequestTab({ onBackPress, coldStorageId }) {
                             </View>
                           )}
                         </View>
+
+                        {item.status === 'IN_TRANSIT' && (
+                          <TouchableOpacity
+                            style={s.deliverBtn}
+                            onPress={() => handleDeliver(item.id)}
+                            activeOpacity={0.8}
+                          >
+                            <Feather name="check" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
+                            <Text style={s.deliverBtnText}>Mark as Delivered</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     );
                   })}
@@ -753,5 +798,20 @@ const s = StyleSheet.create({
     fontFamily: FONTS.mono,
     fontSize: 10,
     color: '#71717A',
+  },
+  deliverBtn: {
+    backgroundColor: '#047857',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    alignSelf: 'flex-start',
+  },
+  deliverBtnText: {
+    color: '#FFFFFF',
+    fontFamily: FONTS.bold,
+    fontSize: 11,
   },
 });

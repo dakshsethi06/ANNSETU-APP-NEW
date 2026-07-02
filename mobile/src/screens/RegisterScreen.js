@@ -238,6 +238,7 @@ export default function RegisterScreen({ onBack, onNext }) {
         name: '', phone: '', email: '',
         state: '', district: '', village: '', pincode: '',
         aadhaar: '', pan: '', businessName: '', storageName: '',
+        mpin: '',
     });
 
     const updateForm = (key, value) => setForm(f => ({ ...f, [key]: value }));
@@ -246,7 +247,10 @@ export default function RegisterScreen({ onBack, onNext }) {
 
     const canProceed = () => {
         if (step === 1) return role !== '';
-        if (step === 2) return form.name.length > 1 && form.phone.length === 10;
+        if (step === 2) {
+            const isMpinValid = role === 'farmer' ? form.mpin.length === 4 : true;
+            return form.name.length > 1 && form.phone.length === 10 && isMpinValid;
+        }
         if (step === 3) return form.state !== '' && form.district !== '';
         if (step === 4) return form.aadhaar.length === 12;
         return true;
@@ -381,6 +385,15 @@ export default function RegisterScreen({ onBack, onNext }) {
                                         <TextInput style={styles.input} placeholder="example@email.com" keyboardType="email-address" autoCapitalize="none" value={form.email} onChangeText={v => updateForm('email', v)} />
                                     </View>
                                 </View>
+
+                                {role === 'farmer' && (
+                                    <View style={{ marginBottom: SPACING.md }}>
+                                        <Text style={styles.label}>Set 4-Digit MPIN *</Text>
+                                        <View style={styles.inputContainer}>
+                                            <TextInput style={styles.input} placeholder="Enter 4-digit MPIN" keyboardType="numeric" maxLength={4} secureTextEntry value={form.mpin} onChangeText={v => updateForm('mpin', v.replace(/[^0-9]/g, ''))} />
+                                        </View>
+                                    </View>
+                                )}
                             </View>
                         )}
 

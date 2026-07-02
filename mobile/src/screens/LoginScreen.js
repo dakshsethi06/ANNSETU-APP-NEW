@@ -10,6 +10,7 @@ import OTPScreen from './OtpScreen';
 export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
   const [currentScreen, setCurrentScreen] = useState('login'); // 'login' | 'register' | 'otp'
   const [phone, setPhone] = useState('');
+  const [mpin, setMpin] = useState('');
   const [lang, setLang] = useState('en');
   const [loading, setLoading] = useState(false);
   const [registrationData, setRegistrationData] = useState(null);
@@ -19,6 +20,41 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
       onHidePreviewChange(currentScreen === 'register' || currentScreen === 'otp');
     }
   }, [currentScreen, onHidePreviewChange]);
+
+  const handleMpinLogin = async () => {
+    if (phone.length < 10) {
+      Alert.alert('Error', 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    if (mpin.length < 4) {
+      Alert.alert('Error', 'Please enter a valid 4-digit MPIN.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { BACKEND_URL } = require('../services/config');
+      const url = `${BACKEND_URL}/api/farmers/login-mpin`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, mpin }),
+      });
+      
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Invalid MPIN or phone number.');
+      }
+      
+      if (onLoginSuccess) {
+        onLoginSuccess(phone, 'farmer');
+      }
+    } catch (error) {
+      Alert.alert('Login Failed', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGetOTP = async () => {
     if (phone.length < 10) {
@@ -93,6 +129,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             village: registrationData.village || '',
             district: registrationData.district || '',
             tehsil: registrationData.district || '',
+            mpin: registrationData.mpin,
           });
           Alert.alert('Success', `Farmer "${registrationData.name}" registered successfully!`);
         }
@@ -175,15 +212,34 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             />
           </View>
 
+          <Text style={styles.label}>{lang === 'en' ? 'Password / MPIN (Optional for Farmers)' : 'पासवर्ड / एमपीआईएन (किसानों के लिए वैकल्पिक)'}</Text>
+          <View style={styles.inputContainer}>
+            <Feather name="lock" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
+            <TextInput
+              style={styles.input}
+              placeholder={lang === 'en' ? '4-digit MPIN to login instantly' : 'तुरंत लॉगिन करने के लिए 4 अंकों का एमपीआईएन'}
+              placeholderTextColor="#6B7B6B"
+              keyboardType="numeric"
+              secureTextEntry
+              maxLength={4}
+              value={mpin}
+              onChangeText={(text) => setMpin(text.replace(/[^0-9]/g, ''))}
+            />
+          </View>
+
           <TouchableOpacity
             style={[styles.primaryButton, phone.length === 10 ? styles.primaryButtonActive : styles.primaryButtonDisabled]}
-            onPress={handleGetOTP}
+            onPress={mpin.length === 4 ? handleMpinLogin : handleGetOTP}
             disabled={phone.length < 10 || loading}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.primaryButtonText}>{lang === 'en' ? 'Get OTP' : 'OTP प्राप्त करें'}</Text>
+              <Text style={styles.primaryButtonText}>
+                {mpin.length === 4 
+                  ? (lang === 'en' ? 'Login with MPIN' : 'एमपीआईएन से लॉगिन करें') 
+                  : (lang === 'en' ? 'Get OTP' : 'OTP प्राप्त करें')}
+              </Text>
             )}
           </TouchableOpacity>
 

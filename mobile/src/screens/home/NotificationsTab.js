@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, Platform, StatusBar, ActivityIndicator } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { FONTS } from '../../theme';
-import { fetchNotifications } from '../../services/notificationService';
+import { fetchNotifications, markNotificationRead } from '../../services/notificationService';
 import { fetchFarmers } from '../../services/api';
 
 export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) {
@@ -31,6 +31,17 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
 
   useEffect(() => {
     loadNotifications();
+
+    const interval = setInterval(async () => {
+      try {
+        const fetched = await fetchNotifications(farmerId || 'default_farmer');
+        setNotifications(fetched || []);
+      } catch (err) {
+        console.warn('Silent NotificationsTab poll failed:', err.message);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [farmerId]);
 
   const renderNotificationCard = ({ item }) => {
@@ -54,8 +65,22 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
 
     const isUnread = !item.isRead;
 
-    const handlePressNotification = () => {
-      if (onNavigateToTab && (item.title.toLowerCase().includes('approval') || item.title.toLowerCase().includes('authorize'))) {
+    const handlePressNotification = async () => {
+      // 1. Instantly mark as read in local state (green dot goes away)
+      setNotifications(prev => 
+        prev.map(n => n.id === item.id ? { ...n, isRead: true } : n)
+      );
+
+      // 2. Send read request to the backend
+      await markNotificationRead(item.id);
+
+      // 3. Navigate if needed
+      if (onNavigateToTab && (
+        item.title.toLowerCase().includes('approval') || 
+        item.title.toLowerCase().includes('authorize') ||
+        item.title.toLowerCase().includes('delivered') ||
+        item.title.toLowerCase().includes('dispatch')
+      )) {
         onNavigateToTab('dispatch');
       }
     };

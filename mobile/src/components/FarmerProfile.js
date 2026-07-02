@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-export default function FarmerProfile({ farmerData, totalStockMt, totalBags, pendingRent, activeAlertsCount, onNotificationsPress, onUpdateStockPress }) {
+export default function FarmerProfile({ farmerData, totalStockMt, totalBags, pendingRent, activeAlertsCount, hasUnreadNotifications, onNotificationsPress, onUpdateStockPress }) {
   return (
     <View style={s.container}>
       {/* Absolute decorative background circles */}
@@ -35,7 +35,7 @@ export default function FarmerProfile({ farmerData, totalStockMt, totalBags, pen
           activeOpacity={0.8}
         >
           <Feather name="bell" size={18} color="#FFFFFF" />
-          {activeAlertsCount > 0 && <View style={s.redDot} />}
+          {hasUnreadNotifications && <View style={s.redDot} />}
         </TouchableOpacity>
       </View>
 
