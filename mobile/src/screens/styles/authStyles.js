@@ -98,7 +98,7 @@ export default StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 32,
-    paddingBottom: 120,
+    paddingBottom: 40,
   },
 
   // Title: text-xl font-bold text-foreground mb-1
