@@ -256,7 +256,9 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text style={styles.primaryButtonText}>
-                {lang === 'en' ? 'Login' : 'लॉगिन करें'}
+                {loginMode === 'coldstorage'
+                  ? (lang === 'en' ? 'Get OTP' : 'OTP प्राप्त करें')
+                  : (lang === 'en' ? 'Login' : 'लॉगिन करें')}
               </Text>
             )}
           </TouchableOpacity>
