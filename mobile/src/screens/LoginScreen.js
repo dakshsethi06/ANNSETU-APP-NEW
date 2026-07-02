@@ -212,12 +212,12 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             />
           </View>
 
-          <Text style={styles.label}>{lang === 'en' ? 'Password / MPIN (Optional for Farmers)' : 'पासवर्ड / एमपीआईएन (किसानों के लिए वैकल्पिक)'}</Text>
+          <Text style={styles.label}>{lang === 'en' ? 'Enter MPIN' : 'एमपीआईएन दर्ज करें'}</Text>
           <View style={styles.inputContainer}>
             <Feather name="lock" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
             <TextInput
               style={styles.input}
-              placeholder={lang === 'en' ? '4-digit MPIN to login instantly' : 'तुरंत लॉगिन करने के लिए 4 अंकों का एमपीआईएन'}
+              placeholder={lang === 'en' ? 'Enter 4-digit MPIN' : '4 अंकों का एमपीआईएन दर्ज करें'}
               placeholderTextColor="#6B7B6B"
               keyboardType="numeric"
               secureTextEntry
