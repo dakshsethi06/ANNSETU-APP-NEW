@@ -36,10 +36,24 @@ async function createFarmerRecord(params) {
       "id", "accountNumber", "name", "state", "primaryCrop",
       "isLocalFarmer", "openingBalance", "creditLimit", "interestRate",
       "autoSmsReminder", "joinDate", "active", "createdAt", "updatedAt",
-      "coldStorageId", "consentGiven", "phone", "fatherName", "village", "district", "tehsil"
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+      "coldStorageId", "consentGiven", "phone", "fatherName", "village", "district", "tehsil", "mpin"
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
   `;
   await db.query(sql, params);
+}
+
+async function getFarmerByPhone(phone) {
+  const cleanPhone = phone.replace('+91', '').trim();
+  const result = await db.query(
+    `SELECT * FROM "Farmer" 
+     WHERE "phone" = $1 
+        OR "phone" = $2 
+        OR "id" = $1 
+        OR "id" = $2 
+     LIMIT 1`,
+    [cleanPhone, '+91' + cleanPhone]
+  );
+  return result.rows[0];
 }
 
 async function getFarmerLedger(farmerId) {
@@ -101,4 +115,4 @@ async function getFarmerLedger(farmerId) {
   return entriesWithRunning.reverse();
 }
 
-module.exports = { getFarmersData, createFarmerRecord, getFarmerLedger };
+module.exports = { getFarmersData, createFarmerRecord, getFarmerLedger, getFarmerByPhone };

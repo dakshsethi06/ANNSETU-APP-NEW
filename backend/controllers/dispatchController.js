@@ -154,6 +154,82 @@ async function createDispatch(req, res) {
 
 async function approveDispatch(req, res) {
   const { id } = req.params;
+  const { mpin } = req.body;
+  
+  if (!mpin) {
+    return res.status(400).json({ success: false, error: 'MPIN is required for dispatch authorization.' });
+  }
+
+  try {
+    // 1. Get the dispatch transaction
+    const dispatchCheck = await db.query('SELECT * FROM "NikasiTransaction" WHERE "id" = $1', [id]);
+    if (dispatchCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Dispatch transaction not found' });
+    }
+    const dispatchData = dispatchCheck.rows[0];
+
+    // 2. Fetch the farmer associated with this dispatch to verify their MPIN
+    const farmerRes = await db.query('SELECT mpin, name FROM "Farmer" WHERE id = $1', [dispatchData.farmerId]);
+    if (farmerRes.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Associated farmer profile not found.' });
+    }
+    
+    const farmer = farmerRes.rows[0];
+    const farmerMpin = farmer.mpin || '1234';
+    if (farmerMpin !== mpin) {
+      return res.status(401).json({ success: false, error: 'Invalid MPIN. Please try again.' });
+    }
+
+    // 3. Proceed to approve the dispatch
+    const sql = `
+      UPDATE "NikasiTransaction"
+      SET "status" = 'IN_TRANSIT', "updatedAt" = NOW()
+      WHERE "id" = $1
+      RETURNING *
+    `;
+    const result = await db.query(sql, [id]);
+
+    // Create in-app notifications
+    try {
+      const { createAppNotification } = require('../lib/notifications');
+      const farmerName = farmer.name || 'Farmer';
+
+      // Notification to vendor
+      await createAppNotification({
+        coldStorageId: dispatchData.coldStorageId || 'cmmp9txv0000ai3t4wush9trs',
+        userId: 'default_vendor',
+        lotId: dispatchData.lotId,
+        type: 'info',
+        title: 'Dispatch Approved by Farmer',
+        message: `${farmerName} authorized dispatch of ${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish || 'goods'} via MPIN.`,
+        icon: 'check',
+        actionUrl: null
+      });
+
+      // Notification to cold storage
+      await createAppNotification({
+        coldStorageId: dispatchData.coldStorageId || 'cmmp9txv0000ai3t4wush9trs',
+        userId: dispatchData.coldStorageId || 'cmmp9txv0000ai3t4wush9trs',
+        lotId: dispatchData.lotId,
+        type: 'info',
+        title: 'Dispatch Approved by Farmer',
+        message: `${farmerName} authorized dispatch of ${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish || 'goods'} via MPIN. Ready for transport/delivery.`,
+        icon: 'check',
+        actionUrl: null
+      });
+    } catch (notifErr) {
+      console.warn('Failed to create approval notifications:', notifErr.message);
+    }
+
+    return res.json({ success: true, dispatch: result.rows[0] });
+  } catch (error) {
+    console.error('PostgreSQL dispatch approval POST error:', error.message);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to approve dispatch in database' });
+  }
+}
+
+async function deliverDispatch(req, res) {
+  const { id } = req.params;
   try {
     const sql = `
       UPDATE "NikasiTransaction"
@@ -165,11 +241,33 @@ async function approveDispatch(req, res) {
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Dispatch transaction not found' });
     }
+
+    // Create in-app notification for the farmer about delivery
+    try {
+      const { createAppNotification } = require('../lib/notifications');
+      const dispatchData = result.rows[0];
+      const csRes = await db.query('SELECT "displayName" FROM "ColdStorageOnboarding" WHERE id = $1', [dispatchData.coldStorageId]);
+      const csName = csRes.rows.length > 0 ? csRes.rows[0].displayName : 'Cold Storage';
+
+      await createAppNotification({
+        coldStorageId: dispatchData.coldStorageId || 'cmmp9txv0000ai3t4wush9trs',
+        userId: dispatchData.farmerId,
+        lotId: dispatchData.lotId,
+        type: 'info',
+        title: 'Dispatch Delivered',
+        message: `${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish || 'goods'} have been successfully delivered/dispatched from ${csName}.`,
+        icon: 'check',
+        actionUrl: `/dispatch`
+      });
+    } catch (notifErr) {
+      console.warn('Failed to create delivery notification:', notifErr.message);
+    }
+
     return res.json({ success: true, dispatch: result.rows[0] });
   } catch (error) {
-    console.error('PostgreSQL dispatch approval POST error:', error.message);
-    return res.status(500).json({ success: false, error: error.message || 'Failed to approve dispatch in database' });
+    console.error('PostgreSQL dispatch delivery POST error:', error.message);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to deliver dispatch in database' });
   }
 }
 
-module.exports = { getDispatches, createDispatch, approveDispatch };
+module.exports = { getDispatches, createDispatch, approveDispatch, deliverDispatch };

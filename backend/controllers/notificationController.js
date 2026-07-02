@@ -38,6 +38,8 @@ async function getNotifications(req, res) {
       }
     });
 
+
+
     notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return res.json({ success: true, notifications });
   } catch (error) {
@@ -46,4 +48,21 @@ async function getNotifications(req, res) {
   }
 }
 
-module.exports = { getNotifications };
+async function markAsRead(req, res) {
+  const { id } = req.params;
+  try {
+    if (id.startsWith('bill-')) {
+      return res.json({ success: true });
+    }
+    const notification = await notificationRepository.markNotificationAsRead(id);
+    if (!notification) {
+      return res.status(404).json({ success: false, error: 'Notification not found' });
+    }
+    return res.json({ success: true, notification });
+  } catch (error) {
+    console.error('PostgreSQL notification read error:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to mark notification as read' });
+  }
+}
+
+module.exports = { getNotifications, markAsRead };

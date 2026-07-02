@@ -12,7 +12,7 @@ async function getFarmers(req, res) {
 }
 
 async function registerFarmer(req, res) {
-  const { serial_number, name, state, commodity, phone, fatherName, village, district, tehsil } = req.body;
+  const { serial_number, name, state, commodity, phone, fatherName, village, district, tehsil, mpin } = req.body;
   if (!serial_number || !name) {
     return res.status(400).json({ success: false, error: 'serial_number and name are required fields' });
   }
@@ -25,7 +25,7 @@ async function registerFarmer(req, res) {
     const params = [
       serial_number, 'CS-' + serial_number, name, finalState, finalCommodity, true, 0.0, 10000.0, 0.0, false,
       now, true, now, now, 'cmmp9txv0000ai3t4wush9trs', true, phone || null, fatherName || null,
-      village || null, district || null, tehsil || null
+      village || null, district || null, tehsil || null, mpin || '1234'
     ];
     
     await farmerRepository.createFarmerRecord(params);
@@ -67,4 +67,36 @@ async function getLedger(req, res) {
   }
 }
 
-module.exports = { getFarmers, registerFarmer, getLedger };
+async function loginMpin(req, res) {
+  const { phone, mpin } = req.body;
+  if (!phone || !mpin) {
+    return res.status(400).json({ success: false, error: 'Phone number and MPIN are required.' });
+  }
+
+  try {
+    const farmer = await farmerRepository.getFarmerByPhone(phone);
+    if (!farmer) {
+      return res.status(404).json({ success: false, error: 'Farmer profile not found.' });
+    }
+
+    const farmerMpin = farmer.mpin || '1234';
+    if (farmerMpin !== mpin) {
+      return res.status(401).json({ success: false, error: 'Invalid MPIN. Please try again.' });
+    }
+
+    return res.json({ 
+      success: true, 
+      farmer: {
+        id: farmer.id,
+        name: farmer.name,
+        phone: farmer.phone,
+        state: farmer.state
+      } 
+    });
+  } catch (error) {
+    console.error('PostgreSQL login-mpin error:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to authenticate via MPIN.' });
+  }
+}
+
+module.exports = { getFarmers, registerFarmer, getLedger, loginMpin };

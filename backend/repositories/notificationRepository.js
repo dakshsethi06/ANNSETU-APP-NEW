@@ -21,4 +21,15 @@ async function getPendingBills(farmerId) {
   return billsRes.rows;
 }
 
-module.exports = { getAppNotifications, getPendingBills };
+async function markNotificationAsRead(id) {
+  const result = await db.query(
+    `UPDATE "AppNotification" 
+     SET "isRead" = true, "updatedAt" = NOW() 
+     WHERE id = $1 
+     RETURNING *`,
+    [id]
+  );
+  return result.rows[0];
+}
+
+module.exports = { getAppNotifications, getPendingBills, markNotificationAsRead };
