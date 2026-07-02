@@ -65,6 +65,16 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
 
     setLoading(true);
     try {
+      if (loginMode === 'coldstorage') {
+        const { fetchUserRole } = require('../services/api');
+        const detected = await fetchUserRole('+91' + phone);
+        if (detected !== 'ColdStorageFacility') {
+          Alert.alert('Access Denied', 'This phone number is not registered as a Cold Storage Partner.');
+          setLoading(false);
+          return;
+        }
+      }
+
       // Attempt real Supabase signInWithOtp
       const { error } = await supabase.auth.signInWithOtp({
         phone: '+91' + phone,
