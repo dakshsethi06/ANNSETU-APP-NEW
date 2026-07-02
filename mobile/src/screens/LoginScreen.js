@@ -9,6 +9,7 @@ import OTPScreen from './OtpScreen';
 
 export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
   const [currentScreen, setCurrentScreen] = useState('login'); // 'login' | 'register' | 'otp'
+  const [loginMode, setLoginMode] = useState('farmer'); // 'farmer' | 'coldstorage'
   const [phone, setPhone] = useState('');
   const [mpin, setMpin] = useState('');
   const [lang, setLang] = useState('en');
@@ -141,7 +142,10 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
     }
 
     if (onLoginSuccess) {
-      onLoginSuccess(verifiedPhone, registrationData?.role);
+      onLoginSuccess(
+        verifiedPhone, 
+        registrationData?.role || (loginMode === 'coldstorage' ? 'ColdStorageFacility' : undefined)
+      );
     }
   };
 
@@ -175,7 +179,11 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             />
           </View>
           <Text style={styles.brandName}>Annsetu</Text>
-          <Text style={styles.brandSubtitle}>Cold Storage Management Platform</Text>
+          <Text style={styles.brandSubtitle}>
+            {loginMode === 'farmer' 
+              ? (lang === 'en' ? 'Cold Storage Management Platform' : 'कोल्ड स्टोरेज प्रबंधन मंच')
+              : (lang === 'en' ? 'Partner Access Portal' : 'साझेदार पहुंच पोर्टल')}
+          </Text>
 
           <View style={styles.langToggle}>
             <TouchableOpacity
@@ -194,8 +202,16 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
         </View>
 
         <View style={styles.bottomSection}>
-          <Text style={styles.title}>{lang === 'en' ? 'Welcome Back' : 'स्वागत है'}</Text>
-          <Text style={styles.subtitle}>{lang === 'en' ? 'Enter your mobile number to continue' : 'जारी रखने के लिए मोबाइल नंबर दर्ज करें'}</Text>
+          <Text style={styles.title}>
+            {loginMode === 'farmer'
+              ? (lang === 'en' ? 'Welcome Back' : 'स्वागत है')
+              : (lang === 'en' ? 'Cold Storage Login' : 'कोल्ड स्टोरेज लॉगिन')}
+          </Text>
+          <Text style={styles.subtitle}>
+            {loginMode === 'farmer'
+              ? (lang === 'en' ? 'Enter your mobile number to continue' : 'जारी रखने के लिए मोबाइल नंबर दर्ज करें')
+              : (lang === 'en' ? 'Enter your registered number to receive OTP' : 'OTP प्राप्त करने के लिए पंजीकृत मोबाइल नंबर दर्ज करें')}
+          </Text>
 
           <Text style={styles.label}>{lang === 'en' ? 'Mobile Number' : 'मोबाइल नंबर'}</Text>
           <View style={styles.inputContainer}>
@@ -212,54 +228,84 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             />
           </View>
 
-          <Text style={styles.label}>{lang === 'en' ? 'Enter MPIN' : 'एमपीआईएन दर्ज करें'}</Text>
-          <View style={styles.inputContainer}>
-            <Feather name="lock" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
-            <TextInput
-              style={styles.input}
-              placeholder={lang === 'en' ? 'Enter 4-digit MPIN' : '4 अंकों का एमपीआईएन दर्ज करें'}
-              placeholderTextColor="#6B7B6B"
-              keyboardType="numeric"
-              secureTextEntry
-              maxLength={4}
-              value={mpin}
-              onChangeText={(text) => setMpin(text.replace(/[^0-9]/g, ''))}
-            />
-          </View>
+          {loginMode === 'farmer' && (
+            <>
+              <Text style={styles.label}>{lang === 'en' ? 'Enter MPIN' : 'एमपीआईएन दर्ज करें'}</Text>
+              <View style={styles.inputContainer}>
+                <Feather name="lock" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.input}
+                  placeholder={lang === 'en' ? 'Enter 4-digit MPIN' : '4 अंकों का एमपीआईएन दर्ज करें'}
+                  placeholderTextColor="#6B7B6B"
+                  keyboardType="numeric"
+                  secureTextEntry
+                  maxLength={4}
+                  value={mpin}
+                  onChangeText={(text) => setMpin(text.replace(/[^0-9]/g, ''))}
+                />
+              </View>
+            </>
+          )}
 
           <TouchableOpacity
             style={[styles.primaryButton, phone.length === 10 ? styles.primaryButtonActive : styles.primaryButtonDisabled]}
-            onPress={mpin.length === 4 ? handleMpinLogin : handleGetOTP}
+            onPress={loginMode === 'farmer' && mpin.length === 4 ? handleMpinLogin : handleGetOTP}
             disabled={phone.length < 10 || loading}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text style={styles.primaryButtonText}>
-                {mpin.length === 4 
-                  ? (lang === 'en' ? 'Login with MPIN' : 'एमपीआईएन से लॉगिन करें') 
-                  : (lang === 'en' ? 'Get OTP' : 'OTP प्राप्त करें')}
+                {lang === 'en' ? 'Login' : 'लॉगिन करें'}
               </Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.secureNote}>
             <Feather name="shield" size={14} color="#6B7B6B" />
-            <Text style={styles.secureNoteText}>{lang === 'en' ? 'Secured with OTP verification & data encryption' : 'OTP और डेटा एन्क्रिप्शन से सुरक्षित'}</Text>
+            <Text style={styles.secureNoteText}>
+              {loginMode === 'farmer'
+                ? (lang === 'en' ? 'Secured with OTP verification & data encryption' : 'OTP और डेटा एन्क्रिप्शन से सुरक्षित')
+                : (lang === 'en' ? 'Cold Storage Authorized Sign-In' : 'कोल्ड स्टोरेज अधिकृत साइन-इन')}
+            </Text>
           </View>
 
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {loginMode === 'farmer' ? (
+            <>
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-          <View style={styles.createAccountContainer}>
-            <Text style={styles.createAccountText}>{lang === 'en' ? 'New to Annsetu?' : 'Annsetu पर नए हैं?'}</Text>
-            <TouchableOpacity onPress={() => setCurrentScreen('register')}>
-              <Text style={styles.createAccountLink}>{lang === 'en' ? 'Create Account' : 'खाता बनाएं'}</Text>
+              <View style={styles.createAccountContainer}>
+                <Text style={styles.createAccountText}>{lang === 'en' ? 'New to Annsetu?' : 'Annsetu पर नए हैं?'}</Text>
+                <TouchableOpacity onPress={() => setCurrentScreen('register')}>
+                  <Text style={styles.createAccountLink}>{lang === 'en' ? 'Create Account' : 'खाता बनाएं'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity 
+                style={{ marginTop: 24, alignItems: 'center' }}
+                onPress={() => { setLoginMode('coldstorage'); setMpin(''); }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ color: '#1E5C2E', fontWeight: 'bold', fontSize: 13, textDecorationLine: 'underline' }}>
+                  {lang === 'en' ? 'Cold Storage Partner? Click here' : 'कोल्ड स्टोरेज पार्टनर? यहाँ क्लिक करें'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity 
+              style={{ marginTop: 12, alignItems: 'center' }}
+              onPress={() => { setLoginMode('farmer'); setMpin(''); }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: '#1E5C2E', fontWeight: 'bold', fontSize: 13, textDecorationLine: 'underline' }}>
+                {lang === 'en' ? 'Back to Farmer Login' : 'किसान लॉगिन पर वापस जाएं'}
+              </Text>
             </TouchableOpacity>
-          </View>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
