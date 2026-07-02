@@ -249,7 +249,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
 
           <TouchableOpacity
             style={[styles.primaryButton, phone.length === 10 ? styles.primaryButtonActive : styles.primaryButtonDisabled]}
-            onPress={loginMode === 'farmer' && mpin.length === 4 ? handleMpinLogin : handleGetOTP}
+            onPress={loginMode === 'farmer' ? handleMpinLogin : handleGetOTP}
             disabled={phone.length < 10 || loading}
           >
             {loading ? (
