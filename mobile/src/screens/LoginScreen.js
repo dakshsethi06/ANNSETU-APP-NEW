@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Platform, Alert, ActivityIndicator, Image, ScrollView, StatusBar, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Platform, Alert, ActivityIndicator, Image, ScrollView, StatusBar, KeyboardAvoidingView, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import styles from './styles/authStyles';
@@ -16,11 +16,54 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
   const [loading, setLoading] = useState(false);
   const [registrationData, setRegistrationData] = useState(null);
 
+  // Reset MPIN States
+  const [resetModalVisible, setResetModalVisible] = useState(false);
+  const [resetPhone, setResetPhone] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
+  const [resetNewMpin, setResetNewMpin] = useState('');
+  const [resettingMpin, setResettingMpin] = useState(false);
+
   useEffect(() => {
     if (onHidePreviewChange) {
       onHidePreviewChange(currentScreen === 'register' || currentScreen === 'otp');
     }
   }, [currentScreen, onHidePreviewChange]);
+
+  const handleResetMpinSubmit = async () => {
+    if (resetPhone.length < 10) {
+      Alert.alert('Error', 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    if (resetOtp !== '1234') {
+      Alert.alert('Error', 'Invalid verification OTP. Please use "1234" to verify.');
+      return;
+    }
+    if (resetNewMpin.length < 4) {
+      Alert.alert('Error', 'New MPIN must be exactly 4 digits.');
+      return;
+    }
+
+    setResettingMpin(true);
+    try {
+      const { BACKEND_URL } = require('../services/config');
+      const response = await fetch(`${BACKEND_URL}/api/farmers/reset-mpin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: resetPhone, otp: resetOtp, newMpin: resetNewMpin }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to reset MPIN.');
+      }
+      Alert.alert('Success', 'MPIN reset successfully! You can now log in.');
+      setResetModalVisible(false);
+      setMpin('');
+    } catch (err) {
+      Alert.alert('Reset Failed', err.message);
+    } finally {
+      setResettingMpin(false);
+    }
+  };
 
   const handleMpinLogin = async () => {
     if (phone.length < 10) {
@@ -41,12 +84,12 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, mpin }),
       });
-      
+
       const data = await response.json();
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Invalid MPIN or phone number.');
       }
-      
+
       if (onLoginSuccess) {
         onLoginSuccess(phone, 'farmer');
       }
@@ -153,7 +196,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
 
     if (onLoginSuccess) {
       onLoginSuccess(
-        verifiedPhone, 
+        verifiedPhone,
         registrationData?.role || (loginMode === 'coldstorage' ? 'ColdStorageFacility' : undefined)
       );
     }
@@ -182,15 +225,15 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
       >
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
-            <Image 
-              source={require('../../assets/ann_setu_logo.png')} 
-              style={styles.logoImage} 
-              resizeMode="contain" 
+            <Image
+              source={require('../../assets/ann_setu_logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
             />
           </View>
           <Text style={styles.brandName}>Annsetu</Text>
           <Text style={styles.brandSubtitle}>
-            {loginMode === 'farmer' 
+            {loginMode === 'farmer'
               ? (lang === 'en' ? 'Cold Storage Management Platform' : 'कोल्ड स्टोरेज प्रबंधन मंच')
               : (lang === 'en' ? 'Partner Access Portal' : 'साझेदार पहुंच पोर्टल')}
           </Text>
@@ -248,12 +291,24 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
                   placeholder={lang === 'en' ? 'Enter 4-digit MPIN' : '4 अंकों का एमपीआईएन दर्ज करें'}
                   placeholderTextColor="#6B7B6B"
                   keyboardType="numeric"
-                  secureTextEntry
                   maxLength={4}
                   value={mpin}
                   onChangeText={(text) => setMpin(text.replace(/[^0-9]/g, ''))}
                 />
               </View>
+              <TouchableOpacity
+                style={{ alignItems: 'center', marginTop: 8, marginBottom: 20 }}
+                onPress={() => {
+                  setResetPhone(phone);
+                  setResetOtp('');
+                  setResetNewMpin('');
+                  setResetModalVisible(true);
+                }}
+              >
+                <Text style={{ color: '#1E5C2E', fontSize: 14, fontWeight: 'bold', textDecorationLine: 'underline' }}>
+                  {lang === 'en' ? 'Forgot MPIN? Click Here' : 'एमपीआईएन भूल गए? रीसेट करें'}
+                </Text>
+              </TouchableOpacity>
             </>
           )}
 
@@ -277,7 +332,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             <Feather name="shield" size={14} color="#6B7B6B" />
             <Text style={styles.secureNoteText}>
               {loginMode === 'farmer'
-                ? (lang === 'en' ? 'Secured with OTP verification & data encryption' : 'OTP और डेटा एन्क्रिप्शन से सुरक्षित')
+                ? (lang === 'en' ? 'Secured with verification & data encryption' : 'OTP और डेटा एन्क्रिप्शन से सुरक्षित')
                 : (lang === 'en' ? 'Cold Storage Authorized Sign-In' : 'कोल्ड स्टोरेज अधिकृत साइन-इन')}
             </Text>
           </View>
@@ -297,18 +352,18 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={{ marginTop: 24, alignItems: 'center' }}
                 onPress={() => { setLoginMode('coldstorage'); setMpin(''); }}
                 activeOpacity={0.7}
               >
                 <Text style={{ color: '#1E5C2E', fontWeight: 'bold', fontSize: 13, textDecorationLine: 'underline' }}>
-                  {lang === 'en' ? 'Cold Storage Partner? Click here' : 'कोल्ड स्टोरेज पार्टनर? यहाँ क्लिक करें'}
+                  {lang === 'en' ? 'Cold Storage? Click here' : 'कोल्ड स्टोरेज पार्टनर? यहाँ क्लिक करें'}
                 </Text>
               </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={{ marginTop: 12, alignItems: 'center' }}
               onPress={() => { setLoginMode('farmer'); setMpin(''); }}
               activeOpacity={0.7}
@@ -320,6 +375,86 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
           )}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={resetModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setResetModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#FAF7F0', borderRadius: 20, padding: 24, borderWidth: 1, borderColor: '#E8E0CE' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1E5C2E' }}>
+                {lang === 'en' ? 'Reset Security MPIN' : 'सुरक्षा एमपीआईएन रीसेट करें'}
+              </Text>
+              <TouchableOpacity onPress={() => setResetModalVisible(false)}>
+                <Feather name="x" size={22} color="#1E5C2E" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8 }}>
+              {lang === 'en' ? 'Mobile Number' : 'मोबाइल नंबर'}
+            </Text>
+            <View style={[styles.inputContainer, { marginBottom: 16 }]}>
+              <Text style={styles.inputPrefix}>+91</Text>
+              <View style={styles.inputDivider} />
+              <TextInput
+                style={styles.input}
+                placeholder="10-digit phone number"
+                keyboardType="numeric"
+                maxLength={10}
+                value={resetPhone}
+                onChangeText={setResetPhone}
+              />
+            </View>
+
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8 }}>
+              {lang === 'en' ? 'Verification OTP' : 'सत्यापन ओटीपी'}
+            </Text>
+            <View style={[styles.inputContainer, { marginBottom: 16 }]}>
+              <Feather name="shield" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.input}
+                placeholder={lang === 'en' ? 'Enter 1234 to verify' : 'सत्यापित करने के लिए 1234 दर्ज करें'}
+                keyboardType="numeric"
+                maxLength={4}
+                value={resetOtp}
+                onChangeText={setResetOtp}
+              />
+            </View>
+
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8 }}>
+              {lang === 'en' ? 'New 4-Digit MPIN' : 'नया 4 अंकों का एमपीआईएन'}
+            </Text>
+            <View style={[styles.inputContainer, { marginBottom: 24 }]}>
+              <Feather name="lock" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.input}
+                placeholder={lang === 'en' ? 'Enter new 4-digit MPIN' : 'नया 4 अंकों का एमपीआईएन दर्ज करें'}
+                keyboardType="numeric"
+                maxLength={4}
+                value={resetNewMpin}
+                onChangeText={(text) => setResetNewMpin(text.replace(/[^0-9]/g, ''))}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.primaryButton, { backgroundColor: '#1E5C2E' }]}
+              onPress={handleResetMpinSubmit}
+              disabled={resettingMpin}
+            >
+              {resettingMpin ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.primaryButtonText}>
+                  {lang === 'en' ? 'Reset MPIN' : 'एमपीआईएन रीसेट करें'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

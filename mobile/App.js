@@ -1,12 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, Keyboard } from 'react-native';
 import * as Updates from 'expo-updates';
+import * as Notifications from 'expo-notifications';
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import VendorScreen from './src/screens/VendorScreen';
 import { supabase } from './src/services/supabase';
 import ColdStorageScreen from './src/screens/ColdStorageScreen';
 import { Feather } from '@expo/vector-icons';
+
+// Configure push notification alert settings when the app is foregrounded
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 // Expo Google Fonts loader
 import { useFonts } from 'expo-font';
@@ -71,6 +81,16 @@ export default function App() {
       setRole('Farmer');
     }
   }, [session, role]);
+
+  useEffect(() => {
+    if (session && session.user && session.user.phone) {
+      // Import dynamically to avoid loading issues at bundle initialization
+      const { registerForPushNotificationsAsync } = require('./src/services/pushService');
+      registerForPushNotificationsAsync(session.user.phone).catch(err => {
+        console.warn('Failed to register push token:', err.message);
+      });
+    }
+  }, [session]);
 
   useEffect(() => {
     // 1. Fetch initial session

@@ -8,25 +8,25 @@ export default function StockTab({ holdingsList = [], manualStockMt, manualBags,
   const [searchQuery, setSearchQuery] = useState('');
 
   // Graceful fallback for mock stock data if database is empty
-  const stockData = holdingsList && holdingsList.length > 0 
+  const stockData = holdingsList && holdingsList.length > 0
     ? holdingsList.map((item, index) => {
-        let statusStr = 'fresh';
-        const age = item.age_days || 7;
-        if (age >= 90) statusStr = 'danger';
-        else if (age >= 70) statusStr = 'warning';
-        else if (age >= 30) statusStr = 'good';
-        return {
-          id: item.lot_id || `AM-${16288 + index}`,
-          commodity: item.crop || 'Potato',
-          variety: item.variety || 'Pukhraj',
-          storage: item.cold_storage || 'SN Sharma CS',
-          room: item.location || 'Room 1 / K12',
-          bags: item.bags || 300,
-          weight: item.weight || `${(item.bags || 300) * 0.05} MT`,
-          age: age,
-          status: statusStr,
-        };
-      })
+      let statusStr = 'fresh';
+      const age = item.age_days || 7;
+      if (age >= 90) statusStr = 'danger';
+      else if (age >= 70) statusStr = 'warning';
+      else if (age >= 30) statusStr = 'good';
+      return {
+        id: item.lot_id || `AM-${16288 + index}`,
+        commodity: item.crop || 'Potato',
+        variety: item.variety || 'Pukhraj',
+        storage: item.cold_storage || 'SN Sharma CS',
+        room: item.location || 'Room 1 / K12',
+        bags: item.bags || 300,
+        weight: item.weight || `${(item.bags || 300) * 0.05} MT`,
+        age: age,
+        status: statusStr,
+      };
+    })
     : [];
 
   // Calculations for summary stats
@@ -35,7 +35,7 @@ export default function StockTab({ holdingsList = [], manualStockMt, manualBags,
   const agingAlertsCount = stockData.filter(item => item.age >= 70).length;
 
   // Filter list by search query
-  const filteredList = stockData.filter(item => 
+  const filteredList = stockData.filter(item =>
     item.commodity.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.variety.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -104,15 +104,15 @@ export default function StockTab({ holdingsList = [], manualStockMt, manualBags,
 
         {/* Buttons */}
         <View style={s.buttonsRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={s.btnSecondary}
             onPress={() => Alert.alert('Stock Details', `Lot ${item.id}\nCrop: ${item.commodity}\nVariety: ${item.variety}\nStored at: ${item.storage}`)}
             activeOpacity={0.7}
           >
             <Text style={s.btnSecondaryText}>View Details</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={s.btnPrimary}
             onPress={() => Alert.alert('Request Dispatch', `Dispatch requested for lot ${item.id}`)}
             activeOpacity={0.8}
@@ -125,7 +125,7 @@ export default function StockTab({ holdingsList = [], manualStockMt, manualBags,
   };
 
   return (
-    <SafeAreaView style={s.container}>
+    <View style={s.container}>
       {/* ─── Top Brand Header ─── */}
       <View style={s.topHeader}>
         <View style={s.topHeaderLeft}>
@@ -134,8 +134,8 @@ export default function StockTab({ holdingsList = [], manualStockMt, manualBags,
           </View>
           <Text style={s.brandTitle}>Annsetu</Text>
         </View>
-        <TouchableOpacity 
-          style={s.searchIconBtn} 
+        <TouchableOpacity
+          style={s.searchIconBtn}
           onPress={() => Alert.alert('Search', 'Search is active.')}
           activeOpacity={0.8}
         >
@@ -157,8 +157,8 @@ export default function StockTab({ holdingsList = [], manualStockMt, manualBags,
           <View style={s.listHeader}>
             {/* ── Summary Stats ── */}
             <View style={s.summaryRow}>
-              <TouchableOpacity 
-                style={s.statCard} 
+              <TouchableOpacity
+                style={s.statCard}
                 onPress={onUpdateStockPress}
                 activeOpacity={0.8}
               >
@@ -185,7 +185,7 @@ export default function StockTab({ holdingsList = [], manualStockMt, manualBags,
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={s.filterBtn}
                   onPress={() => Alert.alert('Filter', 'Show filter controls')}
                   activeOpacity={0.7}
@@ -216,7 +216,7 @@ export default function StockTab({ holdingsList = [], manualStockMt, manualBags,
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

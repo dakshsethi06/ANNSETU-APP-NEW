@@ -1,4 +1,19 @@
 const db = require('../db');
+const crypto = require('crypto');
+
+function hashMpin(mpin) {
+  if (!mpin) return '';
+  return crypto.createHash('sha256').update(mpin.toString()).digest('hex');
+}
+
+function verifyMpin(mpin, storedHash) {
+  if (!storedHash) return false;
+  if (!mpin) return false;
+  if (storedHash.length !== 64) {
+    return storedHash.toString() === mpin.toString();
+  }
+  return hashMpin(mpin) === storedHash;
+}
 
 async function getDispatches(req, res) {
   const { farmerId, coldStorageId } = req.query;
@@ -134,12 +149,12 @@ async function createDispatch(req, res) {
       await createAppNotification({
         coldStorageId: verifiedColdStorageId,
         userId: farmerId,
-        lotId: lotId,
+        lotId: null,
         type: 'warning',
         title: 'Dispatch Approval Required',
-        message: `Request to dispatch ${bags} bags of ${commodity} from ${csName} is pending. Please authorize via OTP.`,
+        message: `Request to dispatch ${bags} bags of ${commodity} from ${csName} is pending. Please authorize via MPIN.`,
         icon: 'lock',
-        actionUrl: `/dispatch`
+        actionUrl: '/dispatch'
       });
     } catch (notifErr) {
       console.warn('Failed to create dispatch notification:', notifErr.message);
@@ -176,7 +191,7 @@ async function approveDispatch(req, res) {
     
     const farmer = farmerRes.rows[0];
     const farmerMpin = farmer.mpin || '1234';
-    if (farmerMpin !== mpin) {
+    if (!verifyMpin(mpin, farmerMpin)) {
       return res.status(401).json({ success: false, error: 'Invalid MPIN. Please try again.' });
     }
 
@@ -198,7 +213,7 @@ async function approveDispatch(req, res) {
       await createAppNotification({
         coldStorageId: dispatchData.coldStorageId || 'cmmp9txv0000ai3t4wush9trs',
         userId: 'default_vendor',
-        lotId: dispatchData.lotId,
+        lotId: null,
         type: 'info',
         title: 'Dispatch Approved by Farmer',
         message: `${farmerName} authorized dispatch of ${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish || 'goods'} via MPIN.`,
@@ -210,7 +225,7 @@ async function approveDispatch(req, res) {
       await createAppNotification({
         coldStorageId: dispatchData.coldStorageId || 'cmmp9txv0000ai3t4wush9trs',
         userId: dispatchData.coldStorageId || 'cmmp9txv0000ai3t4wush9trs',
-        lotId: dispatchData.lotId,
+        lotId: null,
         type: 'info',
         title: 'Dispatch Approved by Farmer',
         message: `${farmerName} authorized dispatch of ${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish || 'goods'} via MPIN. Ready for transport/delivery.`,
@@ -252,7 +267,7 @@ async function deliverDispatch(req, res) {
       await createAppNotification({
         coldStorageId: dispatchData.coldStorageId || 'cmmp9txv0000ai3t4wush9trs',
         userId: dispatchData.farmerId,
-        lotId: dispatchData.lotId,
+        lotId: null,
         type: 'info',
         title: 'Dispatch Delivered',
         message: `${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish || 'goods'} have been successfully delivered/dispatched from ${csName}.`,

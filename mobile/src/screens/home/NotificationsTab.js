@@ -48,7 +48,7 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
     let iconName = 'bell';
     let iconColor = '#0284C7'; // Info blue
     let iconBg = '#E0F2FE';
-    
+
     if (item.type === 'aging' || item.title.toLowerCase().includes('aging')) {
       iconName = 'alert-triangle';
       iconColor = '#D97706'; // Warning orange
@@ -67,7 +67,7 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
 
     const handlePressNotification = async () => {
       // 1. Instantly mark as read in local state (green dot goes away)
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(n => n.id === item.id ? { ...n, isRead: true } : n)
       );
 
@@ -76,7 +76,7 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
 
       // 3. Navigate if needed
       if (onNavigateToTab && (
-        item.title.toLowerCase().includes('approval') || 
+        item.title.toLowerCase().includes('approval') ||
         item.title.toLowerCase().includes('authorize') ||
         item.title.toLowerCase().includes('delivered') ||
         item.title.toLowerCase().includes('dispatch')
@@ -86,9 +86,9 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
     };
 
     return (
-      <TouchableOpacity 
-        style={s.card} 
-        onPress={handlePressNotification} 
+      <TouchableOpacity
+        style={s.card}
+        onPress={handlePressNotification}
         activeOpacity={0.7}
       >
         <View style={s.cardContent}>

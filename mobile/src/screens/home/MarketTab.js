@@ -35,7 +35,7 @@ export default function MarketTab() {
       easing: Easing.bezier(0.4, 0, 0.2, 1),
       useNativeDriver: true,
     }).start();
-    
+
     fetchAllPrices();
   };
 
@@ -71,7 +71,7 @@ export default function MarketTab() {
     setLoading(true);
     try {
       const updatedRates = [...rates];
-      
+
       const promises = [
         fetchMandiPrices('Uttar Pradesh', 'Potato').then(res => {
           const records = filterLatestDateRecords(res.records || []);
@@ -152,14 +152,14 @@ export default function MarketTab() {
 
         {/* Dynamic Progress Accent Track */}
         <View style={s.progressTrack}>
-          <View 
+          <View
             style={[
-              s.progressFill, 
-              { 
-                width: `${item.pct}%`, 
-                backgroundColor: isTrendUp ? '#0ea5e9' : '#EF4444' 
+              s.progressFill,
+              {
+                width: `${item.pct}%`,
+                backgroundColor: isTrendUp ? '#0ea5e9' : '#EF4444'
               }
-            ]} 
+            ]}
           />
         </View>
       </View>
@@ -182,8 +182,8 @@ export default function MarketTab() {
             </View>
             <Text style={s.brandTitle}>Annsetu</Text>
           </View>
-          <TouchableOpacity 
-            style={s.searchIconBtn} 
+          <TouchableOpacity
+            style={s.searchIconBtn}
             onPress={() => Alert.alert('Search', 'Search market rates...')}
             activeOpacity={0.8}
           >
@@ -204,7 +204,7 @@ export default function MarketTab() {
             <View style={s.listHeader}>
               {/* ── Sub-Tab Switcher (Mandi Rates vs Auction Prices) ── */}
               <View style={s.subTabContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[s.subTabButton, selectedSubTab === 'mandi' && s.subTabButtonActive]}
                   onPress={() => setSelectedSubTab('mandi')}
                   activeOpacity={0.9}
@@ -214,7 +214,7 @@ export default function MarketTab() {
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[s.subTabButton, selectedSubTab === 'auction' && s.subTabButtonActive]}
                   onPress={() => setSelectedSubTab('auction')}
                   activeOpacity={0.9}
@@ -226,9 +226,9 @@ export default function MarketTab() {
               </View>
 
               {/* ── Category Pill Filters ScrollView ── */}
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false} 
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
                 contentContainerStyle={s.categoriesScroll}
               >
                 {categories.map((cat) => {
@@ -255,8 +255,8 @@ export default function MarketTab() {
                   <Text style={s.subHeaderText}>{fetchedDate}</Text>
                 </View>
 
-                <TouchableOpacity 
-                  style={s.refreshBtn} 
+                <TouchableOpacity
+                  style={s.refreshBtn}
                   onPress={handleRefresh}
                   disabled={loading}
                   activeOpacity={0.7}

@@ -6,8 +6,8 @@ import AnnsetuLogo from '../../components/AnnsetuLogo';
 
 export default function ProfileTab({ farmerData, onSwitchRole, onLogout }) {
   const profileName = farmerData?.name || 'SN Sharma Trading';
-  const profileSubtitle = farmerData 
-    ? `Farmer · ${farmerData.village || farmerData.district || 'Tundla'}, ${farmerData.state || 'UP'}` 
+  const profileSubtitle = farmerData
+    ? `Farmer · ${farmerData.village || farmerData.district || 'Tundla'}, ${farmerData.state || 'UP'}`
     : 'Vendor · Tundla, Firozabad';
   const currentRole = farmerData ? 'Farmer / किसान' : 'Vendor / व्यापारी';
   const avatarChar = profileName ? profileName.charAt(0).toUpperCase() : 'S';
@@ -76,8 +76,8 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout }) {
 
       <View style={s.divider} />
 
-      <ScrollView 
-        contentContainerStyle={s.scrollContent} 
+      <ScrollView
+        contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Green Hero Section */}

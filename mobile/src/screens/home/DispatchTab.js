@@ -13,6 +13,48 @@ export default function DispatchTab({ farmerId, onBackPress }) {
   const [submittingOtp, setSubmittingOtp] = useState(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  // Reset MPIN states
+  const [resetModalVisible, setResetModalVisible] = useState(false);
+  const [resetPhone, setResetPhone] = useState('');
+  const [resetOtp, setResetOtp] = useState('');
+  const [resetNewMpin, setResetNewMpin] = useState('');
+  const [resettingMpin, setResettingMpin] = useState(false);
+
+  const handleResetMpinSubmit = async () => {
+    if (resetPhone.length < 10) {
+      Alert.alert('Error', 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    if (resetOtp !== '1234') {
+      Alert.alert('Error', 'Invalid verification OTP. Please use "1234" to verify.');
+      return;
+    }
+    if (resetNewMpin.length < 4) {
+      Alert.alert('Error', 'New MPIN must be exactly 4 digits.');
+      return;
+    }
+
+    setResettingMpin(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/farmers/reset-mpin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: resetPhone, otp: resetOtp, newMpin: resetNewMpin }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to reset MPIN.');
+      }
+      Alert.alert('Success', 'MPIN reset successfully! You can now authorize dispatches.');
+      setResetModalVisible(false);
+      setOtpText('');
+    } catch (err) {
+      Alert.alert('Reset Failed', err.message);
+    } finally {
+      setResettingMpin(false);
+    }
+  };
+
   useEffect(() => {
     loadDispatches();
   }, [farmerId]);
@@ -57,7 +99,7 @@ export default function DispatchTab({ farmerId, onBackPress }) {
       }
       const data = await response.json();
       if (!data.success) throw new Error(data.error || 'Approval failed');
-      
+
       Alert.alert('Success', 'Dispatch transaction authorized successfully!');
       setOtpModalVisible(false);
       loadDispatches();
@@ -116,9 +158,9 @@ export default function DispatchTab({ farmerId, onBackPress }) {
         <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Summary stats */}
           <View style={s.summaryContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                s.summaryCard, 
+                s.summaryCard,
                 statusFilter === 'IN_TRANSIT' && { borderColor: '#1D4ED8', borderWidth: 2, backgroundColor: '#EFF6FF' }
               ]}
               onPress={() => setStatusFilter(statusFilter === 'IN_TRANSIT' ? 'ALL' : 'IN_TRANSIT')}
@@ -127,9 +169,9 @@ export default function DispatchTab({ farmerId, onBackPress }) {
               <Text style={[s.summaryValue, { color: '#1D4ED8' }]}>{totals.intransit}</Text>
               <Text style={s.summaryLabel}>In Transit</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                s.summaryCard, 
+                s.summaryCard,
                 statusFilter === 'CREATED' && { borderColor: '#B45309', borderWidth: 2, backgroundColor: '#FFFBEB' }
               ]}
               onPress={() => setStatusFilter(statusFilter === 'CREATED' ? 'ALL' : 'CREATED')}
@@ -138,9 +180,9 @@ export default function DispatchTab({ farmerId, onBackPress }) {
               <Text style={[s.summaryValue, { color: '#B45309' }]}>{totals.pending}</Text>
               <Text style={s.summaryLabel}>Pending</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                s.summaryCard, 
+                s.summaryCard,
                 statusFilter === 'DISPATCHED' && { borderColor: '#047857', borderWidth: 2, backgroundColor: '#ECFDF5' }
               ]}
               onPress={() => setStatusFilter(statusFilter === 'DISPATCHED' ? 'ALL' : 'DISPATCHED')}
@@ -255,7 +297,23 @@ export default function DispatchTab({ farmerId, onBackPress }) {
                 )}
 
                 <Text style={s.otpInstructions}>Enter your 4-digit security MPIN to authorize</Text>
-                
+
+                <TouchableOpacity
+                  style={{ alignSelf: 'center', marginTop: -4, marginBottom: 16 }}
+                  onPress={() => {
+                    setResetPhone(farmerId || '');
+                    setResetOtp('');
+                    setResetNewMpin('');
+                    setResetModalVisible(true);
+                    setOtpModalVisible(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ color: '#1E5C2E', fontSize: 13, textDecorationLine: 'underline', fontWeight: 'bold', fontFamily: FONTS.bold }}>
+                    Forgot MPIN? Click here
+                  </Text>
+                </TouchableOpacity>
+
                 {/* MPIN Input fields */}
                 <View style={s.otpInputRow}>
                   {[0, 1, 2, 3].map((index) => {
@@ -292,6 +350,87 @@ export default function DispatchTab({ farmerId, onBackPress }) {
             </View>
           </KeyboardAvoidingView>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Reset MPIN Modal */}
+      <Modal
+        visible={resetModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setResetModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#FAF7F0', borderRadius: 20, padding: 24, borderWidth: 1, borderColor: '#E8E0CE' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1E5C2E', fontFamily: FONTS.bold }}>
+                Reset Security MPIN
+              </Text>
+              <TouchableOpacity onPress={() => setResetModalVisible(false)}>
+                <Feather name="x" size={22} color="#1E5C2E" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8, fontFamily: FONTS.bold }}>
+              Mobile Number
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(30, 92, 46, 0.12)', borderRadius: 12, paddingHorizontal: 16, height: 52, marginBottom: 16 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#1A2E1A' }}>+91</Text>
+              <View style={{ width: 1, height: 20, backgroundColor: 'rgba(30, 92, 46, 0.12)', marginHorizontal: 12 }} />
+              <TextInput
+                style={{ flex: 1, height: '100%', fontSize: 14, color: '#1A2E1A' }}
+                placeholder="10-digit phone number"
+                keyboardType="numeric"
+                maxLength={10}
+                value={resetPhone}
+                onChangeText={setResetPhone}
+              />
+            </View>
+
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8, fontFamily: FONTS.bold }}>
+              Verification OTP
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(30, 92, 46, 0.12)', borderRadius: 12, paddingHorizontal: 16, height: 52, marginBottom: 16 }}>
+              <Feather name="shield" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
+              <TextInput
+                style={{ flex: 1, height: '100%', fontSize: 14, color: '#1A2E1A' }}
+                placeholder="Enter 1234 to verify"
+                keyboardType="numeric"
+                maxLength={4}
+                value={resetOtp}
+                onChangeText={setResetOtp}
+              />
+            </View>
+
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8, fontFamily: FONTS.bold }}>
+              New 4-Digit MPIN
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(30, 92, 46, 0.12)', borderRadius: 12, paddingHorizontal: 16, height: 52, marginBottom: 24 }}>
+              <Feather name="lock" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
+              <TextInput
+                style={{ flex: 1, height: '100%', fontSize: 14, color: '#1A2E1A' }}
+                placeholder="Enter new 4-digit MPIN"
+                keyboardType="numeric"
+                maxLength={4}
+                value={resetNewMpin}
+                onChangeText={(text) => setResetNewMpin(text.replace(/[^0-9]/g, ''))}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={{ backgroundColor: '#1E5C2E', borderRadius: 12, height: 52, justifyContent: 'center', alignItems: 'center' }}
+              onPress={handleResetMpinSubmit}
+              disabled={resettingMpin}
+            >
+              {resettingMpin ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600', fontFamily: FONTS.bold }}>
+                  Reset MPIN
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </View>
   );

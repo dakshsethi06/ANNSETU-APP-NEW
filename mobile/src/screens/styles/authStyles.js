@@ -3,12 +3,12 @@ import { COLORS, SPACING, RADIUS, SHADOWS } from '../../theme';
 
 // Exact tokens from prototype theme.css
 const PROTO = {
-  primary:          '#1E5C2E',
-  background:       '#F5F3EE',   // --background: warm beige
-  foreground:       '#1A2E1A',   // --foreground: title text
-  card:             '#ffffff',   // --card: input bg
-  mutedFg:          '#6B7B6B',   // --muted-foreground: subtitles, labels
-  border:           'rgba(30, 92, 46, 0.12)', // --border
+  primary: '#1E5C2E',
+  background: '#F5F3EE',   // --background: warm beige
+  foreground: '#1A2E1A',   // --foreground: title text
+  card: '#ffffff',   // --card: input bg
+  mutedFg: '#6B7B6B',   // --muted-foreground: subtitles, labels
+  border: 'rgba(30, 92, 46, 0.12)', // --border
 };
 
 export default StyleSheet.create({
@@ -98,7 +98,7 @@ export default StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 32,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
 
   // Title: text-xl font-bold text-foreground mb-1

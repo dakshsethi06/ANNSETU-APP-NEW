@@ -32,7 +32,16 @@ async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9tr
     const id = 'notif-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
     const now = new Date();
     const params = [ id, coldStorageId, userId, lotId, type, title, message, icon, actionUrl, false, alertDate || now, now, now ];
-    return await appNotificationRepository.insertAppNotification(params);
+    const result = await appNotificationRepository.insertAppNotification(params);
+    if (result && userId) {
+      try {
+        const { sendPushNotification } = require('./pushNotifications');
+        sendPushNotification(userId, title, message, { actionUrl });
+      } catch (pushErr) {
+        console.warn('Failed to dispatch background push:', pushErr.message);
+      }
+    }
+    return result;
   } catch (error) {
     if (error.code === '23505') return null;
     console.error('Error creating app notification:', error.message);

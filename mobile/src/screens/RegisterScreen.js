@@ -390,7 +390,7 @@ export default function RegisterScreen({ onBack, onNext }) {
                                     <View style={{ marginBottom: SPACING.md }}>
                                         <Text style={styles.label}>Set 4-Digit MPIN *</Text>
                                         <View style={styles.inputContainer}>
-                                            <TextInput style={styles.input} placeholder="Enter 4-digit MPIN" keyboardType="numeric" maxLength={4} secureTextEntry value={form.mpin} onChangeText={v => updateForm('mpin', v.replace(/[^0-9]/g, ''))} />
+                                            <TextInput style={styles.input} placeholder="Enter 4-digit MPIN" keyboardType="numeric" maxLength={4} value={form.mpin} onChangeText={v => updateForm('mpin', v.replace(/[^0-9]/g, ''))} />
                                         </View>
                                     </View>
                                 )}
