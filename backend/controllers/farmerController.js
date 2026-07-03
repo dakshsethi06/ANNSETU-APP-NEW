@@ -93,11 +93,12 @@ async function loginMpin(req, res) {
 
   try {
     // 1. Check if the phone number belongs to a Cold Storage Facility first
-    const csRes = await db.query('SELECT id, "displayName" FROM "ColdStorageOnboarding" WHERE phone = $1', [phone]);
+    const csRes = await db.query('SELECT id, "displayName", mpin FROM "ColdStorageOnboarding" WHERE phone = $1', [phone]);
     if (csRes.rows.length > 0) {
       const cs = csRes.rows[0];
-      // Verification: For existing cold storages, keep the mpin 1111
-      if (mpin !== '1111') {
+      // Verification: using verifyMpin with SHA-256 hash (defaulting to '1111' hash if not set)
+      const csMpin = cs.mpin || '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c';
+      if (!verifyMpin(mpin, csMpin)) {
         return res.status(401).json({ success: false, error: 'Invalid MPIN for Cold Storage. Please try again.' });
       }
       return res.json({
@@ -152,6 +153,20 @@ async function resetMpin(req, res) {
 
   try {
     const db = require('../db');
+    const cleanPhone = phone.replace('+91', '').trim();
+
+    // Check if the phone number belongs to a Cold Storage Facility first
+    const csRes = await db.query('SELECT id FROM "ColdStorageOnboarding" WHERE phone = $1', [cleanPhone]);
+    if (csRes.rows.length > 0) {
+      const cs = csRes.rows[0];
+      const hashedMpin = hashMpin(newMpin);
+      await db.query(
+        `UPDATE "ColdStorageOnboarding" SET "mpin" = $1, "updatedAt" = NOW() WHERE "id" = $2`,
+        [hashedMpin, cs.id]
+      );
+      return res.json({ success: true, message: 'MPIN reset successfully.' });
+    }
+
     const farmer = await farmerRepository.getFarmerByPhone(phone);
     if (!farmer) {
       return res.status(404).json({ success: false, error: 'Farmer profile not found.' });

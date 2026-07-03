@@ -1,4 +1,5 @@
 const storageRepository = require('../repositories/storageRepository');
+const crypto = require('crypto');
 
 async function getColdStorages(req, res) {
   try {
@@ -11,7 +12,7 @@ async function getColdStorages(req, res) {
 }
 
 async function registerColdStorage(req, res) {
-  const { id, displayName, city, district, state, address, contactPerson, phone } = req.body;
+  const { id, displayName, city, district, state, address, contactPerson, phone, mpin } = req.body;
   if (!id || !displayName) return res.status(400).json({ success: false, error: 'id and displayName are required fields' });
 
   try {
@@ -21,10 +22,12 @@ async function registerColdStorage(req, res) {
     const finalAddress = address || `${finalCity}, ${finalDistrict}`;
     const now = new Date();
     const storageCode = 'CS-' + id.substring(0, 6).toUpperCase();
+    const hashedMpin = crypto.createHash('sha256').update((mpin || '1111').toString()).digest('hex');
 
     const params = [
       id, storageCode, displayName, displayName, contactPerson || 'Manager', phone || '9999999999', 'contact@' + id + '.com',
-      finalCity, finalDistrict, finalState, finalAddress, 5000.0, 10, 'APPROVED', now, now, now, now, true, now, 'Onboarding Consent', 'v1.0'
+      finalCity, finalDistrict, finalState, finalAddress, 5000.0, 10, 'APPROVED', now, now, now, now, true, now, 'Onboarding Consent', 'v1.0',
+      hashedMpin
     ];
     
     await storageRepository.createColdStorage(params);
