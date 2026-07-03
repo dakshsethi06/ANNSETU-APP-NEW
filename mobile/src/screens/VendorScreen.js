@@ -124,7 +124,7 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
           {/* Top Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <AnnsetuLogo size={24} backgroundColor="#1E5C2E" iconColor="#FFFFFF" />
+              <AnnsetuLogo size={38} backgroundColor="#1E5C2E" iconColor="#FFFFFF" style={{ marginRight: 10 }} />
               <Text style={styles.headerTitle}>Annsetu</Text>
             </View>
           </View>
@@ -411,24 +411,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F3EE',
   },
   header: {
-    height: 50,
-    backgroundColor: '#F5F3EE',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E2D9',
+    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 56,
+    paddingBottom: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#F5F3EE',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: '800',
-    color: '#103321',
-    marginLeft: 8,
-    letterSpacing: 0.5,
+    color: '#1B4332',
   },
   scrollContent: {
     flexGrow: 1,

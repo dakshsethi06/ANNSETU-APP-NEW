@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform, Alert, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SHADOWS } from '../../theme';
+import AnnsetuLogo from '../../components/AnnsetuLogo';
 
-export default function KhataTab({ farmerData, ledgerList = [] }) {
+export default function KhataTab({ farmerData, ledgerList = [], userRole = 'farmer' }) {
   const pendingRent = parseFloat(farmerData?.pendingRent || 0);
 
   // Compute total charged and total paid from live database records
@@ -32,10 +33,17 @@ export default function KhataTab({ farmerData, ledgerList = [] }) {
   return (
     <View style={styles.container}>
       {/* ─── Top Header ─── */}
-      <View style={styles.screenHeader}>
-        <Text style={styles.logoText}>Annsetu</Text>
-        <TouchableOpacity style={styles.searchHeaderIcon} onPress={() => Alert.alert('Search', 'Khata search is active.')}>
-          <Feather name="search" size={20} color="#1B4332" />
+      <View style={styles.topHeader}>
+        <View style={styles.topHeaderLeft}>
+          <AnnsetuLogo size={38} backgroundColor="#1E5C2E" iconColor="#FFFFFF" style={{ marginRight: 10 }} />
+          <Text style={styles.brandTitle}>Annsetu</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.searchIconBtn} 
+          onPress={() => Alert.alert('Search', 'Khata search is active.')}
+          activeOpacity={0.8}
+        >
+          <Feather name="search" size={18} color="#1E5C2E" />
         </TouchableOpacity>
       </View>
 
@@ -101,7 +109,7 @@ export default function KhataTab({ farmerData, ledgerList = [] }) {
             <View style={{ paddingVertical: 32, alignItems: 'center', justifyContent: 'center' }}>
               <Feather name="book-open" size={32} color="#A1A1AA" style={{ marginBottom: 12 }} />
               <Text style={{ color: '#71717A', fontSize: 13, fontWeight: '500', textAlign: 'center', paddingHorizontal: 16 }}>
-                No ledger transactions found in the database for this farmer.
+                No ledger transactions found in the database for this {userRole === 'coldstorage' ? 'cold storage' : 'farmer'}.
               </Text>
             </View>
           ) : (
@@ -141,27 +149,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAF7F0',
   },
-  screenHeader: {
+  topHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'android' ? 24 : 12,
+    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 56,
     paddingBottom: 12,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8E0CE',
     backgroundColor: '#FAF7F0',
   },
-  logoText: {
+  topHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandTitle: {
     fontSize: 22,
     fontWeight: '800',
     color: '#1B4332',
   },
-  searchHeaderIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#EAE7D6',
+  searchIconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#EAF2EB',
     justifyContent: 'center',
     alignItems: 'center',
   },

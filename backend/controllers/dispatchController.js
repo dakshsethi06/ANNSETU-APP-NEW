@@ -35,7 +35,7 @@ async function getDispatches(req, res) {
           n."dispatchTo" AS buyer,
           f.name AS farmer_name,
           c."displayName" AS cold_storage_name,
-          COALESCE(a.commodity, n."remarkEnglish", 'Potato') AS commodity
+          COALESCE(n."remarkEnglish", a.commodity, 'Potato') AS commodity
         FROM "NikasiTransaction" n
         LEFT JOIN "Farmer" f ON n."farmerId" = f.id
         LEFT JOIN "AmadLot" a ON n."lotId" = a.id
@@ -61,7 +61,7 @@ async function getDispatches(req, res) {
           n."dispatchTo" AS buyer,
           f.name AS farmer_name,
           c."displayName" AS cold_storage_name,
-          COALESCE(a.commodity, n."remarkEnglish", 'Potato') AS commodity
+          COALESCE(n."remarkEnglish", a.commodity, 'Potato') AS commodity
         FROM "NikasiTransaction" n
         LEFT JOIN "Farmer" f ON n."farmerId" = f.id
         LEFT JOIN "AmadLot" a ON n."lotId" = a.id
@@ -204,6 +204,20 @@ async function approveDispatch(req, res) {
     `;
     const result = await db.query(sql, [id]);
 
+    // Delete the pending dispatch approval notification for this farmer
+    try {
+      await db.query(
+        `DELETE FROM "AppNotification" 
+         WHERE "userId" = $1 
+           AND "title" = 'Dispatch Approval Required' 
+           AND "message" LIKE $2`,
+        [dispatchData.farmerId, `%dispatch ${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish}%`]
+      );
+      console.log(`[Notification Cleanup] Deleted pending dispatch notification for farmer ${dispatchData.farmerId}`);
+    } catch (cleanErr) {
+      console.warn('Failed to delete pending dispatch notification:', cleanErr.message);
+    }
+
     // Create in-app notifications
     try {
       const { createAppNotification } = require('../lib/notifications');
@@ -256,11 +270,25 @@ async function deliverDispatch(req, res) {
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Dispatch transaction not found' });
     }
+    const dispatchData = result.rows[0];
+
+    // Delete the cold storage's dispatch approval notification (no longer needed once delivered)
+    try {
+      await db.query(
+        `DELETE FROM "AppNotification" 
+         WHERE "userId" = $1 
+           AND "title" = 'Dispatch Approved by Farmer' 
+           AND "message" LIKE $2`,
+        [dispatchData.coldStorageId, `%dispatch of ${dispatchData.packetsDispatched} bags%`]
+      );
+      console.log(`[Notification Cleanup] Deleted dispatch approved notification for cold storage ${dispatchData.coldStorageId}`);
+    } catch (cleanErr) {
+      console.warn('Failed to delete cold storage notification:', cleanErr.message);
+    }
 
     // Create in-app notification for the farmer about delivery
     try {
       const { createAppNotification } = require('../lib/notifications');
-      const dispatchData = result.rows[0];
       const csRes = await db.query('SELECT "displayName" FROM "ColdStorageOnboarding" WHERE id = $1', [dispatchData.coldStorageId]);
       const csName = csRes.rows.length > 0 ? csRes.rows[0].displayName : 'Cold Storage';
 

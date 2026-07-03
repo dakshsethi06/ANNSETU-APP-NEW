@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Alert, Image } from 'react-na
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import FarmerProfile from '../../components/FarmerProfile';
+import AnnsetuLogo from '../../components/AnnsetuLogo';
 import MandiPricePreview from '../../components/MandiPricePreview';
 import styles from './styles/farmerDashboardStyles';
 import { supabase } from '../../services/supabase';
@@ -68,11 +69,7 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
       <View style={styles.topHeader}>
         <View style={styles.topHeaderLeft}>
           <TouchableOpacity onPress={onBackPress} activeOpacity={0.8}>
-            <Image 
-              source={require('../../../assets/ann_setu_logo.png')} 
-              style={styles.shieldIcon}
-              resizeMode="contain"
-            />
+            <AnnsetuLogo size={38} backgroundColor="#1E5C2E" iconColor="#FFFFFF" style={{ marginRight: 10 }} />
           </TouchableOpacity>
           <Text style={styles.brandTitle}>Annsetu</Text>
         </View>

@@ -129,9 +129,7 @@ export default function StockTab({ holdingsList = [], manualStockMt, manualBags,
       {/* ─── Top Brand Header ─── */}
       <View style={s.topHeader}>
         <View style={s.topHeaderLeft}>
-          <View style={s.shieldIcon}>
-            <AnnsetuLogo size={22} backgroundColor="transparent" iconColor="#FFFFFF" />
-          </View>
+          <AnnsetuLogo size={38} backgroundColor="#1E5C2E" iconColor="#FFFFFF" style={{ marginRight: 10 }} />
           <Text style={s.brandTitle}>Annsetu</Text>
         </View>
         <TouchableOpacity
@@ -170,7 +168,7 @@ export default function StockTab({ holdingsList = [], manualStockMt, manualBags,
               <View style={[s.statCard, s.statCardAccent]}>
                 <Text style={s.statLabelAccent}>Aging Alerts</Text>
                 <Text style={s.statValueAccent}>{agingAlertsCount}</Text>
-                <Text style={s.statSubAccent}>Need attention</Text>
+                <Text style={s.statSubAccent}>{agingAlertsCount >= 1 ? 'Need attention' : 'All good'}</Text>
               </View>
             </View>
 

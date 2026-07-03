@@ -91,7 +91,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
       }
 
       if (onLoginSuccess) {
-        onLoginSuccess(phone, 'farmer');
+        onLoginSuccess(phone, data.role);
       }
     } catch (error) {
       Alert.alert('Login Failed', error.message);
@@ -203,7 +203,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
   };
 
   if (currentScreen === 'register') {
-    return <RegisterScreen onBack={() => setCurrentScreen('login')} onNext={handleRegisterOTP} />;
+    return <RegisterScreen onBack={() => setCurrentScreen('login')} onNext={handleRegisterOTP} lang={lang} setLang={setLang} />;
   }
 
   if (currentScreen === 'otp') {
@@ -337,7 +337,6 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             </Text>
           </View>
 
-          {loginMode === 'farmer' ? (
             <>
               <View style={styles.dividerContainer}>
                 <View style={styles.dividerLine} />
@@ -351,28 +350,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
                   <Text style={styles.createAccountLink}>{lang === 'en' ? 'Create Account' : 'खाता बनाएं'}</Text>
                 </TouchableOpacity>
               </View>
-
-              <TouchableOpacity
-                style={{ marginTop: 24, alignItems: 'center' }}
-                onPress={() => { setLoginMode('coldstorage'); setMpin(''); }}
-                activeOpacity={0.7}
-              >
-                <Text style={{ color: '#1E5C2E', fontWeight: 'bold', fontSize: 13, textDecorationLine: 'underline' }}>
-                  {lang === 'en' ? 'Cold Storage? Click here' : 'कोल्ड स्टोरेज पार्टनर? यहाँ क्लिक करें'}
-                </Text>
-              </TouchableOpacity>
             </>
-          ) : (
-            <TouchableOpacity
-              style={{ marginTop: 12, alignItems: 'center' }}
-              onPress={() => { setLoginMode('farmer'); setMpin(''); }}
-              activeOpacity={0.7}
-            >
-              <Text style={{ color: '#1E5C2E', fontWeight: 'bold', fontSize: 13, textDecorationLine: 'underline' }}>
-                {lang === 'en' ? 'Back to Farmer Login' : 'किसान लॉगिन पर वापस जाएं'}
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
       </ScrollView>
 

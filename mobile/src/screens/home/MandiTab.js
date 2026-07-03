@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Alert, Platform, StatusBar, TextInput, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { fetchMandiPrices } from '../../services/mandiService';
+import AnnsetuLogo from '../../components/AnnsetuLogo';
 import StateModal from './modals/StateModal';
 import CityModal from './modals/CityModal';
 import { FONTS } from '../../theme';
@@ -15,11 +16,21 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
   // Search parameters & modals
   const [state, setState] = useState('All');
   const [city, setCity] = useState('All');
+  const [tempState, setTempState] = useState('All');
+  const [tempCity, setTempCity] = useState('All');
   const [searchVisible, setSearchVisible] = useState(false);
   const [stateModalVisible, setStateModalVisible] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
   const [citiesList, setCitiesList] = useState([]);
   const [citiesLoading, setCitiesLoading] = useState(false);
+
+  const handleToggleSearch = () => {
+    if (!searchVisible) {
+      setTempState(state);
+      setTempCity(city);
+    }
+    setSearchVisible(!searchVisible);
+  };
 
   // Live Mandi rates from API
   const [loading, setLoading] = useState(false);
@@ -53,8 +64,8 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
   };
 
   useEffect(() => {
-    loadCities(state);
-  }, [state]);
+    loadCities(tempState);
+  }, [tempState]);
 
   // Fetch prices on change
   useEffect(() => {
@@ -120,16 +131,12 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
       {/* ─── Top Brand Header ─── */}
       <View style={s.topHeader}>
         <View style={s.topHeaderLeft}>
-          <Image 
-            source={require('../../../assets/ann_setu_logo.png')} 
-            style={s.shieldIcon} 
-            resizeMode="contain"
-          />
+          <AnnsetuLogo size={38} backgroundColor="#1E5C2E" iconColor="#FFFFFF" style={{ marginRight: 10 }} />
           <Text style={s.brandTitle}>Annsetu</Text>
         </View>
         <TouchableOpacity 
           style={[s.searchIconBtn, searchVisible && s.searchIconBtnActive]} 
-          onPress={() => setSearchVisible(!searchVisible)}
+          onPress={handleToggleSearch}
           activeOpacity={0.8}
         >
           <Feather name="search" size={18} color={searchVisible ? '#FFFFFF' : '#1E5C2E'} />
@@ -161,16 +168,16 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
           <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
             <TouchableOpacity style={[s.filterInputRow, { flex: 1 }]} onPress={() => setStateModalVisible(true)}>
               <Text style={s.filterInputLabel}>State</Text>
-              <Text style={s.filterInputValue}>{state || 'Choose state'}</Text>
+              <Text style={s.filterInputValue}>{tempState || 'Choose state'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[s.filterInputRow, { flex: 1 }, !state && { opacity: 0.5 }]} 
+              style={[s.filterInputRow, { flex: 1 }, !tempState && { opacity: 0.5 }]} 
               onPress={() => setCityModalVisible(true)}
-              disabled={!state}
+              disabled={!tempState}
             >
               <Text style={s.filterInputLabel}>Mandi / City</Text>
-              <Text style={s.filterInputValue}>{city || 'All Mandis'}</Text>
+              <Text style={s.filterInputValue}>{tempCity || 'All Mandis'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -178,11 +185,9 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
             <TouchableOpacity 
               style={s.filterResetBtn} 
               onPress={() => { 
-                setState(defaultState); 
-                setCity(''); 
-                setCropInput('');
-                setSelectedCrop('All');
-                setSearchVisible(false); 
+                setTempState('All'); 
+                setTempCity('All'); 
+                setCropInput('All');
               }}
             >
               <Text style={s.filterResetBtnText}>Reset</Text>
@@ -191,6 +196,8 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
             <TouchableOpacity 
               style={s.filterApplyBtn} 
               onPress={() => { 
+                setState(tempState);
+                setCity(tempCity);
                 setSelectedCrop(cropInput.trim() || 'All');
                 setSearchVisible(false); 
               }}
@@ -339,8 +346,8 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
       </ScrollView>
 
       {/* State & City Modals */}
-      <StateModal visible={stateModalVisible} onClose={() => setStateModalVisible(false)} selectedState={state} onSelectState={setState} />
-      <CityModal visible={cityModalVisible} onClose={() => setCityModalVisible(false)} selectedCity={city} onSelectCity={setCity} citiesList={citiesList} citiesLoading={citiesLoading} />
+      <StateModal visible={stateModalVisible} onClose={() => setStateModalVisible(false)} selectedState={tempState} onSelectState={(v) => { setTempState(v); setTempCity('All'); }} />
+      <CityModal visible={cityModalVisible} onClose={() => setCityModalVisible(false)} selectedCity={tempCity} onSelectCity={setTempCity} citiesList={citiesList} citiesLoading={citiesLoading} />
     </View>
   );
 }

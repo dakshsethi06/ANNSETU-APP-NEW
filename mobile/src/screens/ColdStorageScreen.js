@@ -210,11 +210,7 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
               <View style={styles.topHeader}>
                 <View style={styles.topHeaderLeft}>
                   <TouchableOpacity activeOpacity={0.8}>
-                    <Image 
-                      source={require('../../assets/ann_setu_logo.png')} 
-                      style={styles.shieldIcon}
-                      resizeMode="contain"
-                    />
+                    <AnnsetuLogo size={38} backgroundColor="#1E5C2E" iconColor="#FFFFFF" style={{ marginRight: 10 }} />
                   </TouchableOpacity>
                   <Text style={styles.brandTitle}>Annsetu</Text>
                 </View>
@@ -408,6 +404,7 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
             <KhataTab 
               farmerData={{ name: profile.name, pendingRent: stats.pendingDuesText.replace('₹', '').replace(/,/g, '') }} 
               ledgerList={ledgerList} 
+              userRole="coldstorage"
             />
           ) : activeTab === 'notifications' ? (
             <NotificationsTab farmerId={profile.id} onBack={() => setActiveTab('home')} />

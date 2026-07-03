@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Image, Modal, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Image, Modal, FlatList, StatusBar } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import styles from './styles/authStyles';
+import AnnsetuLogo from '../components/AnnsetuLogo';
 import { COLORS, SPACING, RADIUS } from '../theme';
 
 const ROLES = [
@@ -52,7 +53,7 @@ const DISTRICTS_BY_STATE = {
 };
 
 // ── Dropdown Picker Component (matching prototype select styling) ──
-function DropdownPicker({ label, placeholder, value, options, onSelect }) {
+function DropdownPicker({ label, placeholder, value, options, onSelect, lang = 'en' }) {
     const [visible, setVisible] = useState(false);
     const [search, setSearch] = useState('');
 
@@ -61,6 +62,10 @@ function DropdownPicker({ label, placeholder, value, options, onSelect }) {
         : options;
 
     const openPicker = () => { setSearch(''); setVisible(true); };
+
+    const searchPlaceholder = lang === 'en' ? 'Search...' : 'खोजें...';
+    const noResultsText = lang === 'en' ? 'No results found' : 'कोई परिणाम नहीं मिला';
+    const noOptionsText = lang === 'en' ? 'No options available' : 'कोई विकल्प उपलब्ध नहीं है';
 
     return (
         <View style={{ marginBottom: 16 }}>
@@ -160,7 +165,7 @@ function DropdownPicker({ label, placeholder, value, options, onSelect }) {
                                         marginLeft: 8,
                                         paddingVertical: 0,
                                     }}
-                                    placeholder="Search..."
+                                    placeholder={searchPlaceholder}
                                     placeholderTextColor="#6B7B6B"
                                     value={search}
                                     onChangeText={setSearch}
@@ -219,7 +224,7 @@ function DropdownPicker({ label, placeholder, value, options, onSelect }) {
                             ListEmptyComponent={
                                 <View style={{ paddingVertical: 32, alignItems: 'center' }}>
                                     <Text style={{ fontSize: 14, color: '#6B7B6B' }}>
-                                        {search ? 'No results found' : 'No options available'}
+                                        {search ? noResultsText : noOptionsText}
                                     </Text>
                                 </View>
                             }
@@ -231,7 +236,110 @@ function DropdownPicker({ label, placeholder, value, options, onSelect }) {
     );
 }
 
-export default function RegisterScreen({ onBack, onNext }) {
+const TRANSLATIONS = {
+    en: {
+        createAccount: "Create Account",
+        subtitleHeader: "Join thousands of farmers, vendors & cold storages",
+        roles: {
+            farmer: { label: "Farmer", sub: "Store & manage my crops" },
+            vendor: { label: "Vendor / Trader", sub: "Buy commodities from cold storages" },
+            coldstorage: { label: "Cold Storage", sub: "Manage my cold storage facility" }
+        },
+        iam: "I am a...",
+        iamSub: "Select your role to get the right experience",
+        continue: "Continue",
+        verifyOtp: "Verify with OTP & Continue",
+        personalInfo: "Personal Information",
+        personalSub: "Your basic details for account setup",
+        coldStorageName: "Cold Storage Name",
+        coldStoragePlaceholder: "e.g. SN Sharma Cold Storage",
+        businessName: "Business / Firm Name",
+        businessPlaceholder: "e.g. SN Sharma Trading Co.",
+        fullName: "Full Name",
+        fullNamePlaceholder: "Enter your full name",
+        mobileNumber: "Mobile Number *",
+        mobilePlaceholder: "10-digit mobile number",
+        emailAddress: "Email Address *",
+        emailPlaceholder: "example@email.com",
+        setMpin: "Set 4-Digit MPIN *",
+        mpinPlaceholder: "Enter 4-digit MPIN",
+        addressDetails: "Address Details",
+        addressSub: "Your location helps connect nearby cold storages",
+        state: "State *",
+        statePlaceholder: "Select State",
+        district: "District *",
+        districtPlaceholder: "Select District",
+        village: "Village / Town",
+        villagePlaceholder: "e.g. Tundla",
+        pincode: "Pincode",
+        pincodePlaceholder: "e.g. 283204",
+        kycVerification: "KYC Verification",
+        kycSub: "Required for secure transactions & compliance",
+        kycAlert: "Your KYC documents are encrypted and stored securely. They are only used for identity verification.",
+        aadhaarNumber: "Aadhaar Number *",
+        panNumber: "PAN Number (Optional)",
+        panPlaceholder: "ABCDE1234F",
+        accountSaved: "Account Details Saved!",
+        welcomeAnnsetu: "Welcome to Annsetu,",
+        accountSummary: "Account Summary",
+        nameLabel: "Name",
+        mobileLabel: "Mobile",
+        roleLabel: "Role",
+        steps: ['Role', 'Personal Info', 'Address', 'KYC', 'Done']
+    },
+    hi: {
+        createAccount: "खाता बनाएं",
+        subtitleHeader: "हजारों किसानों, विक्रेताओं और कोल्ड स्टोरेज से जुड़ें",
+        roles: {
+            farmer: { label: "किसान", sub: "अपनी फसलों का भंडारण और प्रबंधन करें" },
+            vendor: { label: "विक्रेता / व्यापारी", sub: "कोल्ड स्टोरेज से वस्तुएं खरीदें" },
+            coldstorage: { label: "कोल्ड स्टोरेज", sub: "अपने कोल्ड स्टोरेज सुविधा का प्रबंधन करें" }
+        },
+        iam: "मैं हूँ एक...",
+        iamSub: "सही अनुभव प्राप्त करने के लिए अपनी भूमिका चुनें",
+        continue: "जारी रखें",
+        verifyOtp: "OTP से सत्यापित करें और जारी रखें",
+        personalInfo: "व्यक्तिगत जानकारी",
+        personalSub: "खाता सेटअप के लिए आपका बुनियादी विवरण",
+        coldStorageName: "कोल्ड स्टोरेज का नाम",
+        coldStoragePlaceholder: "जैसे: एस.एन. शर्मा कोल्ड स्टोरेज",
+        businessName: "व्यवसाय / फर्म का नाम",
+        businessPlaceholder: "जैसे: एस.एन. शर्मा ट्रेडिंग कंपनी",
+        fullName: "पूरा नाम",
+        fullNamePlaceholder: "अपना पूरा नाम दर्ज करें",
+        mobileNumber: "मोबाइल नंबर *",
+        mobilePlaceholder: "10 अंकों का मोबाइल नंबर",
+        emailAddress: "ईमेल पता *",
+        emailPlaceholder: "example@email.com",
+        setMpin: "4-अंकों का MPIN सेट करें *",
+        mpinPlaceholder: "4-अंकों का MPIN दर्ज करें",
+        addressDetails: "पता विवरण",
+        addressSub: "आपका स्थान पास के कोल्ड स्टोरेज को जोड़ने में मदद करता है",
+        state: "राज्य *",
+        statePlaceholder: "राज्य चुनें",
+        district: "जिला *",
+        districtPlaceholder: "जिला चुनें",
+        village: "गांव / शहर",
+        villagePlaceholder: "जैसे: टूंडला",
+        pincode: "पिनकोड",
+        pincodePlaceholder: "जैसे: 283204",
+        kycVerification: "केवाईसी सत्यापन",
+        kycSub: "सुरक्षित लेनदेन और अनुपालन के लिए आवश्यक",
+        kycAlert: "आपके केवाईसी दस्तावेज एन्क्रिप्टेड और सुरक्षित रूप से संग्रहीत हैं। वे केवल पहचान सत्यापन के लिए उपयोग किए जाते हैं।",
+        aadhaarNumber: "आधार संख्या *",
+        panNumber: "पैन संख्या (वैकल्पिक)",
+        panPlaceholder: "ABCDE1234F",
+        accountSaved: "खाता विवरण सहेजा गया!",
+        welcomeAnnsetu: "अन्नसेतु में आपका स्वागत है,",
+        accountSummary: "खाता सारांश",
+        nameLabel: "नाम",
+        mobileLabel: "मोबाइल",
+        roleLabel: "भूमिका",
+        steps: ['भूमिका', 'व्यक्तिगत जानकारी', 'पता', 'केवाईसी', 'पूर्ण']
+    }
+};
+
+export default function RegisterScreen({ onBack, onNext, lang = 'en', setLang }) {
     const [step, setStep] = useState(1);
     const [role, setRole] = useState('');
     const [form, setForm] = useState({
@@ -243,13 +351,15 @@ export default function RegisterScreen({ onBack, onNext }) {
 
     const updateForm = (key, value) => setForm(f => ({ ...f, [key]: value }));
 
-    const stepLabels = ['Role', 'Personal', 'Address', 'KYC', 'Done'];
+    const currentT = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    const stepLabels = currentT.steps;
 
     const canProceed = () => {
         if (step === 1) return role !== '';
         if (step === 2) {
             const isMpinValid = role === 'farmer' ? form.mpin.length === 4 : true;
-            return form.name.length > 1 && form.phone.length === 10 && isMpinValid;
+            const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+            return form.name.length > 1 && form.phone.length === 10 && isMpinValid && isEmailValid;
         }
         if (step === 3) return form.state !== '' && form.district !== '';
         if (step === 4) return form.aadhaar.length === 12;
@@ -293,26 +403,38 @@ export default function RegisterScreen({ onBack, onNext }) {
 
     return (
         <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <StatusBar barStyle="light-content" backgroundColor="#1E5C2E" />
             <View style={{ flex: 1 }}>
-                <View style={styles.headerTop}>
-                    <TouchableOpacity style={styles.backButton} onPress={step > 1 ? () => setStep(s => s - 1) : onBack}>
-                        <Feather name="arrow-left" size={18} color={COLORS.white} />
-                    </TouchableOpacity>
+                <View style={[styles.headerTop, { paddingTop: Platform.OS === 'ios' ? 56 : 48 }]}>
+                    <View style={{ width: 60, alignItems: 'flex-start' }}>
+                        <TouchableOpacity style={styles.backButton} onPress={step > 1 ? () => setStep(s => s - 1) : onBack}>
+                            <Feather name="arrow-left" size={18} color={COLORS.white} />
+                        </TouchableOpacity>
+                    </View>
                     <View style={styles.headerBrand}>
-                        <View style={styles.headerBrandIcon}>
-                            <Image 
-                                source={require('../../assets/ann_setu_logo.png')} 
-                                style={{ width: 18, height: 18, tintColor: '#155E38' }} 
-                                resizeMode="contain" 
-                            />
-                        </View>
+                        <AnnsetuLogo size={38} backgroundColor="rgba(255, 255, 255, 0.15)" iconColor="#FFFFFF" style={{ marginRight: 8 }} />
                         <Text style={styles.headerBrandText}>Annsetu</Text>
                     </View>
-                    <View style={{ width: 32 }} />
+                    <View style={{ width: 60, alignItems: 'flex-end' }}>
+                        <View style={localStyles.headerLangToggle}>
+                            <TouchableOpacity
+                                style={[localStyles.headerLangButton, lang === 'en' && localStyles.headerLangButtonActive]}
+                                onPress={() => setLang && setLang('en')}
+                            >
+                                <Text style={[localStyles.headerLangText, lang === 'en' && localStyles.headerLangTextActive]}>EN</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[localStyles.headerLangButton, lang === 'hi' && localStyles.headerLangButtonActive]}
+                                onPress={() => setLang && setLang('hi')}
+                            >
+                                <Text style={[localStyles.headerLangText, lang === 'hi' && localStyles.headerLangTextActive]}>हि</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
 
-                <Text style={styles.headerTitle}>Create Account</Text>
-                <Text style={styles.headerSubtitle}>Join thousands of farmers, vendors & cold storages</Text>
+                <Text style={styles.headerTitle}>{currentT.createAccount}</Text>
+                <Text style={styles.headerSubtitle}>{currentT.subtitleHeader}</Text>
 
                 {renderStepIndicator()}
 
@@ -320,77 +442,80 @@ export default function RegisterScreen({ onBack, onNext }) {
                     <ScrollView contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl }}>
                         {step === 1 && (
                             <View>
-                                <Text style={styles.title}>I am a...</Text>
-                                <Text style={styles.subtitle}>Select your role to get the right experience</Text>
-                                {ROLES.map(r => (
-                                    <TouchableOpacity
-                                        key={r.key}
-                                        style={[localStyles.roleCard, role === r.key && localStyles.roleCardActive]}
-                                        onPress={() => setRole(r.key)}
-                                    >
-                                        <Text style={{ fontSize: 32 }}>{r.emoji}</Text>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={[localStyles.roleTitle, role === r.key && localStyles.roleTitleActive]}>{r.label}</Text>
-                                            <Text style={localStyles.roleSub}>{r.sub}</Text>
-                                        </View>
-                                        <View style={[localStyles.roleCheck, role === r.key && localStyles.roleCheckActive]}>
-                                            {role === r.key && <Feather name="check" size={12} color={COLORS.white} />}
-                                        </View>
-                                    </TouchableOpacity>
-                                ))}
+                                <Text style={styles.title}>{currentT.iam}</Text>
+                                <Text style={styles.subtitle}>{currentT.iamSub}</Text>
+                                {ROLES.map(r => {
+                                    const roleInfo = currentT.roles[r.key];
+                                    return (
+                                        <TouchableOpacity
+                                            key={r.key}
+                                            style={[localStyles.roleCard, role === r.key && localStyles.roleCardActive]}
+                                            onPress={() => setRole(r.key)}
+                                        >
+                                            <Text style={{ fontSize: 32 }}>{r.emoji}</Text>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={[localStyles.roleTitle, role === r.key && localStyles.roleTitleActive]}>{roleInfo.label}</Text>
+                                                <Text style={localStyles.roleSub}>{roleInfo.sub}</Text>
+                                            </View>
+                                            <View style={[localStyles.roleCheck, role === r.key && localStyles.roleCheckActive]}>
+                                                {role === r.key && <Feather name="check" size={12} color={COLORS.white} />}
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
                             </View>
                         )}
 
                         {step === 2 && (
                             <View>
-                                <Text style={styles.title}>Personal Information</Text>
-                                <Text style={styles.subtitle}>Your basic details for account setup</Text>
+                                <Text style={styles.title}>{currentT.personalInfo}</Text>
+                                <Text style={styles.subtitle}>{currentT.personalSub}</Text>
 
                                 {role === 'coldstorage' && (
                                     <View style={{ marginBottom: SPACING.md }}>
-                                        <Text style={styles.label}>Cold Storage Name</Text>
+                                        <Text style={styles.label}>{currentT.coldStorageName}</Text>
                                         <View style={styles.inputContainer}>
-                                            <TextInput style={styles.input} placeholder="e.g. SN Sharma Cold Storage" value={form.storageName} onChangeText={v => updateForm('storageName', v)} />
+                                            <TextInput style={styles.input} placeholder={currentT.coldStoragePlaceholder} placeholderTextColor="#6B7B6B" value={form.storageName} onChangeText={v => updateForm('storageName', v)} />
                                         </View>
                                     </View>
                                 )}
                                 {role === 'vendor' && (
                                     <View style={{ marginBottom: SPACING.md }}>
-                                        <Text style={styles.label}>Business / Firm Name</Text>
+                                        <Text style={styles.label}>{currentT.businessName}</Text>
                                         <View style={styles.inputContainer}>
-                                            <TextInput style={styles.input} placeholder="e.g. SN Sharma Trading Co." value={form.businessName} onChangeText={v => updateForm('businessName', v)} />
+                                            <TextInput style={styles.input} placeholder={currentT.businessPlaceholder} placeholderTextColor="#6B7B6B" value={form.businessName} onChangeText={v => updateForm('businessName', v)} />
                                         </View>
                                     </View>
                                 )}
 
                                 <View style={{ marginBottom: SPACING.md }}>
-                                    <Text style={styles.label}>Full Name</Text>
+                                    <Text style={styles.label}>{currentT.fullName}</Text>
                                     <View style={styles.inputContainer}>
-                                        <TextInput style={styles.input} placeholder="Enter your full name" value={form.name} onChangeText={v => updateForm('name', v)} />
+                                        <TextInput style={styles.input} placeholder={currentT.fullNamePlaceholder} placeholderTextColor="#6B7B6B" value={form.name} onChangeText={v => updateForm('name', v)} />
                                     </View>
                                 </View>
 
                                 <View style={{ marginBottom: SPACING.md }}>
-                                    <Text style={styles.label}>Mobile Number *</Text>
+                                    <Text style={styles.label}>{currentT.mobileNumber}</Text>
                                     <View style={styles.inputContainer}>
                                         <Text style={styles.inputPrefix}>+91</Text>
                                         <View style={styles.inputDivider} />
-                                        <TextInput style={styles.input} placeholder="10-digit mobile number" keyboardType="numeric" maxLength={10} value={form.phone} onChangeText={v => updateForm('phone', v.replace(/[^0-9]/g, ''))} />
+                                        <TextInput style={styles.input} placeholder={currentT.mobilePlaceholder} placeholderTextColor="#6B7B6B" keyboardType="numeric" maxLength={10} value={form.phone} onChangeText={v => updateForm('phone', v.replace(/[^0-9]/g, ''))} />
                                     </View>
                                 </View>
 
                                 <View style={{ marginBottom: SPACING.md }}>
-                                    <Text style={styles.label}>Email Address (Optional)</Text>
+                                    <Text style={styles.label}>{currentT.emailAddress}</Text>
                                     <View style={styles.inputContainer}>
-                                        <TextInput style={styles.input} placeholder="example@email.com" keyboardType="email-address" autoCapitalize="none" value={form.email} onChangeText={v => updateForm('email', v)} />
+                                        <TextInput style={styles.input} placeholder={currentT.emailPlaceholder} placeholderTextColor="#6B7B6B" keyboardType="email-address" autoCapitalize="none" value={form.email} onChangeText={v => updateForm('email', v)} />
                                     </View>
                                 </View>
 
                                 {role === 'farmer' && (
                                     <View style={{ marginBottom: SPACING.md }}>
-                                        <Text style={styles.label}>Set 4-Digit MPIN *</Text>
+                                        <Text style={styles.label}>{currentT.setMpin}</Text>
                                         <View style={styles.inputContainer}>
-                                            <TextInput style={styles.input} placeholder="Enter 4-digit MPIN" keyboardType="numeric" maxLength={4} value={form.mpin} onChangeText={v => updateForm('mpin', v.replace(/[^0-9]/g, ''))} />
+                                            <TextInput style={styles.input} placeholder={currentT.mpinPlaceholder} placeholderTextColor="#6B7B6B" keyboardType="numeric" maxLength={4} value={form.mpin} onChangeText={v => updateForm('mpin', v.replace(/[^0-9]/g, ''))} />
                                         </View>
                                     </View>
                                 )}
@@ -399,39 +524,41 @@ export default function RegisterScreen({ onBack, onNext }) {
 
                         {step === 3 && (
                             <View>
-                                <Text style={styles.title}>Address Details</Text>
-                                <Text style={styles.subtitle}>Your location helps connect nearby cold storages</Text>
+                                <Text style={styles.title}>{currentT.addressDetails}</Text>
+                                <Text style={styles.subtitle}>{currentT.addressSub}</Text>
 
                                 <DropdownPicker
-                                    label="State *"
-                                    placeholder="Select State"
+                                    label={currentT.state}
+                                    placeholder={currentT.statePlaceholder}
                                     value={form.state}
                                     options={INDIAN_STATES}
                                     onSelect={(val) => {
                                         updateForm('state', val);
                                         updateForm('district', ''); // reset district when state changes
                                     }}
+                                    lang={lang}
                                 />
 
                                 <DropdownPicker
-                                    label="District *"
-                                    placeholder="Select District"
+                                    label={currentT.district}
+                                    placeholder={currentT.districtPlaceholder}
                                     value={form.district}
                                     options={DISTRICTS_BY_STATE[form.state] || []}
                                     onSelect={(val) => updateForm('district', val)}
+                                    lang={lang}
                                 />
 
                                 <View style={{ marginBottom: 16 }}>
-                                    <Text style={styles.label}>Village / Town</Text>
+                                    <Text style={styles.label}>{currentT.village}</Text>
                                     <View style={styles.inputContainer}>
-                                        <TextInput style={styles.input} placeholder="e.g. Tundla" placeholderTextColor="#6B7B6B" value={form.village} onChangeText={v => updateForm('village', v)} />
+                                        <TextInput style={styles.input} placeholder={currentT.villagePlaceholder} placeholderTextColor="#6B7B6B" value={form.village} onChangeText={v => updateForm('village', v)} />
                                     </View>
                                 </View>
 
                                 <View style={{ marginBottom: 16 }}>
-                                    <Text style={styles.label}>Pincode</Text>
+                                    <Text style={styles.label}>{currentT.pincode}</Text>
                                     <View style={styles.inputContainer}>
-                                        <TextInput style={styles.input} placeholder="e.g. 283204" placeholderTextColor="#6B7B6B" keyboardType="numeric" maxLength={6} value={form.pincode} onChangeText={v => updateForm('pincode', v.replace(/[^0-9]/g, ''))} />
+                                        <TextInput style={styles.input} placeholder={currentT.pincodePlaceholder} placeholderTextColor="#6B7B6B" keyboardType="numeric" maxLength={6} value={form.pincode} onChangeText={v => updateForm('pincode', v.replace(/[^0-9]/g, ''))} />
                                     </View>
                                 </View>
                             </View>
@@ -439,26 +566,26 @@ export default function RegisterScreen({ onBack, onNext }) {
 
                         {step === 4 && (
                             <View>
-                                <Text style={styles.title}>KYC Verification</Text>
-                                <Text style={styles.subtitle}>Required for secure transactions & compliance</Text>
+                                <Text style={styles.title}>{currentT.kycVerification}</Text>
+                                <Text style={styles.subtitle}>{currentT.kycSub}</Text>
 
                                 <View style={localStyles.alertBox}>
                                     <Feather name="shield" size={16} color="#B45309" style={{ marginTop: 2 }} />
-                                    <Text style={localStyles.alertText}>Your KYC documents are encrypted and stored securely. They are only used for identity verification.</Text>
+                                    <Text style={localStyles.alertText}>{currentT.kycAlert}</Text>
                                 </View>
 
                                 <View style={{ marginBottom: SPACING.md }}>
-                                    <Text style={styles.label}>Aadhaar Number *</Text>
+                                    <Text style={styles.label}>{currentT.aadhaarNumber}</Text>
                                     <View style={styles.inputContainer}>
                                         <Feather name="file-text" size={16} color={COLORS.textMid} style={{ marginRight: 8 }} />
-                                        <TextInput style={styles.input} placeholder="XXXX XXXX XXXX" keyboardType="numeric" maxLength={12} value={form.aadhaar} onChangeText={v => updateForm('aadhaar', v.replace(/[^0-9]/g, ''))} />
+                                        <TextInput style={styles.input} placeholder="XXXX XXXX XXXX" placeholderTextColor="#6B7B6B" keyboardType="numeric" maxLength={12} value={form.aadhaar} onChangeText={v => updateForm('aadhaar', v.replace(/[^0-9]/g, ''))} />
                                     </View>
                                 </View>
 
                                 <View style={{ marginBottom: SPACING.md }}>
-                                    <Text style={styles.label}>PAN Number (Optional)</Text>
+                                    <Text style={styles.label}>{currentT.panNumber}</Text>
                                     <View style={styles.inputContainer}>
-                                        <TextInput style={styles.input} placeholder="ABCDE1234F" autoCapitalize="characters" maxLength={10} value={form.pan} onChangeText={v => updateForm('pan', v)} />
+                                        <TextInput style={styles.input} placeholder={currentT.panPlaceholder} placeholderTextColor="#6B7B6B" autoCapitalize="characters" maxLength={10} value={form.pan} onChangeText={v => updateForm('pan', v)} />
                                     </View>
                                 </View>
                             </View>
@@ -469,23 +596,23 @@ export default function RegisterScreen({ onBack, onNext }) {
                                 <View style={localStyles.successIconBox}>
                                     <Feather name="check-circle" size={48} color="#10B981" />
                                 </View>
-                                <Text style={styles.title}>Account Details Saved!</Text>
-                                <Text style={styles.subtitle}>Welcome to Annsetu,</Text>
+                                <Text style={styles.title}>{currentT.accountSaved}</Text>
+                                <Text style={styles.subtitle}>{currentT.welcomeAnnsetu}</Text>
                                 <Text style={localStyles.successName}>{form.name || 'User'}</Text>
 
                                 <View style={localStyles.summaryBox}>
-                                    <Text style={localStyles.summaryTitle}>Account Summary</Text>
+                                    <Text style={localStyles.summaryTitle}>{currentT.accountSummary}</Text>
                                     <View style={localStyles.summaryRow}>
-                                        <Text style={localStyles.summaryLabel}>Name</Text>
+                                        <Text style={localStyles.summaryLabel}>{currentT.nameLabel}</Text>
                                         <Text style={localStyles.summaryValue}>{form.name}</Text>
                                     </View>
                                     <View style={localStyles.summaryRow}>
-                                        <Text style={localStyles.summaryLabel}>Mobile</Text>
+                                        <Text style={localStyles.summaryLabel}>{currentT.mobileLabel}</Text>
                                         <Text style={localStyles.summaryValue}>+91 {form.phone}</Text>
                                     </View>
                                     <View style={localStyles.summaryRow}>
-                                        <Text style={localStyles.summaryLabel}>Role</Text>
-                                        <Text style={localStyles.summaryValue}>{ROLES.find(r => r.key === role)?.label}</Text>
+                                        <Text style={localStyles.summaryLabel}>{currentT.roleLabel}</Text>
+                                        <Text style={localStyles.summaryValue}>{currentT.roles[role]?.label}</Text>
                                     </View>
                                 </View>
                             </View>
@@ -498,7 +625,7 @@ export default function RegisterScreen({ onBack, onNext }) {
                             onPress={handleAction}
                             disabled={!canProceed()}
                         >
-                            <Text style={styles.primaryButtonText}>{step === 5 ? 'Verify with OTP & Continue' : 'Continue'}</Text>
+                            <Text style={styles.primaryButtonText}>{step === 5 ? currentT.verifyOtp : currentT.continue}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -512,7 +639,7 @@ const localStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: SPACING.lg,
-        paddingBottom: SPACING.lg,
+        paddingBottom: 32,
     },
     stepItem: {
         flexDirection: 'row',
@@ -521,6 +648,9 @@ const localStyles = StyleSheet.create({
     },
     stepCircleContainer: {
         alignItems: 'center',
+        width: 24,
+        height: 24,
+        position: 'relative',
     },
     stepCircle: {
         width: 24,
@@ -528,7 +658,6 @@ const localStyles = StyleSheet.create({
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 4,
     },
     stepCircleDone: { backgroundColor: COLORS.white },
     stepCircleActive: { backgroundColor: 'rgba(255,255,255,0.3)', borderWidth: 2, borderColor: COLORS.white },
@@ -536,7 +665,15 @@ const localStyles = StyleSheet.create({
     stepNumber: { fontSize: 10, fontWeight: 'bold' },
     stepNumberActive: { color: COLORS.white },
     stepNumberPending: { color: 'rgba(255,255,255,0.4)' },
-    stepLabel: { fontSize: 9, fontWeight: '600' },
+    stepLabel: {
+        fontSize: 9,
+        fontWeight: '600',
+        position: 'absolute',
+        top: 28,
+        width: 80,
+        left: -28,
+        textAlign: 'center',
+    },
     stepLabelDone: { color: 'rgba(255,255,255,0.8)' },
     stepLabelActive: { color: COLORS.white },
     stepLabelPending: { color: 'rgba(255,255,255,0.3)' },
@@ -544,7 +681,6 @@ const localStyles = StyleSheet.create({
         flex: 1,
         height: 1,
         marginHorizontal: 4,
-        marginBottom: 12,
     },
     stepLineDone: { backgroundColor: 'rgba(255,255,255,0.7)' },
     stepLinePending: { backgroundColor: 'rgba(255,255,255,0.15)' },
@@ -643,4 +779,31 @@ const localStyles = StyleSheet.create({
     },
     summaryLabel: { fontSize: 13, color: '#047857' },
     summaryValue: { fontSize: 13, fontWeight: '600', color: '#064E3B' },
+    headerLangToggle: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        borderRadius: 16,
+        padding: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 32,
+    },
+    headerLangButton: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerLangButtonActive: {
+        backgroundColor: '#FFFFFF',
+    },
+    headerLangText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+    },
+    headerLangTextActive: {
+        color: '#1E5C2E',
+    },
 });

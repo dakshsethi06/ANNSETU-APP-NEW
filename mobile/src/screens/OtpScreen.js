@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image, StatusBar, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
+import AnnsetuLogo from '../components/AnnsetuLogo';
 
 // Prototype Colors
 const PROTO = {
@@ -88,13 +89,7 @@ export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
                         <Feather name="arrow-left" size={16} color={PROTO.foreground} />
                     </TouchableOpacity>
                     <View style={localStyles.headerBrand}>
-                        <View style={localStyles.headerBrandIcon}>
-                            <Image 
-                                source={require('../../assets/ann_setu_logo.png')} 
-                                style={{ width: 15, height: 15, tintColor: '#ffffff' }} 
-                                resizeMode="contain" 
-                            />
-                        </View>
+                        <AnnsetuLogo size={38} backgroundColor={PROTO.primary} iconColor="#FFFFFF" style={{ marginRight: 8 }} />
                         <Text style={localStyles.headerBrandText}>Annsetu</Text>
                     </View>
                     <View style={{ width: 32 }} />

@@ -67,9 +67,7 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout }) {
       {/* Top Header */}
       <View style={s.topHeader}>
         <View style={s.topHeaderLeft}>
-          <View style={s.shieldIcon}>
-            <AnnsetuLogo size={22} backgroundColor="transparent" iconColor="#FFFFFF" />
-          </View>
+          <AnnsetuLogo size={38} backgroundColor="#1E5C2E" iconColor="#FFFFFF" style={{ marginRight: 10 }} />
           <Text style={s.brandTitle}>Annsetu</Text>
         </View>
       </View>

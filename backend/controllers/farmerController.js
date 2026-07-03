@@ -1,5 +1,6 @@
 const farmerRepository = require('../repositories/farmerRepository');
 const crypto = require('crypto');
+const db = require('../db');
 
 function hashMpin(mpin) {
   if (!mpin) return '';
@@ -91,6 +92,26 @@ async function loginMpin(req, res) {
   }
 
   try {
+    // 1. Check if the phone number belongs to a Cold Storage Facility first
+    const csRes = await db.query('SELECT id, "displayName" FROM "ColdStorageOnboarding" WHERE phone = $1', [phone]);
+    if (csRes.rows.length > 0) {
+      const cs = csRes.rows[0];
+      // Verification: For existing cold storages, keep the mpin 1111
+      if (mpin !== '1111') {
+        return res.status(401).json({ success: false, error: 'Invalid MPIN for Cold Storage. Please try again.' });
+      }
+      return res.json({
+        success: true,
+        role: 'ColdStorageFacility',
+        coldStorage: {
+          id: cs.id,
+          name: cs.displayName,
+          phone: phone
+        }
+      });
+    }
+
+    // 2. If not a Cold Storage, proceed with Farmer login
     const farmer = await farmerRepository.getFarmerByPhone(phone);
     if (!farmer) {
       return res.status(404).json({ success: false, error: 'Farmer profile not found.' });
@@ -103,6 +124,7 @@ async function loginMpin(req, res) {
 
     return res.json({
       success: true,
+      role: 'ColdStorage', // Maps to Farmer Dashboard role
       farmer: {
         id: farmer.id,
         name: farmer.name,
