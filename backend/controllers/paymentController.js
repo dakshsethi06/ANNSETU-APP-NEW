@@ -83,8 +83,8 @@ async function createOrder(req, res) {
         paymentLinkUrl = link.short_url;
       } catch (linkErr) {
         console.warn('Razorpay payment link creation failed:', linkErr.message);
-        // Fallback standard checkout page
-        paymentLinkUrl = `https://checkout.razorpay.com/v1/checkout.html?key=${keyId}&amount=${amountPaise}&order_id=${orderId}`;
+        // Fallback to our functional Mock Checkout Page so the user can still test in WebView!
+        paymentLinkUrl = `http://${serverIp}/api/payments/mock-checkout/${orderId}`;
       }
     }
 
