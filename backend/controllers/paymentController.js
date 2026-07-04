@@ -378,6 +378,166 @@ async function handleWebhook(req, res) {
   }
 }
 
+async function renderMockCheckout(req, res) {
+  const { orderId } = req.params;
+  
+  let amount = 0.00;
+  try {
+    const paymentRes = await db.query('SELECT amount FROM "Payment" WHERE id = $1', [orderId]);
+    if (paymentRes.rows.length > 0) {
+      amount = paymentRes.rows[0].amount;
+    }
+  } catch (err) {
+    console.warn('Failed to retrieve order amount for mock checkout:', err.message);
+  }
+
+  res.send(`
+    <html>
+      <head>
+        <title>AnnSetu Mock Payment Portal</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #FAF7F0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+          }
+          .card {
+            background: white;
+            padding: 32px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(30, 64, 50, 0.08);
+            text-align: center;
+            max-width: 420px;
+            width: 100%;
+            border: 1px solid #E8E0CE;
+          }
+          .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1E5C2E;
+            margin-bottom: 24px;
+            letter-spacing: -0.5px;
+          }
+          h2 {
+            color: #1E4032;
+            margin-top: 0;
+            font-size: 22px;
+            font-weight: 800;
+          }
+          p {
+            color: #71717A;
+            font-size: 14px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+          }
+          .amount-box {
+            background: #F3EFE3;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: 1px solid #EAD9B0;
+          }
+          .amount-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #71717A;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+          }
+          .amount-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: #1A1A1A;
+          }
+          .btn-pay {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 28px;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            background: #1E5C2E;
+            color: white;
+            transition: background 0.2s;
+            margin-bottom: 12px;
+          }
+          .btn-pay:hover {
+            background: #164622;
+          }
+          .btn-cancel {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #E4E4E7;
+            border-radius: 28px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+            color: #71717A;
+            text-decoration: none;
+            text-align: center;
+            box-sizing: border-box;
+          }
+          .btn-cancel:hover {
+            background: #F8F9FA;
+            color: #1A1A1A;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="logo">AnnSetu Gateway</div>
+          <h2>Mock Payment Checkout</h2>
+          <p>You are in test mode. Click below to simulate a successful Razorpay transaction payment capture.</p>
+          <div class="amount-box">
+            <div class="amount-label">Total Amount</div>
+            <div class="amount-value">₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+          </div>
+          <form id="payForm" method="POST" action="/api/payments/verify">
+            <input type="hidden" name="razorpay_order_id" value="${orderId}">
+            <input type="hidden" name="razorpay_payment_id" value="pay_mock_${Math.random().toString(36).substr(2, 9)}">
+            <input type="hidden" name="razorpay_signature" value="mock_signature">
+            <button type="submit" class="btn-pay">Pay Now (Simulate Success)</button>
+          </form>
+          <a href="#" class="btn-cancel" onclick="window.close()">Cancel Payment</a>
+        </div>
+        <script>
+          const form = document.getElementById('payForm');
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new URLSearchParams(new FormData(form));
+            try {
+              const res = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+              });
+              const data = await res.json();
+              if (data.success) {
+                window.location.href = '/api/payments/success?order_id=${orderId}&payment_id=' + form.razorpay_payment_id.value;
+              } else {
+                alert('Payment verification failed: ' + data.error);
+              }
+            } catch (err) {
+              alert('Error verifying payment: ' + err.message);
+            }
+          });
+        </script>
+      </body>
+    </html>
+  `);
+}
+
 async function renderSuccessPage(req, res) {
   const { 
     order_id, 
