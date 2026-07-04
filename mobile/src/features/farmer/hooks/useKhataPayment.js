@@ -124,7 +124,8 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       return;
     }
 
-    if (!RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
+    const isMock = razorpayOrderData.order_id?.startsWith('order_mock_');
+    if (isMock || !RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
       if (razorpayOrderData.payment_link_url) {
         setPaymentUrl(razorpayOrderData.payment_link_url);
         return;

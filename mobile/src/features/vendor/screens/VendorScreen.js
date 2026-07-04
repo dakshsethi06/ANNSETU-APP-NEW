@@ -4,7 +4,7 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import styles from '../styles/vendorScreenStyles';
-import StockTab from '../../farmer/screens/StockTab';
+import StockTab from '../../inventory/screens/StockTab';
 import MarketTab from '../../mandi/screens/MarketTab';
 import NotificationsTab from '../../notifications/screens/NotificationsTab';
 import ProfileTab from '../../farmer/screens/ProfileTab';

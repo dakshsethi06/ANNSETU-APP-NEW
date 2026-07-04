@@ -56,6 +56,12 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
           paymentUrl={state.paymentUrl}
           lang={state.lang}
           onClose={() => state.setPaymentUrl(null)}
+          onPaymentSuccess={() => {
+            state.setPaymentUrl(null);
+            if (onPaymentSuccess) {
+              onPaymentSuccess();
+            }
+          }}
         />
       </View>
     );

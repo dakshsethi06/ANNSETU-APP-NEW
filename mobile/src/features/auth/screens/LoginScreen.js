@@ -226,7 +226,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../assets/ann_setu_logo.png')}
+              source={require('../../../../assets/ann_setu_logo.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />

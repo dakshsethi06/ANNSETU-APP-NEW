@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Pla
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
-import StockTab from '../../farmer/screens/StockTab';
+import StockTab from '../../inventory/screens/StockTab';
 import MandiTab from '../../mandi/screens/MandiTab';
 import KhataTab from '../../farmer/screens/KhataTab';
 import NotificationsTab from '../../notifications/screens/NotificationsTab';

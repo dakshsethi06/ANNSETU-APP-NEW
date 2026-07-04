@@ -4,7 +4,7 @@ import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import styles from '../styles/khataTabStyles';
 
-export default function PaymentWebViewModal({ visible, paymentUrl, lang, onClose }) {
+export default function PaymentWebViewModal({ visible, paymentUrl, lang, onClose, onPaymentSuccess }) {
   return (
     <Modal
       visible={visible}
@@ -31,6 +31,13 @@ export default function PaymentWebViewModal({ visible, paymentUrl, lang, onClose
             javaScriptEnabled={true}
             domStorageEnabled={true}
             startInLoadingState={true}
+            onNavigationStateChange={(navState) => {
+              if (navState.url.includes('/api/payments/success')) {
+                if (onPaymentSuccess) {
+                  onPaymentSuccess();
+                }
+              }
+            }}
             renderLoading={() => (
               <ActivityIndicator
                 color="#1E5C2E"
