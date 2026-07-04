@@ -1,23 +1,8 @@
-const Razorpay = require('razorpay');
-const crypto = require('crypto');
 const db = require('../../config/database');
 const paymentRepository = require('./payment.repository');
 const { createAppNotification } = require('../../shared/notifications/notifications');
 const manualController = require('./payment.manual.controller');
-
-// Fetch credentials from env, with fallbacks for local test/mock runs
-const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_DakshSethi123';
-const keySecret = process.env.RAZORPAY_KEY_SECRET || 'mock_secret_daksh_sethi';
-
-let razorpayInstance = null;
-try {
-  razorpayInstance = new Razorpay({
-    key_id: keyId,
-    key_secret: keySecret,
-  });
-} catch (e) {
-  console.warn('Razorpay client initialization warning:', e.message);
-}
+const razorpayService = require('./razorpay.service');
 
 async function createOrder(req, res) {
   const { farmerId } = req.body;
@@ -34,48 +19,43 @@ async function createOrder(req, res) {
     const amountPaise = Math.round(pendingRent * 100);
     const receipt = `rcpt_${farmerId}_${Date.now().toString().slice(-6)}`;
 
-    let orderId;
-    let paymentLinkUrl;
     let serverIp = req.headers.host || '10.36.66.6:3001';
     if (serverIp.includes('localhost') || serverIp.includes('127.0.0.1')) {
       serverIp = '10.36.66.6:3001';
     }
-    const isMockMode = !process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET === 'mock_secret_daksh_sethi';
 
-    if (isMockMode) {
-      orderId = `order_mock_${Math.random().toString(36).substr(2, 9)}`;
+    const isMock = razorpayService.isMockMode();
+    let orderId;
+    let paymentLinkUrl;
+
+    if (isMock) {
+      const order = await razorpayService.createOrder(amountPaise, receipt);
+      orderId = order.id;
       paymentLinkUrl = `http://${serverIp}/api/payments/mock-checkout/${orderId}`;
     } else {
-      const order = await razorpayInstance.orders.create({
-        amount: amountPaise,
-        currency: 'INR',
-        receipt: receipt,
-      });
-      orderId = order.id;
-
       try {
-        const callbackUrl = `http://${serverIp}/api/payments/success`;
+        const order = await razorpayService.createOrder(amountPaise, receipt);
+        orderId = order.id;
 
-        const link = await razorpayInstance.paymentLink.create({
-          amount: amountPaise,
-          currency: 'INR',
-          accept_partial: false,
+        const callbackUrl = `http://${serverIp}/api/payments/success`;
+        const link = await razorpayService.createPaymentLink({
+          amountPaise: amountPaise,
           description: `Rent payment for Farmer account ${farmerId}`,
           customer: {
             name: 'Farmer Partner',
             email: `farmer_${farmerId}@annsetu.local`,
             contact: farmerId.length === 10 ? farmerId : '9999999999'
           },
-          notify: { sms: false, email: false },
-          reminder_enable: false,
-          notes: { order_id: orderId },
-          callback_url: callbackUrl,
-          callback_method: 'get',
-          reference_id: orderId
+          callbackUrl: callbackUrl,
+          orderId: orderId
         });
-        paymentLinkUrl = link.short_url;
-      } catch (linkErr) {
-        console.warn('Razorpay payment link creation failed:', linkErr.message);
+
+        paymentLinkUrl = link ? link.short_url : `http://${serverIp}/api/payments/mock-checkout/${orderId}`;
+      } catch (err) {
+        console.warn('Real Razorpay order/link generation failed, falling back to mock:', err.message);
+        // Fallback to mock order generation if Razorpay APIs fail or rate limit
+        const mockOrder = await razorpayService.createOrder(amountPaise, receipt);
+        orderId = mockOrder.id;
         paymentLinkUrl = `http://${serverIp}/api/payments/mock-checkout/${orderId}`;
       }
     }
@@ -90,7 +70,7 @@ async function createOrder(req, res) {
     return res.json({
       success: true,
       order_id: orderId,
-      key_id: keyId,
+      key_id: razorpayService.keyId,
       amount: pendingRent,
       currency: 'INR',
       payment_link_url: paymentLinkUrl
@@ -116,20 +96,7 @@ async function verifyPayment(req, res) {
   }
 
   try {
-    let isValid = false;
-    const isMock = razorpay_order_id.startsWith('order_mock_') || razorpay_signature === 'mock_signature';
-
-    if (isMock) {
-      isValid = true;
-    } else {
-      if (!razorpay_signature) {
-        return res.status(400).json({ success: false, error: 'Missing razorpay_signature.' });
-      }
-      const hmac = crypto.createHmac('sha256', keySecret);
-      hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
-      const generatedSignature = hmac.digest('hex');
-      isValid = generatedSignature === razorpay_signature;
-    }
+    const isValid = razorpayService.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
 
     if (!isValid) {
       console.log('[Payment Verify API] Signature verification failed for order:', razorpay_order_id);
@@ -165,16 +132,12 @@ async function verifyPayment(req, res) {
 
 async function handleWebhook(req, res) {
   const signatureHeader = req.headers['x-razorpay-signature'];
-  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || 'webhook_secret_daksh_sethi';
 
   try {
-    const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(JSON.stringify(req.body))
-      .digest('hex');
+    const bodyString = JSON.stringify(req.body);
+    const isValid = razorpayService.verifyWebhookSignature(bodyString, signatureHeader);
 
-    const skipVerify = webhookSecret === 'webhook_secret_daksh_sethi';
-    if (!skipVerify && expectedSignature !== signatureHeader) {
+    if (!isValid) {
       return res.status(401).json({ success: false, error: 'Invalid webhook signature.' });
     }
 
