@@ -88,6 +88,15 @@ export function useStorageTabDashboard(loggedInPhone) {
       let selectedFarmer = null;
       if (farmers && farmers.length > 0) {
         selectedFarmer = farmers[0];
+      } else {
+        // Check local list for fallback profile (e.g. for new or unregistered login numbers)
+        const local = dbFarmers.find(f => f.serial_number === farmerId);
+        if (local) {
+          selectedFarmer = local;
+        }
+      }
+
+      if (selectedFarmer) {
         setFarmerData(selectedFarmer);
       } else {
         throw new Error('Farmer profile not found.');
