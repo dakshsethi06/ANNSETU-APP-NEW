@@ -174,11 +174,11 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
 
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
-            <Text style={state.lang === 'en' ? 'Total Charged' : 'कुल शुल्क'}</Text>
+            <Text style={styles.summaryLabel}>{state.lang === 'en' ? 'Total Charged' : 'कुल शुल्क'}</Text>
             <Text style={styles.summaryValue}>₹{totalCharged.toLocaleString('en-IN')}</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={state.lang === 'en' ? 'Total Paid' : 'कुल भुगतान'}</Text>
+            <Text style={styles.summaryLabel}>{state.lang === 'en' ? 'Total Paid' : 'कुल भुगतान'}</Text>
             <Text style={[styles.summaryValue, { color: '#16A34A' }]}>₹{totalPaid.toLocaleString('en-IN')}</Text>
           </View>
         </View>
