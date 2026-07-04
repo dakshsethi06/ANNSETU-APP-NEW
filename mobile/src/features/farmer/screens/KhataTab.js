@@ -58,9 +58,22 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
           onClose={() => state.setPaymentUrl(null)}
           onPaymentSuccess={() => {
             state.setPaymentUrl(null);
-            if (onPaymentSuccess) {
-              onPaymentSuccess();
-            }
+            state.setIsOnlineSuccess(true);
+            state.setVerificationSuccessModalVisible(true);
+          }}
+        />
+        <SuccessModal
+          visible={state.verificationSuccessModalVisible}
+          lang={state.lang}
+          title={state.isOnlineSuccess ? (state.lang === 'en' ? 'Payment Successful' : 'भुगतान सफल') : undefined}
+          message={state.isOnlineSuccess
+            ? (state.lang === 'en' ? 'Your payment has been successfully processed. Dues are cleared.' : 'आपका भुगतान सफलतापूर्वक पूरा हो गया है।')
+            : undefined
+          }
+          onClose={() => {
+            state.setVerificationSuccessModalVisible(false);
+            state.setIsOnlineSuccess(false);
+            handlers.handleResetAll();
           }}
         />
       </View>
@@ -115,8 +128,14 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
         <SuccessModal
           visible={state.verificationSuccessModalVisible}
           lang={state.lang}
+          title={state.isOnlineSuccess ? (state.lang === 'en' ? 'Payment Successful' : 'भुगतान सफल') : undefined}
+          message={state.isOnlineSuccess
+            ? (state.lang === 'en' ? 'Your payment has been successfully processed. Dues are cleared.' : 'आपका भुगतान सफलतापूर्वक पूरा हो गया है।')
+            : undefined
+          }
           onClose={() => {
             state.setVerificationSuccessModalVisible(false);
+            state.setIsOnlineSuccess(false);
             handlers.handleResetAll();
           }}
         />

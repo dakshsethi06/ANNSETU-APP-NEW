@@ -23,6 +23,7 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   const [verificationSuccessModalVisible, setVerificationSuccessModalVisible] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [razorpayOrderData, setRazorpayOrderData] = useState(null);
+  const [isOnlineSuccess, setIsOnlineSuccess] = useState(false);
 
   const pendingRent = parseFloat(farmerData?.pendingRent || 0);
 
@@ -231,6 +232,7 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     setVerificationStep(1);
     setShowVerificationForm(false);
     setShowSummary(false);
+    setIsOnlineSuccess(false);
     if (onPaymentSuccess) onPaymentSuccess();
   };
 
@@ -252,6 +254,7 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       verificationSuccessModalVisible, setVerificationSuccessModalVisible,
       paymentUrl, setPaymentUrl,
       razorpayOrderData, setRazorpayOrderData,
+      isOnlineSuccess, setIsOnlineSuccess,
       pendingRent
     },
     handlers: {
