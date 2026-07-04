@@ -15,6 +15,8 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
   const [activeNotifId, setActiveNotifId] = useState(null);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [fullImageUrl, setFullImageUrl] = useState('');
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const loadNotifications = async () => {
     setLoading(true);
@@ -372,6 +374,7 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
         onRequestClose={() => {
           setImageModalVisible(false);
           setFullImageUrl('');
+          setImageError(false);
         }}
       >
         <View style={s.imageModalOverlay}>
@@ -380,17 +383,43 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
             onPress={() => {
               setImageModalVisible(false);
               setFullImageUrl('');
+              setImageError(false);
             }}
             activeOpacity={0.8}
           >
             <Feather name="x" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           {fullImageUrl ? (
-            <Image
-              source={{ uri: fullImageUrl }}
-              style={s.fullSizeImage}
-              resizeMode="contain"
-            />
+            <View style={{ width: '100%', height: '85%', justifyContent: 'center', alignItems: 'center' }}>
+              <Image
+                source={{ uri: fullImageUrl }}
+                style={s.fullSizeImage}
+                resizeMode="contain"
+                onLoadStart={() => {
+                  setImageLoading(true);
+                  setImageError(false);
+                }}
+                onLoadEnd={() => setImageLoading(false)}
+                onError={() => {
+                  setImageLoading(false);
+                  setImageError(true);
+                }}
+              />
+              {imageLoading && (
+                <ActivityIndicator size="large" color="#FFFFFF" style={{ position: 'absolute' }} />
+              )}
+              {imageError && (
+                <View style={{ position: 'absolute', alignItems: 'center', paddingHorizontal: 20 }}>
+                  <Feather name="image" size={48} color="#A1A1AA" style={{ marginBottom: 12 }} />
+                  <Text style={{ color: '#FFFFFF', fontSize: 16, fontFamily: FONTS.medium, textAlign: 'center' }}>
+                    Failed to load receipt image / रसीद लोड करने में विफल
+                  </Text>
+                  <Text style={{ color: '#A1A1AA', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+                    {fullImageUrl}
+                  </Text>
+                </View>
+              )}
+            </View>
           ) : null}
         </View>
       </Modal>
