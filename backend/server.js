@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const path = require('path');
-const db = require('./db');
+const db = require('./config/database');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,14 +16,14 @@ app.use(express.urlencoded({ limit: '15mb', extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
-app.use('/api', require('./routes/mandi'));
-app.use('/api', require('./routes/farmers'));
-app.use('/api', require('./routes/amad'));
-app.use('/api', require('./routes/storages'));
-app.use('/api', require('./routes/notifications'));
-app.use('/api', require('./routes/cron'));
-app.use('/api', require('./routes/dispatches'));
-app.use('/api', require('./routes/payments'));
+app.use('/api', require('./modules/mandi/mandi.routes'));
+app.use('/api', require('./modules/farmer/farmer.routes'));
+app.use('/api', require('./modules/amad/amad.routes'));
+app.use('/api', require('./modules/storage/storage.routes'));
+app.use('/api', require('./modules/notification/notification.routes'));
+app.use('/api', require('./modules/cron/cron.routes'));
+app.use('/api', require('./modules/dispatch/dispatch.routes'));
+app.use('/api', require('./modules/payment/payment.routes'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'Annsetu Backend' }));
