@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Payment Successful</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>/* CSS_PLACEHOLDER */</style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="icon">✓</div>
+      <h2>Payment Successful!</h2>
+      <p>Your payment has been successfully processed and verified.</p>
+      <div class="receipt">
+        <div class="receipt-row">
+          <span class="label">Order ID</span>
+          <span class="val">{{orderId}}</span>
+        </div>
+        <div class="receipt-row">
+          <span class="label">Payment ID</span>
+          <span class="val">{{paymentId}}</span>
+        </div>
+      </div>
+      <button class="btn-done" onclick="window.close()">Return to App</button>
+    </div>
+  </body>
+</html>

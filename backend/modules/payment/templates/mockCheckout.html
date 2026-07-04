@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AnnSetu Mock Payment Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>/* CSS_PLACEHOLDER */</style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="logo">AnnSetu Gateway</div>
+      <h2>Mock Payment Checkout</h2>
+      <p>You are in test mode. Click below to simulate a successful Razorpay transaction payment capture.</p>
+      <div class="amount-box">
+        <div class="amount-label">Total Amount</div>
+        <div class="amount-value">₹{{amount}}</div>
+      </div>
+      <form id="payForm" method="POST" action="/api/payments/verify">
+        <input type="hidden" name="razorpay_order_id" value="{{orderId}}">
+        <input type="hidden" name="razorpay_payment_id" value="{{mockPaymentId}}">
+        <input type="hidden" name="razorpay_signature" value="mock_signature">
+        <button type="submit" class="btn-pay">Pay Now (Simulate Success)</button>
+      </form>
+      <a href="#" class="btn-cancel" onclick="window.close()">Cancel Payment</a>
+    </div>
+    <script>
+      const form = document.getElementById('payForm');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new URLSearchParams(new FormData(form));
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+          });
+          const data = await res.json();
+          if (data.success) {
+            window.location.href = '/api/payments/success?order_id={{orderId}}&payment_id=' + form.razorpay_payment_id.value;
+          } else {
+            alert('Payment verification failed: ' + data.error);
+          }
+        } catch (err) {
+          alert('Error verifying payment: ' + err.message);
+        }
+      });
+    </script>
+  </body>
+</html>
