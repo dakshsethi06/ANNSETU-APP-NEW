@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, NativeModules } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import RazorpayCheckout from 'react-native-razorpay';
 import { BACKEND_URL } from '../../../core/network/config';
@@ -125,7 +125,9 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     }
 
     const isMock = razorpayOrderData.order_id?.startsWith('order_mock_');
-    if (isMock || !RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
+    const hasNativeSDK = !!NativeModules.RazorpayCheckout;
+
+    if (isMock || !hasNativeSDK || !RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
       if (razorpayOrderData.payment_link_url) {
         setPaymentUrl(razorpayOrderData.payment_link_url);
         return;
@@ -179,10 +181,10 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
           Alert.alert('Verification Error', verifyErr.message);
         }
       }).catch((error) => {
-        if (!error || error.code === 'NATIVE_MODULE_NOT_FOUND' || error.message?.includes('not a function')) {
-          if (razorpayOrderData.payment_link_url) setPaymentUrl(razorpayOrderData.payment_link_url);
+        if (razorpayOrderData.payment_link_url) {
+          setPaymentUrl(razorpayOrderData.payment_link_url);
         } else {
-          Alert.alert('Payment Failed', error.description || 'Payment failed.');
+          Alert.alert('Payment Failed', (error && (error.description || error.message)) || 'Payment failed.');
         }
       });
     } catch (sdkErr) {
