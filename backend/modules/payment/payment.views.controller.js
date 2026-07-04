@@ -36,6 +36,7 @@ async function renderMockCheckout(req, res) {
 }
 
 async function renderSuccessPage(req, res) {
+  console.log('[Payment Success View] Incoming req.query:', req.query);
   const { 
     order_id, 
     payment_id,
@@ -50,9 +51,10 @@ async function renderSuccessPage(req, res) {
 
   if (isPaid && finalOrderId) {
     try {
+      console.log('[Payment Success View] Redirected successfully, updating database order status to PAID for order:', finalOrderId);
       await paymentRepository.updatePaymentStatus(finalOrderId, 'PAID', finalPaymentId);
     } catch (err) {
-      console.error('Failed to update status on success redirect:', err.message);
+      console.error('[Payment Success View] Failed to update status on success redirect:', err.message);
     }
   }
 
