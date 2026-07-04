@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, Keyboard } from 'react-native';
+import { Alert, View, ActivityIndicator, Platform, Keyboard } from 'react-native';
 import * as Updates from 'expo-updates';
 import * as Notifications from 'expo-notifications';
-import HomeScreen from './src/features/farmer/screens/HomeScreen';
-import LoginScreen from './src/features/auth/screens/LoginScreen';
-import VendorScreen from './src/features/vendor/screens/VendorScreen';
 import { supabase } from './src/core/network/supabase';
-import ColdStorageScreen from './src/features/cold-storage/screens/ColdStorageScreen';
-import { Feather } from '@expo/vector-icons';
+import AppNavigator from './src/navigation/AppNavigator';
 
 // Configure push notification alert settings when the app is foregrounded
 Notifications.setNotificationHandler({
@@ -179,120 +175,18 @@ export default function App() {
     setShowRoleSwitcher(false);
   };
 
-  const renderScreen = () => {
-    switch (role) {
-      case 'Farmer':
-        return (
-          <LoginScreen 
-            onLoginSuccess={handleLoginSuccess} 
-            onHidePreviewChange={setHidePreviewFromLogin}
-          />
-        );
-      case 'Vendor':
-        return (
-          <VendorScreen 
-            onSwitchRole={() => setShowRoleSwitcher(true)}
-            onLogout={handleLogout}
-          />
-        );
-      case 'ColdStorage':
-        return (
-          <HomeScreen 
-            loggedInPhone={session?.user?.phone} 
-            onSwitchRole={() => setShowRoleSwitcher(true)}
-            onLogout={handleLogout}
-          />
-        );
-      case 'ColdStorageFacility':
-        return (
-          <ColdStorageScreen 
-            loggedInPhone={session?.user?.phone}
-            onSwitchRole={() => setShowRoleSwitcher(true)}
-            onLogout={handleLogout}
-          />
-        );
-      default:
-        return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
-    }
-  };
-
   return (
-    <View style={{ flex: 1 }}>
-      {renderScreen()}
-
-      {/* Persistent Floating UI Preview Navigation Bar */}
-      {((role !== 'Vendor' && role !== 'ColdStorage' && role !== 'ColdStorageFacility') || showRoleSwitcher) && !isKeyboardVisible && !hidePreviewFromLogin && (role !== 'Farmer' || session !== null) && (
-        <View style={barStyles.previewBar}>
-          <Text style={barStyles.previewLabel}>
-            📱 Preview: <Text style={{ fontWeight: 'bold' }}>{role === 'ColdStorage' ? 'Farmer' : role === 'Farmer' ? 'Login' : role === 'ColdStorageFacility' ? 'Cold Storage' : role}</Text>
-          </Text>
-          <Text style={barStyles.separator}>·</Text>
-          <View style={barStyles.linkGroup}>
-            <TouchableOpacity onPress={() => { setRole('Farmer'); setShowRoleSwitcher(false); }} activeOpacity={0.8}>
-              <Text style={[barStyles.linkLabel, role === 'Farmer' && barStyles.linkLabelActive]}>Login</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity onPress={() => { setRole('ColdStorage'); setShowRoleSwitcher(false); }} activeOpacity={0.8}>
-              <Text style={[barStyles.linkLabel, role === 'ColdStorage' && barStyles.linkLabelActive]}>Farmer</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => { setRole('Vendor'); setShowRoleSwitcher(false); }} activeOpacity={0.8}>
-              <Text style={[barStyles.linkLabel, role === 'Vendor' && barStyles.linkLabelActive]}>Vendor</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => { setRole('ColdStorageFacility'); setShowRoleSwitcher(false); }} activeOpacity={0.8}>
-              <Text style={[barStyles.linkLabel, role === 'ColdStorageFacility' && barStyles.linkLabelActive]}>Cold Storage</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-    </View>
+    <AppNavigator
+      role={role}
+      setRole={setRole}
+      session={session}
+      onLoginSuccess={handleLoginSuccess}
+      setHidePreviewFromLogin={setHidePreviewFromLogin}
+      setShowRoleSwitcher={setShowRoleSwitcher}
+      showRoleSwitcher={showRoleSwitcher}
+      isKeyboardVisible={isKeyboardVisible}
+      hidePreviewFromLogin={hidePreviewFromLogin}
+      onLogout={handleLogout}
+    />
   );
 }
-
-const barStyles = StyleSheet.create({
-  previewBar: {
-    position: 'absolute',
-    bottom: 30,
-    alignSelf: 'center',
-    backgroundColor: '#2E3D34',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#415549',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 10,
-    zIndex: 9999,
-  },
-  previewLabel: {
-    fontSize: 10,
-    color: '#D8E2DC',
-    fontWeight: '500',
-  },
-  separator: {
-    color: '#D8E2DC',
-    fontSize: 10,
-    marginHorizontal: 6,
-  },
-  linkGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  linkLabel: {
-    fontSize: 10,
-    color: '#9CA8A0',
-    fontWeight: '600',
-    marginHorizontal: 6,
-  },
-  linkLabelActive: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    textDecorationLine: 'underline',
-  },
-});

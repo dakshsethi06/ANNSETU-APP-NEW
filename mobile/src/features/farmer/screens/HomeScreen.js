@@ -4,12 +4,12 @@ import { COLORS } from '../../../core/theme/theme';
 import { Feather } from '@expo/vector-icons';
 
 import MandiTab from '../../mandi/screens/MandiTab';
-import StockTab from './StockTab';
+import StockTab from '../../inventory/screens/StockTab';
 import KhataTab from './KhataTab';
 import ProfileTab from './ProfileTab';
 import FarmerSelector from './FarmerSelector';
 import FarmerDashboard from './FarmerDashboard';
-import WeatherTab from './WeatherTab';
+import WeatherTab from '../../weather/screens/WeatherTab';
 import BookStorageTab from './BookStorageTab';
 import ErrorCard from '../../../core/components/ErrorCard';
 import RegisterFarmerModal from '../modals/RegisterFarmerModal';
