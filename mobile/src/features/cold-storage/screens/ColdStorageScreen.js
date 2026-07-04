@@ -13,6 +13,7 @@ import { fetchWeather } from '../../../core/network/api';
 import MandiPricePreview from '../../mandi/components/MandiPricePreview';
 import styles from '../../farmer/styles/farmerDashboardStyles';
 import layoutStyles from '../../farmer/styles/layoutStyles';
+import localStyles from '../styles/coldStorageScreenStyles';
 import { FONTS } from '../../../core/theme/theme';
 
 const QUICK_ACTIONS = [
@@ -508,101 +509,4 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
   );
 }
 
-const localStyles = StyleSheet.create({
-  heroContainer: {
-    backgroundColor: '#1E5C2E',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 28,
-    marginHorizontal: -20,
-    position: 'relative',
-    overflow: 'hidden',
-    marginBottom: 20,
-  },
-  circleTopRight: {
-    position: 'absolute',
-    top: -40,
-    right: -40,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  circleBottomRight: {
-    position: 'absolute',
-    bottom: -32,
-    right: 48,
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    zIndex: 10,
-  },
-  profileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  logoBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textContainer: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  roleLabel: {
-    color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 12,
-    fontFamily: FONTS.regular,
-  },
-  nameText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 18,
-    lineHeight: 22,
-    marginTop: 1,
-    fontFamily: FONTS.bold,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  locationText: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 12,
-    marginLeft: 4,
-    fontFamily: FONTS.regular,
-  },
-  bellButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  redDot: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#F87171',
-    borderWidth: 1.5,
-    borderColor: '#1E5C2E',
-  },
-});
+
