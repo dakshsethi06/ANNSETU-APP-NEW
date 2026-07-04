@@ -1,14 +1,16 @@
 const express = require('express');
 const router = express.Router();
 
-const onlineController = require('./payment.online.controller');
+const createOrder = require('./payment.create.controller');
+const verifyPayment = require('./payment.verify.controller');
+const handleWebhook = require('./payment.webhook.controller');
 const manualController = require('./payment.manual.controller');
 const viewsController = require('./payment.views.controller');
 
 // Online payments (Razorpay)
-router.post('/payments/order', onlineController.createOrder);
-router.post('/payments/verify', onlineController.verifyPayment);
-router.post('/payments/webhook', onlineController.handleWebhook);
+router.post('/payments/order', createOrder);
+router.post('/payments/verify', verifyPayment);
+router.post('/payments/webhook', handleWebhook);
 
 // Offline / Manual payments
 router.post('/payments/initiated', manualController.initiatePayment);
