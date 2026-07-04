@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Alert, View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, Keyboard } from 'react-native';
 import * as Updates from 'expo-updates';
 import * as Notifications from 'expo-notifications';
-import HomeScreen from './src/screens/HomeScreen';
-import LoginScreen from './src/screens/LoginScreen';
-import VendorScreen from './src/screens/VendorScreen';
-import { supabase } from './src/services/supabase';
-import ColdStorageScreen from './src/screens/ColdStorageScreen';
+import HomeScreen from './src/features/farmer/screens/HomeScreen';
+import LoginScreen from './src/features/auth/screens/LoginScreen';
+import VendorScreen from './src/features/vendor/screens/VendorScreen';
+import { supabase } from './src/core/network/supabase';
+import ColdStorageScreen from './src/features/cold-storage/screens/ColdStorageScreen';
 import { Feather } from '@expo/vector-icons';
 
 // Configure push notification alert settings when the app is foregrounded
@@ -63,7 +63,7 @@ export default function App() {
   const determineRole = async (phone) => {
     if (!phone) return;
     try {
-      const { fetchUserRole } = require('./src/services/api');
+      const { fetchUserRole } = require('./src/core/network/api');
       const detectedRole = await fetchUserRole(phone);
       setRole(detectedRole);
     } catch (e) {
@@ -85,7 +85,7 @@ export default function App() {
   useEffect(() => {
     if (session && session.user && session.user.phone) {
       // Import dynamically to avoid loading issues at bundle initialization
-      const { registerForPushNotificationsAsync } = require('./src/services/pushService');
+      const { registerForPushNotificationsAsync } = require('./src/core/network/pushService');
       registerForPushNotificationsAsync(session.user.phone).catch(err => {
         console.warn('Failed to register push token:', err.message);
       });
