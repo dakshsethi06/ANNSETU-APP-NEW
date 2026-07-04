@@ -16,7 +16,7 @@ export default function AnnsetuLogo({ size = 38, backgroundColor = '#1E5C2E', ic
       alignItems: 'center',
     }, style]}>
       <Image 
-        source={require('../../assets/ann_setu_logo.png')} 
+        source={require('../../../assets/ann_setu_logo.png')} 
         style={{ width: iconSize, height: iconSize, tintColor: iconColor }} 
         resizeMode="contain" 
       />
