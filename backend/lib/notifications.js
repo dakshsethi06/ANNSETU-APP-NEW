@@ -9,7 +9,7 @@ async function logOutboundNotification({
     const id = 'log-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
     const now = new Date();
     const redactedMessage = message.replace(/\b\d{6}\b/g, '******');
-    const params = [ id, coldStorageId, channel, eventType, recipientPhone, recipientEmail, recipientName, subject, redactedMessage, status, provider, providerMessageId, relatedModel, relatedId, errorMessage, metadata ? JSON.stringify(metadata) : null, status === 'SENT' ? now : null, now, now ];
+    const params = [id, coldStorageId, channel, eventType, recipientPhone, recipientEmail, recipientName, subject, redactedMessage, status, provider, providerMessageId, relatedModel, relatedId, errorMessage, metadata ? JSON.stringify(metadata) : null, status === 'SENT' ? now : null, now, now];
     return await appNotificationRepository.insertNotificationLog(params);
   } catch (error) { console.error('Error logging outbound notification:', error.message); return null; }
 }
@@ -31,7 +31,7 @@ async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9tr
     if (userId) await ensureUserForFarmer(userId);
     const id = 'notif-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
     const now = new Date();
-    const params = [ id, coldStorageId, userId, lotId, type, title, message, icon, actionUrl, false, alertDate || now, now, now ];
+    const params = [id, coldStorageId, userId, lotId, type, title, message, icon, actionUrl, false, alertDate || now, now, now];
     const result = await appNotificationRepository.insertAppNotification(params);
     if (result && userId) {
       try {
@@ -39,6 +39,62 @@ async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9tr
         sendPushNotification(userId, title, message, { actionUrl });
       } catch (pushErr) {
         console.warn('Failed to dispatch background push:', pushErr.message);
+      }
+
+      // Automatically send SMS & Email via centralized notification-service
+      try {
+        const db = require('../db');
+        const farmerRes = await db.query('SELECT name, phone FROM "Farmer" WHERE id = $1', [userId]);
+        const userRes = await db.query('SELECT email FROM "User" WHERE id = $1', [userId]);
+
+        let recipientPhone = null;
+        let recipientEmail = null;
+        let recipientName = null;
+
+        if (farmerRes.rows.length > 0) {
+          recipientPhone = farmerRes.rows[0].phone;
+          recipientName = farmerRes.rows[0].name;
+          recipientEmail = userRes.rows.length > 0 ? userRes.rows[0].email : `farmer_${userId}@annsetu.local`;
+        } else {
+          const csRes = await db.query('SELECT "displayName" AS name, phone, email FROM "ColdStorageOnboarding" WHERE id = $1', [userId]);
+          if (csRes.rows.length > 0) {
+            recipientPhone = csRes.rows[0].phone;
+            recipientName = csRes.rows[0].name;
+            recipientEmail = csRes.rows[0].email;
+          }
+        }
+
+        if (recipientPhone || recipientEmail) {
+          const { sendSMS, sendEmail } = require('../notification');
+
+          if (recipientPhone) {
+            const formattedPhone = recipientPhone.startsWith('+') ? recipientPhone : `+91${recipientPhone}`;
+            await sendSMS({
+              to: formattedPhone,
+              message: `[${title}] ${message}`,
+              coldStorageId,
+              eventType: 'AUTO_ALERT_SMS',
+              recipientName,
+              relatedModel: lotId ? 'AmadLot' : null,
+              relatedId: lotId
+            }).catch(err => console.warn('[Auto Notification Hook] Failed to send SMS:', err.message));
+          }
+
+          if (recipientEmail) {
+            await sendEmail({
+              to: recipientEmail,
+              subject: `AnnSetu Alert: ${title}`,
+              text: `Dear ${recipientName || 'User'},\n\n${message}\n\nThank you,\nAnnSetu Team`,
+              coldStorageId,
+              eventType: 'AUTO_ALERT_EMAIL',
+              recipientName,
+              relatedModel: lotId ? 'AmadLot' : null,
+              relatedId: lotId
+            }).catch(err => console.warn('[Auto Notification Hook] Failed to send Email:', err.message));
+          }
+        }
+      } catch (autoNotifErr) {
+        console.warn('[Auto Notification Hook] Error in background dispatch:', autoNotifErr.message);
       }
     }
     return result;

@@ -1,13 +1,19 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const path = require('path');
+const db = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ limit: '15mb', extended: true }));
+
+// Serve static uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api', require('./routes/mandi'));
@@ -17,13 +23,12 @@ app.use('/api', require('./routes/storages'));
 app.use('/api', require('./routes/notifications'));
 app.use('/api', require('./routes/cron'));
 app.use('/api', require('./routes/dispatches'));
-
+app.use('/api', require('./routes/payments'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'Annsetu Backend' }));
 
 // Fetch user role based on phone database registration
-const db = require('./db');
 app.get('/api/user-role', async (req, res) => {
   try {
     const { phone } = req.query;

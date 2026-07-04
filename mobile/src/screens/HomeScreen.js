@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, ActivityIndicator, KeyboardAvoidingView, Platform, Modal, TextInput, Alert, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Keyboard } from 'react-native';
 import { COLORS } from '../theme';
 import { Feather } from '@expo/vector-icons';
 
@@ -18,13 +18,28 @@ import DispatchTab from './home/DispatchTab';
 
 import { useStorageTabDashboard } from '../hooks/useStorageTabDashboard';
 import layoutStyles from './home/styles/layoutStyles';
-import HomeHeader from '../components/HomeHeader';
-import { supabase } from '../services/supabase';
 
 export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
   // Navigation: 'home', 'stock', 'market', 'khata', 'profile'
   const [activeTab, setActiveTab] = useState('home');
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
 
   // Load the shared database state for the active farmer
   const {
@@ -172,20 +187,24 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
               />
             )}
 
-
             {activeTab === 'market' && (
               <MandiTab defaultState={farmerData.state || 'Uttar Pradesh'} />
             )}
 
             {activeTab === 'khata' && (
-              <KhataTab farmerData={farmerData} ledgerList={ledgerList} />
+              <KhataTab
+                farmerData={farmerData}
+                ledgerList={ledgerList}
+                holdingsList={holdingsList}
+                onPaymentSuccess={() => handleSelectFarmer(selectedFarmerId)}
+              />
             )}
 
             {activeTab === 'profile' && (
-              <ProfileTab 
-                farmerData={farmerData} 
-                onSwitchRole={onSwitchRole} 
-                onLogout={onLogout} 
+              <ProfileTab
+                farmerData={farmerData}
+                onSwitchRole={onSwitchRole}
+                onLogout={onLogout}
               />
             )}
 
@@ -213,7 +232,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
           </View>
 
           {/* ─── Elevated Bottom Tab Navigation ─── */}
-          {activeTab !== 'weather' && activeTab !== 'book' && (
+          {!isKeyboardVisible && activeTab !== 'weather' && activeTab !== 'book' && (
             <View style={layoutStyles.bottomNav}>
               {/* Tab 1: Home */}
               <TouchableOpacity
@@ -281,4 +300,3 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
     </KeyboardAvoidingView>
   );
 }
-

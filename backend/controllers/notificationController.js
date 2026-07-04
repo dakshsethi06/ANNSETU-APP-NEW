@@ -55,9 +55,23 @@ async function getNotifications(req, res) {
       let timeLabel = `${diffDays}d ago`;
       if (diffDays === 0) {
         const diffHours = Math.floor(diffTime / (1000 * 60 * 60)) || 0;
-        timeLabel = diffHours > 0 ? `${diffHours}h ago` : 'Just now';
+        if (diffHours > 0) {
+          timeLabel = `${diffHours}h ago`;
+        } else {
+          const diffMins = Math.floor(diffTime / (1000 * 60)) || 0;
+          timeLabel = diffMins > 0 ? `${diffMins}m ago` : 'Just now';
+        }
       }
-      notifications.push({ id: item.id, title: item.title, message: item.message, type: item.type, createdAt: item.createdAt, isRead: item.isRead, timeLabel });
+      notifications.push({
+        id: item.id,
+        title: item.title,
+        message: item.message,
+        type: item.type,
+        createdAt: item.createdAt,
+        isRead: item.isRead,
+        timeLabel,
+        actionUrl: item.actionUrl
+      });
     }
 
     const pendingBills = await notificationRepository.getPendingBills(farmerId);
@@ -71,13 +85,24 @@ async function getNotifications(req, res) {
         let timeLabel = `${timeAgoDays}d ago`;
         if (timeAgoDays === 0) {
           const timeAgoHours = Math.floor(timeAgoMs / (1000 * 60 * 60)) || 0;
-          timeLabel = timeAgoHours > 0 ? `${timeAgoHours}h ago` : 'Just now';
+          if (timeAgoHours > 0) {
+            timeLabel = `${timeAgoHours}h ago`;
+          } else {
+            const timeAgoMins = Math.floor(timeAgoMs / (1000 * 60)) || 0;
+            timeLabel = timeAgoMins > 0 ? `${timeAgoMins}m ago` : 'Just now';
+          }
         }
-        notifications.push({ id: `bill-${bill.id}`, title: 'Payment Due', message: `Storage rent of ₹${parseFloat(bill.amount).toLocaleString('en-IN')} is due for ${bill.periodLabel || 'recent storage period'}.`, type: 'billing', createdAt: bill.createdAt, isRead: false, timeLabel });
+        notifications.push({
+          id: `bill-${bill.id}`,
+          title: 'Payment Due',
+          message: `Storage rent of ₹${parseFloat(bill.amount).toLocaleString('en-IN')} is due for ${bill.periodLabel || 'recent storage period'}.`,
+          type: 'billing',
+          createdAt: bill.createdAt,
+          isRead: false,
+          timeLabel
+        });
       }
     });
-
-
 
     notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return res.json({ success: true, notifications });

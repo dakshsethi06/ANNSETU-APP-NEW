@@ -25,29 +25,29 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
     async function loadLivePrices() {
       try {
         const updatedPrices = [...mandiPrices];
-        
+
         // 1. Fetch Potato prices for Uttar Pradesh
         try {
           const potatoData = await fetchMandiPrices('Uttar Pradesh', 'Potato');
           const records = potatoData.records || [];
-          
-          const agraRec = records.find(r => 
-            r.market.toLowerCase().includes('agra') && 
+
+          const agraRec = records.find(r =>
+            r.market.toLowerCase().includes('agra') &&
             r.variety.toLowerCase().includes('pukhraj')
           ) || records.find(r => r.market.toLowerCase().includes('agra'));
-          
+
           if (agraRec) {
             updatedPrices[0] = {
               ...updatedPrices[0],
               price: agraRec.modalPrice || agraRec.maxPrice || 820,
             };
           }
-          
-          const firozabadRec = records.find(r => 
-            r.market.toLowerCase().includes('firozabad') && 
+
+          const firozabadRec = records.find(r =>
+            r.market.toLowerCase().includes('firozabad') &&
             r.variety.toLowerCase().includes('chipsona')
           ) || records.find(r => r.market.toLowerCase().includes('firozabad'));
-          
+
           if (firozabadRec) {
             updatedPrices[1] = {
               ...updatedPrices[1],
@@ -62,11 +62,11 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
         try {
           const onionData = await fetchMandiPrices('Uttar Pradesh', 'Onion');
           const records = onionData.records || [];
-          
-          const tundlaRec = records.find(r => 
+
+          const tundlaRec = records.find(r =>
             r.market.toLowerCase().includes('tundla')
           ) || records.find(r => r.market.toLowerCase().includes('firozabad')) || records[0];
-          
+
           if (tundlaRec) {
             updatedPrices[2] = {
               ...updatedPrices[2],
@@ -131,234 +131,234 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
 
           {/* Main Scroll Content */}
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* Green Hero Banner */}
-        <View style={styles.heroBanner}>
-          {/* Circular overlays */}
-          <View style={[styles.bgCircle, { top: -40, right: -40, width: 160, height: 160 }]} />
-          <View style={[styles.bgCircle, { bottom: -32, right: 48, width: 96, height: 96 }]} />
-          
-          <View style={styles.profileRow}>
-            <View style={styles.profileLeft}>
-              <View style={styles.logoBadge}>
-                <AnnsetuLogo size={24} backgroundColor="transparent" iconColor="#FFFFFF" />
+
+            {/* Green Hero Banner */}
+            <View style={styles.heroBanner}>
+              {/* Circular overlays */}
+              <View style={[styles.bgCircle, { top: -40, right: -40, width: 160, height: 160 }]} />
+              <View style={[styles.bgCircle, { bottom: -32, right: 48, width: 96, height: 96 }]} />
+
+              <View style={styles.profileRow}>
+                <View style={styles.profileLeft}>
+                  <View style={styles.logoBadge}>
+                    <AnnsetuLogo size={24} backgroundColor="transparent" iconColor="#FFFFFF" />
+                  </View>
+                  <View style={styles.profileTextGroup}>
+                    <Text style={styles.roleLabel}>Vendor / व्यापारी</Text>
+                    <Text style={styles.profileName}>SN Sharma Trading</Text>
+                    <View style={styles.locationRow}>
+                      <Feather name="map-pin" size={11} color="rgba(255, 255, 255, 0.5)" />
+                      <Text style={styles.locationText}>Tundla, Firozabad, UP</Text>
+                    </View>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.notificationBtn}
+                  onPress={() => {
+                    setActiveTab('notifications');
+                    setHasUnreadNotifications(false);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="bell" size={18} color="#FFFFFF" />
+                  {hasUnreadNotifications && <View style={styles.badgeDot} />}
+                </TouchableOpacity>
               </View>
-              <View style={styles.profileTextGroup}>
-                <Text style={styles.roleLabel}>Vendor / व्यापारी</Text>
-                <Text style={styles.profileName}>SN Sharma Trading</Text>
-                <View style={styles.locationRow}>
-                  <Feather name="map-pin" size={11} color="rgba(255, 255, 255, 0.5)" />
-                  <Text style={styles.locationText}>Tundla, Firozabad, UP</Text>
+
+              {/* Metric Cards Row */}
+              <View style={styles.metricsRow}>
+                {/* Active Sauda */}
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricLabel}>Active Sauda</Text>
+                  <Text style={styles.metricValue}>3</Text>
+                  <Text style={styles.metricSubtext}>₹3,60,000</Text>
+                </View>
+                {/* Pending Due */}
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricLabel}>Pending Due</Text>
+                  <Text style={[styles.metricValue, { color: '#FCA5A5' }]}>₹1,20,000</Text>
+                  <Text style={styles.metricSubtext}>2 parties</Text>
+                </View>
+                {/* In Transit */}
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricLabel}>In Transit</Text>
+                  <Text style={[styles.metricValue, { color: '#FCD34D' }]}>1</Text>
+                  <Text style={styles.metricSubtext}>75 Qt</Text>
                 </View>
               </View>
             </View>
-            <TouchableOpacity 
-              style={styles.notificationBtn} 
-              onPress={() => {
-                setActiveTab('notifications');
-                setHasUnreadNotifications(false);
-              }} 
-              activeOpacity={0.8}
-            >
-              <Feather name="bell" size={18} color="#FFFFFF" />
-              {hasUnreadNotifications && <View style={styles.badgeDot} />}
-            </TouchableOpacity>
-          </View>
 
-          {/* Metric Cards Row */}
-          <View style={styles.metricsRow}>
-            {/* Active Sauda */}
-            <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>Active Sauda</Text>
-              <Text style={styles.metricValue}>3</Text>
-              <Text style={styles.metricSubtext}>₹3,60,000</Text>
+            {/* Quick Actions Grid */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+              <View style={styles.gridContainer}>
+                {/* Card 1: Marketplace */}
+                <TouchableOpacity style={styles.gridItem} onPress={() => setActiveTab('market')} activeOpacity={0.7}>
+                  <View style={[styles.gridIconBg, { backgroundColor: '#ECFDF5' }]}>
+                    <Feather name="shopping-bag" size={18} color="#047857" />
+                  </View>
+                  <Text style={styles.gridLabel}>Marketplace</Text>
+                </TouchableOpacity>
+
+                {/* Card 2: My Orders */}
+                <TouchableOpacity style={styles.gridItem} activeOpacity={0.7}>
+                  <View style={[styles.gridIconBg, { backgroundColor: '#EFF6FF' }]}>
+                    <Feather name="file-text" size={18} color="#1D4ED8" />
+                  </View>
+                  <Text style={styles.gridLabel}>My Orders</Text>
+                </TouchableOpacity>
+
+                {/* Card 3: Khata */}
+                <TouchableOpacity style={styles.gridItem} activeOpacity={0.7}>
+                  <View style={[styles.gridIconBg, { backgroundColor: '#FFFBEB' }]}>
+                    <Feather name="book-open" size={18} color="#B45309" />
+                  </View>
+                  <Text style={styles.gridLabel}>Khata</Text>
+                </TouchableOpacity>
+
+                {/* Card 4: Payments */}
+                <TouchableOpacity style={styles.gridItem} activeOpacity={0.7}>
+                  <View style={[styles.gridIconBg, { backgroundColor: '#FAF5FF' }]}>
+                    <Ionicons name="wallet-outline" size={18} color="#6D28D9" />
+                  </View>
+                  <Text style={styles.gridLabel}>Payments</Text>
+                </TouchableOpacity>
+
+                {/* Card 5: Market Rates */}
+                <TouchableOpacity style={styles.gridItem} onPress={() => setActiveTab('market')} activeOpacity={0.7}>
+                  <View style={[styles.gridIconBg, { backgroundColor: '#F0F9FF' }]}>
+                    <Feather name="trending-up" size={18} color="#0369A1" />
+                  </View>
+                  <Text style={styles.gridLabel}>Market Rates</Text>
+                </TouchableOpacity>
+
+                {/* Card 6: Reports */}
+                <TouchableOpacity style={styles.gridItem} activeOpacity={0.7}>
+                  <View style={[styles.gridIconBg, { backgroundColor: '#FFF1F2' }]}>
+                    <Feather name="bar-chart-2" size={18} color="#BE123C" />
+                  </View>
+                  <Text style={styles.gridLabel}>Reports</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            {/* Pending Due */}
-            <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>Pending Due</Text>
-              <Text style={[styles.metricValue, { color: '#FCA5A5' }]}>₹1,20,000</Text>
-              <Text style={styles.metricSubtext}>2 parties</Text>
+
+            {/* Live Mandi Prices */}
+            <View style={styles.sectionContainer}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Live Mandi Prices / आज के भाव</Text>
+                <TouchableOpacity onPress={() => setActiveTab('market')} activeOpacity={0.7}>
+                  <Text style={styles.viewAllText}>View All ›</Text>
+                </TouchableOpacity>
+              </View>
+
+              {mandiPrices.map((item) => {
+                const isTrendUp = item.change > 0;
+                return (
+                  <View key={item.id} style={styles.priceCard}>
+                    <View>
+                      <Text style={styles.priceCropName}>
+                        {item.commodity}{item.variety ? ` (${item.variety})` : ''}
+                      </Text>
+                      <Text style={styles.priceLocation}>{item.mandi}</Text>
+                    </View>
+                    <View style={styles.priceRight}>
+                      <Text style={styles.priceVal}>₹{item.price}</Text>
+                      <Text style={[styles.priceTrend, { color: isTrendUp ? '#2E7D32' : '#C62828' }]}>
+                        {isTrendUp ? `↗ ${item.change}` : `↙ ${Math.abs(item.change)}`}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
-            {/* In Transit */}
-            <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>In Transit</Text>
-              <Text style={[styles.metricValue, { color: '#FCD34D' }]}>1</Text>
-              <Text style={styles.metricSubtext}>75 Qt</Text>
-            </View>
-          </View>
-        </View>
 
-        {/* Quick Actions Grid */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.gridContainer}>
-            {/* Card 1: Marketplace */}
-            <TouchableOpacity style={styles.gridItem} onPress={() => setActiveTab('market')} activeOpacity={0.7}>
-              <View style={[styles.gridIconBg, { backgroundColor: '#ECFDF5' }]}>
-                <Feather name="shopping-bag" size={18} color="#047857" />
+            {/* Recent Activity */}
+            <View style={styles.sectionContainer}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Recent Activity</Text>
+                <TouchableOpacity activeOpacity={0.7}>
+                  <Text style={styles.viewAllText}>View All ›</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.gridLabel}>Marketplace</Text>
-            </TouchableOpacity>
 
-            {/* Card 2: My Orders */}
-            <TouchableOpacity style={styles.gridItem} activeOpacity={0.7}>
-              <View style={[styles.gridIconBg, { backgroundColor: '#EFF6FF' }]}>
-                <Feather name="file-text" size={18} color="#1D4ED8" />
-              </View>
-              <Text style={styles.gridLabel}>My Orders</Text>
-            </TouchableOpacity>
-
-            {/* Card 3: Khata */}
-            <TouchableOpacity style={styles.gridItem} activeOpacity={0.7}>
-              <View style={[styles.gridIconBg, { backgroundColor: '#FFFBEB' }]}>
-                <Feather name="book-open" size={18} color="#B45309" />
-              </View>
-              <Text style={styles.gridLabel}>Khata</Text>
-            </TouchableOpacity>
-
-            {/* Card 4: Payments */}
-            <TouchableOpacity style={styles.gridItem} activeOpacity={0.7}>
-              <View style={[styles.gridIconBg, { backgroundColor: '#FAF5FF' }]}>
-                <Ionicons name="wallet-outline" size={18} color="#6D28D9" />
-              </View>
-              <Text style={styles.gridLabel}>Payments</Text>
-            </TouchableOpacity>
-
-            {/* Card 5: Market Rates */}
-            <TouchableOpacity style={styles.gridItem} onPress={() => setActiveTab('market')} activeOpacity={0.7}>
-              <View style={[styles.gridIconBg, { backgroundColor: '#F0F9FF' }]}>
-                <Feather name="trending-up" size={18} color="#0369A1" />
-              </View>
-              <Text style={styles.gridLabel}>Market Rates</Text>
-            </TouchableOpacity>
-
-            {/* Card 6: Reports */}
-            <TouchableOpacity style={styles.gridItem} activeOpacity={0.7}>
-              <View style={[styles.gridIconBg, { backgroundColor: '#FFF1F2' }]}>
-                <Feather name="bar-chart-2" size={18} color="#BE123C" />
-              </View>
-              <Text style={styles.gridLabel}>Reports</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Live Mandi Prices */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Live Mandi Prices / आज के भाव</Text>
-            <TouchableOpacity onPress={() => setActiveTab('market')} activeOpacity={0.7}>
-              <Text style={styles.viewAllText}>View All ›</Text>
-            </TouchableOpacity>
-          </View>
-
-          {mandiPrices.map((item) => {
-            const isTrendUp = item.change > 0;
-            return (
-              <View key={item.id} style={styles.priceCard}>
-                <View>
-                  <Text style={styles.priceCropName}>
-                    {item.commodity}{item.variety ? ` (${item.variety})` : ''}
-                  </Text>
-                  <Text style={styles.priceLocation}>{item.mandi}</Text>
+              {/* Activity Card 1 */}
+              <View style={styles.activityCard}>
+                <View style={styles.activityHeader}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={styles.activityCropName}>Potato — Pukhraj</Text>
+                    <Text style={styles.activityCSName} numberOfLines={1}>Room 1 / K12 · SN Sharma CS</Text>
+                  </View>
+                  <View style={[styles.activityBadge, { backgroundColor: '#E8F5E9' }]}>
+                    <Text style={[styles.activityBadgeText, { color: '#2E7D32' }]}>Fresh</Text>
+                  </View>
                 </View>
-                <View style={styles.priceRight}>
-                  <Text style={styles.priceVal}>₹{item.price}</Text>
-                  <Text style={[styles.priceTrend, { color: isTrendUp ? '#2E7D32' : '#C62828' }]}>
-                    {isTrendUp ? `↗ ${item.change}` : `↙ ${Math.abs(item.change)}`}
-                  </Text>
+                <View style={styles.activityGrid}>
+                  <View style={styles.activityGridCol}>
+                    <Text style={styles.activityGridLabel}>Bags</Text>
+                    <Text style={styles.activityGridValue}>300</Text>
+                  </View>
+                  <View style={styles.activityGridCol}>
+                    <Text style={styles.activityGridLabel}>Weight</Text>
+                    <Text style={styles.activityGridValue}>15 MT</Text>
+                  </View>
+                  <View style={styles.activityGridCol}>
+                    <Text style={styles.activityGridLabel}>Age</Text>
+                    <Text style={styles.activityGridValue}>7d</Text>
+                  </View>
                 </View>
               </View>
-            );
-          })}
-        </View>
 
-        {/* Recent Activity */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            <TouchableOpacity activeOpacity={0.7}>
-              <Text style={styles.viewAllText}>View All ›</Text>
-            </TouchableOpacity>
-          </View>
+              {/* Activity Card 2 */}
+              <View style={styles.activityCard}>
+                <View style={styles.activityHeader}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={styles.activityCropName}>Potato — Pukhraj</Text>
+                    <Text style={styles.activityCSName} numberOfLines={1}>Room 1 / B12 · SN Sharma CS</Text>
+                  </View>
+                  <View style={[styles.activityBadge, { backgroundColor: '#E3F2FD' }]}>
+                    <Text style={[styles.activityBadgeText, { color: '#1565C0' }]}>Good</Text>
+                  </View>
+                </View>
+                <View style={styles.activityGrid}>
+                  <View style={styles.activityGridCol}>
+                    <Text style={styles.activityGridLabel}>Bags</Text>
+                    <Text style={styles.activityGridValue}>50</Text>
+                  </View>
+                  <View style={styles.activityGridCol}>
+                    <Text style={styles.activityGridLabel}>Weight</Text>
+                    <Text style={styles.activityGridValue}>2.5 MT</Text>
+                  </View>
+                  <View style={styles.activityGridCol}>
+                    <Text style={styles.activityGridLabel}>Age</Text>
+                    <Text style={styles.activityGridValue}>55d</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
 
-          {/* Activity Card 1 */}
-          <View style={styles.activityCard}>
-            <View style={styles.activityHeader}>
-              <View>
-                <Text style={styles.activityCropName}>Potato — Pukhraj</Text>
-                <Text style={styles.activityCSName}>Room 1 / K12 · SN Sharma CS</Text>
-              </View>
-              <View style={[styles.activityBadge, { backgroundColor: '#E8F5E9' }]}>
-                <Text style={[styles.activityBadgeText, { color: '#2E7D32' }]}>Fresh</Text>
-              </View>
+            {/* Weather Widget */}
+            <View style={[styles.sectionContainer, { marginBottom: Platform.OS === 'android' ? 96 : 76 }]}>
+              <LinearGradient
+                colors={['#0ea5e9', '#2563eb']} // from-sky-500 to-blue-600
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.weatherCard}
+              >
+                <View style={styles.weatherLeft}>
+                  <Feather name="sun" size={32} color="#FFE066" />
+                  <View style={styles.weatherInfoText}>
+                    <Text style={styles.weatherLocation}>Tundla, Firozabad</Text>
+                    <Text style={styles.weatherStatus}>Clear sky · Good for transport</Text>
+                  </View>
+                </View>
+                <View style={styles.weatherRight}>
+                  <Text style={styles.weatherTemp}>32°C</Text>
+                  <Text style={styles.weatherTempRange}>Max 35°C / Min 24°C</Text>
+                </View>
+              </LinearGradient>
             </View>
-            <View style={styles.activityGrid}>
-              <View style={styles.activityGridCol}>
-                <Text style={styles.activityGridLabel}>Bags</Text>
-                <Text style={styles.activityGridValue}>300</Text>
-              </View>
-              <View style={styles.activityGridCol}>
-                <Text style={styles.activityGridLabel}>Weight</Text>
-                <Text style={styles.activityGridValue}>15 MT</Text>
-              </View>
-              <View style={styles.activityGridCol}>
-                <Text style={styles.activityGridLabel}>Age</Text>
-                <Text style={styles.activityGridValue}>7d</Text>
-              </View>
-            </View>
-          </View>
 
-          {/* Activity Card 2 */}
-          <View style={styles.activityCard}>
-            <View style={styles.activityHeader}>
-              <View>
-                <Text style={styles.activityCropName}>Potato — Pukhraj</Text>
-                <Text style={styles.activityCSName}>Room 1 / B12 · SN Sharma CS</Text>
-              </View>
-              <View style={[styles.activityBadge, { backgroundColor: '#E3F2FD' }]}>
-                <Text style={[styles.activityBadgeText, { color: '#1565C0' }]}>Good</Text>
-              </View>
-            </View>
-            <View style={styles.activityGrid}>
-              <View style={styles.activityGridCol}>
-                <Text style={styles.activityGridLabel}>Bags</Text>
-                <Text style={styles.activityGridValue}>50</Text>
-              </View>
-              <View style={styles.activityGridCol}>
-                <Text style={styles.activityGridLabel}>Weight</Text>
-                <Text style={styles.activityGridValue}>2.5 MT</Text>
-              </View>
-              <View style={styles.activityGridCol}>
-                <Text style={styles.activityGridLabel}>Age</Text>
-                <Text style={styles.activityGridValue}>55d</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Weather Widget */}
-        <View style={[styles.sectionContainer, { marginBottom: Platform.OS === 'android' ? 96 : 76 }]}>
-          <LinearGradient
-            colors={['#0ea5e9', '#2563eb']} // from-sky-500 to-blue-600
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.weatherCard}
-          >
-            <View style={styles.weatherLeft}>
-              <Feather name="sun" size={32} color="#FFE066" />
-              <View style={styles.weatherInfoText}>
-                <Text style={styles.weatherLocation}>Tundla, Firozabad</Text>
-                <Text style={styles.weatherStatus}>Clear sky · Good for transport</Text>
-              </View>
-            </View>
-            <View style={styles.weatherRight}>
-              <Text style={styles.weatherTemp}>32°C</Text>
-              <Text style={styles.weatherTempRange}>Max 35°C / Min 24°C</Text>
-            </View>
-          </LinearGradient>
-        </View>
-
-      </ScrollView>
+          </ScrollView>
         </>
       ) : activeTab === 'stock' ? (
         <StockTab />
@@ -380,7 +380,7 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
           {renderTabIcon('home', 'home')}
           <Text style={[styles.footerTabText, activeTab === 'home' && styles.footerTabTextActive]}>Home</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.footerTab} onPress={() => setActiveTab('stock')} activeOpacity={0.8}>
           {renderTabIcon('package', 'stock')}
           <Text style={[styles.footerTabText, activeTab === 'stock' && styles.footerTabTextActive]}>My Stock</Text>

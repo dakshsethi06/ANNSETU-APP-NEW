@@ -26,8 +26,8 @@ const BOTTOM_TABS = [
 ];
 
 export default function FarmerDashboard({ farmerData, holdingsList = [], notifications, hasUnreadNotifications, weatherData, onBackPress, onNotificationsPress, onActionPress, manualStockMt, manualBags, onUpdateStockPress }) {
-  const activeAlertsCount = (notifications || []).filter(n => 
-    n.type === 'aging' || 
+  const activeAlertsCount = (notifications || []).filter(n =>
+    n.type === 'aging' ||
     (n.type === 'warning' && n.title.toLowerCase().includes('crop'))
   ).length;
   const totalStockMt = holdingsList.reduce((sum, h) => sum + (parseFloat(h.weight) || 0), 0) * 0.1;
@@ -43,24 +43,24 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
   };
 
   // Graceful fallback for recent activities
-  const recentActivities = holdingsList && holdingsList.length > 0 
+  const recentActivities = holdingsList && holdingsList.length > 0
     ? holdingsList.slice(0, 2).map((item, index) => {
-        let statusStr = 'fresh';
-        const age = item.age_days || 7;
-        if (age >= 70) statusStr = 'warning';
-        else if (age >= 30) statusStr = 'good';
-        return {
-          id: item.lot_id || `AM-${16288 + index}`,
-          commodity: item.crop || 'Potato',
-          variety: item.variety || 'Pukhraj',
-          location: item.location || 'Room 1 / K12',
-          cold_storage: item.cold_storage || 'SN Sharma CS',
-          bags: item.bags || 300,
-          weight: item.weight || `${(item.bags || 300) * 0.05} MT`,
-          age_days: age,
-          status: statusStr,
-        };
-      })
+      let statusStr = 'fresh';
+      const age = item.age_days || 7;
+      if (age >= 70) statusStr = 'warning';
+      else if (age >= 30) statusStr = 'good';
+      return {
+        id: item.lot_id || `AM-${16288 + index}`,
+        commodity: item.crop || 'Potato',
+        variety: item.variety || 'Pukhraj',
+        location: item.location || 'Room 1 / K12',
+        cold_storage: item.cold_storage || 'SN Sharma CS',
+        bags: item.bags || 300,
+        weight: item.weight || `${(item.bags || 300) * 0.05} MT`,
+        age_days: age,
+        status: statusStr,
+      };
+    })
     : [];
 
   return (
@@ -146,9 +146,9 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
             return (
               <View key={act.id} style={styles.activityCard}>
                 <View style={styles.activityHeader}>
-                  <View>
+                  <View style={{ flex: 1, marginRight: 8 }}>
                     <Text style={styles.activityTitleText}>{act.commodity} — {act.variety}</Text>
-                    <Text style={styles.activitySubtitleText}>{act.location} · {act.cold_storage}</Text>
+                    <Text style={styles.activitySubtitleText} numberOfLines={1}>{act.location} · {act.cold_storage}</Text>
                   </View>
                   <View style={[styles.activityBadge, { backgroundColor: cfg.bg }]}>
                     <Text style={[styles.activityBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
@@ -175,8 +175,8 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
         )}
 
         {/* Weather Widget */}
-        <TouchableOpacity 
-          style={styles.weatherContainer} 
+        <TouchableOpacity
+          style={styles.weatherContainer}
           onPress={() => onActionPress('Weather')}
           activeOpacity={0.9}
         >
@@ -211,5 +211,3 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
     </View>
   );
 }
-
-

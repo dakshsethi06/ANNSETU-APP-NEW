@@ -2,7 +2,7 @@ const db = require('../db');
 
 async function getAppNotifications(farmerId) {
   const dbNotifsRes = await db.query(
-    `SELECT id, "lotId", type, title, message, icon, "isRead", "createdAt" 
+    `SELECT id, "lotId", type, title, message, icon, "isRead", "createdAt", "actionUrl" 
      FROM "AppNotification" 
      WHERE "userId" = $1 
      ORDER BY "createdAt" DESC`,

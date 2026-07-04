@@ -79,15 +79,15 @@ async function getFarmerLedger(farmerId) {
     WHERE "farmerId" = $1
   `, [farmerId]);
 
-  // 3. Fetch Payments
+  // 3. Fetch Payments (Both approved manual and paid online payments should affect the ledger)
   const paymentRes = await db.query(`
     SELECT 
       id,
-      COALESCE(note, 'Payment Received (' || "paymentMode" || ')') AS title,
+      COALESCE(note, 'Payment Received (' || "paymentMode" || ')') || COALESCE(' - Ref: ' || reference, '') AS title,
       "createdAt" AS date,
       amount AS amount
     FROM "Payment"
-    WHERE "farmerId" = $1
+    WHERE "farmerId" = $1 AND "status" IN ('APPROVED', 'PAID')
   `, [farmerId]);
 
   // Combine and sort by date descending

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar, Alert, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Platform, StatusBar, Alert, ActivityIndicator, Keyboard } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AnnsetuLogo from '../components/AnnsetuLogo';
@@ -38,7 +38,24 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
   const [holdingsList, setHoldingsList] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [ledgerList, setLedgerList] = useState([]);
-  
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
   const [profile, setProfile] = useState({
     id: 'cmmp9txv0000ai3t4wush9trs',
     name: 'Loading...',
@@ -61,9 +78,9 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
         const { fetchHoldings } = require('../services/amadService');
         const { fetchNotifications } = require('../services/notificationService');
         const { fetchFarmerLedger } = require('../services/api');
-        
+
         const list = await fetchColdStorages();
-        
+
         let targetId = null;
         let locationName = 'Tundla';
 
@@ -242,9 +259,9 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
                         </View>
                       </View>
                     </View>
-                    
-                    <TouchableOpacity 
-                      style={localStyles.bellButton} 
+
+                    <TouchableOpacity
+                      style={localStyles.bellButton}
                       onPress={() => {
                         setActiveTab('notifications');
                         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -309,7 +326,7 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
                     <Text style={styles.recentActivityViewAll}>View All &gt;</Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 {holdingsList.length === 0 ? (
                   <View style={{
                     padding: 24,
@@ -330,9 +347,9 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
                     return (
                       <View key={act.id} style={styles.activityCard}>
                         <View style={styles.activityHeader}>
-                          <View>
+                          <View style={{ flex: 1, marginRight: 8 }}>
                             <Text style={styles.activityTitleText}>{act.commodity} — {act.variety}</Text>
-                            <Text style={styles.activitySubtitleText}>{act.location} · {act.cold_storage}</Text>
+                            <Text style={styles.activitySubtitleText} numberOfLines={1}>{act.location} · {act.cold_storage}</Text>
                           </View>
                           <View style={[styles.activityBadge, { backgroundColor: cfg.bg }]}>
                             <Text style={[styles.activityBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
@@ -359,8 +376,8 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
                 )}
 
                 {/* Weather Widget */}
-                <TouchableOpacity 
-                  style={styles.weatherContainer} 
+                <TouchableOpacity
+                  style={styles.weatherContainer}
                   onPress={() => handleQuickAction('Weather')}
                   activeOpacity={0.9}
                 >
@@ -401,18 +418,19 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
           ) : activeTab === 'market' ? (
             <MandiTab defaultState={profile.state || 'Uttar Pradesh'} />
           ) : activeTab === 'khata' ? (
-            <KhataTab 
-              farmerData={{ name: profile.name, pendingRent: stats.pendingDuesText.replace('₹', '').replace(/,/g, '') }} 
-              ledgerList={ledgerList} 
+            <KhataTab
+              farmerData={{ name: profile.name, pendingRent: stats.pendingDuesText.replace('₹', '').replace(/,/g, '') }}
+              ledgerList={ledgerList}
+              holdingsList={holdingsList}
               userRole="coldstorage"
             />
           ) : activeTab === 'notifications' ? (
             <NotificationsTab farmerId={profile.id} onBack={() => setActiveTab('home')} />
           ) : activeTab === 'profile' ? (
-            <ProfileTab 
-              farmerData={{ name: profile.name, phone: loggedInPhone }} 
-              onSwitchRole={onSwitchRole} 
-              onLogout={onLogout} 
+            <ProfileTab
+              farmerData={{ name: profile.name, phone: loggedInPhone }}
+              onSwitchRole={onSwitchRole}
+              onLogout={onLogout}
             />
           ) : (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -422,7 +440,7 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
         </View>
 
         {/* ─── Elevated Bottom Tab Navigation ─── */}
-        {activeTab !== 'notifications' && activeTab !== 'createRequest' && (
+        {!isKeyboardVisible && activeTab !== 'notifications' && activeTab !== 'createRequest' && (
           <View style={layoutStyles.bottomNav}>
             {/* Tab 1: Home */}
             <TouchableOpacity
