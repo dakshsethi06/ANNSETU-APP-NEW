@@ -425,10 +425,6 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
                 style={styles.btnClosePayment}
                 onPress={() => {
                   setPaymentUrl(null);
-                  setShowSummary(false);
-                  if (onPaymentSuccess) {
-                    onPaymentSuccess();
-                  }
                 }}
                 activeOpacity={0.8}
               >
@@ -982,10 +978,6 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
               style={styles.btnClosePayment}
               onPress={() => {
                 setPaymentUrl(null);
-                setShowSummary(false);
-                if (onPaymentSuccess) {
-                  onPaymentSuccess();
-                }
               }}
               activeOpacity={0.8}
             >
