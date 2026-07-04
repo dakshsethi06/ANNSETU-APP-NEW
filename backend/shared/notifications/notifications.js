@@ -65,9 +65,7 @@ async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9tr
         }
 
         if (recipientPhone || recipientEmail) {
-          const { sendSMS, sendEmail } = require('../../notification');
-
-          if (recipientPhone) {
+          const { sendSMS, sendEmail } = require('../notification');
             const formattedPhone = recipientPhone.startsWith('+') ? recipientPhone : `+91${recipientPhone}`;
             await sendSMS({
               to: formattedPhone,
@@ -78,7 +76,6 @@ async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9tr
               relatedModel: lotId ? 'AmadLot' : null,
               relatedId: lotId
             }).catch(err => console.warn('[Auto Notification Hook] Failed to send SMS:', err.message));
-          }
 
           if (recipientEmail) {
             await sendEmail({

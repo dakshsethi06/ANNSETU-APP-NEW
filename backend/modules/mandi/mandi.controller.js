@@ -1,4 +1,4 @@
-const mandiService = require('../../services/mandiService');
+const mandiService = require('./mandi.service');
 
 async function getMandiPrices(req, res) {
   try {

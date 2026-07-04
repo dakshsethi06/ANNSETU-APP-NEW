@@ -145,4 +145,25 @@ async function markAsRead(req, res) {
   }
 }
 
-module.exports = { getNotifications, markAsRead };
+async function registerPushToken(req, res) {
+  const { userId, pushToken } = req.body;
+  if (!userId || !pushToken) {
+    return res.status(400).json({ success: false, error: 'userId and pushToken are required fields.' });
+  }
+
+  try {
+    const cleanUserId = userId.replace('+91', '').trim();
+    const resolvedUserId = await notificationRepository.resolveFarmerId(cleanUserId);
+    const email = `farmer_${resolvedUserId}@annsetu.local`;
+
+    await notificationRepository.upsertUserPushToken(resolvedUserId, email, pushToken);
+
+    console.log(`[Backend] Registered push token for userId ${resolvedUserId}: ${pushToken}`);
+    return res.json({ success: true, message: 'Push token registered successfully.' });
+  } catch (err) {
+    console.error('Error registering push token:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+module.exports = { getNotifications, markAsRead, registerPushToken };

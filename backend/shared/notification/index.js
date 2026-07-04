@@ -1,6 +1,6 @@
 const { sendEmail } = require('./emailService');
 const { sendSMS } = require('./smsService');
-const { logOutboundNotification } = require('../lib/notifications');
+const { logOutboundNotification } = require('../notifications/notifications');
 
 /**
  * Sends an email and registers a log in the database.

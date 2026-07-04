@@ -1,4 +1,4 @@
-const db = require('../../db');
+const db = require('../../config/database');
 
 async function getAppNotifications(farmerId) {
   const dbNotifsRes = await db.query(
@@ -79,6 +79,23 @@ async function insertAppNotification(params) {
   return result.rows[0];
 }
 
+async function resolveFarmerId(phoneOrId) {
+  const farmerRes = await db.query(
+    'SELECT id FROM "Farmer" WHERE phone = $1 OR id = $1 LIMIT 1',
+    [phoneOrId]
+  );
+  return farmerRes.rows.length > 0 ? farmerRes.rows[0].id : phoneOrId;
+}
+
+async function upsertUserPushToken(userId, email, pushToken) {
+  await db.query(
+    `INSERT INTO "User" ("id", "name", "email", "passwordHash", "role", "active", "createdAt", "updatedAt", "coldStorageId", "sessionVersion", "pushToken")
+     VALUES ($1, $1, $2, 'dummy_hash', 'OPERATOR', true, NOW(), NOW(), 'cmmp9txv0000ai3t4wush9trs', 1, $3)
+     ON CONFLICT (id) DO UPDATE SET "pushToken" = EXCLUDED."pushToken", "updatedAt" = NOW()`,
+    [userId, email, pushToken]
+  );
+}
+
 module.exports = {
   getAppNotifications,
   getPendingBills,
@@ -87,5 +104,7 @@ module.exports = {
   getUserForFarmer,
   getFarmerDetails,
   insertShadowUser,
-  insertAppNotification
+  insertAppNotification,
+  resolveFarmerId,
+  upsertUserPushToken
 };
