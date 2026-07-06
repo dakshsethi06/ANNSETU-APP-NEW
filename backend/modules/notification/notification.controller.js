@@ -32,7 +32,25 @@ async function getNotifications(req, res) {
     }
 
     const dbNotifs = await notificationRepository.getAppNotifications(farmerId);
+    const readNotifIds = new Set();
+    
     for (const item of dbNotifs) {
+      if (item.isRead) {
+        readNotifIds.add(item.id);
+        continue; // Skip read notifications in getNotifications
+      }
+
+      // Check if this is a payment verification notification and if the corresponding payment record exists
+      if (item.actionUrl && item.actionUrl.includes('/payment-verification/')) {
+        const paymentId = item.actionUrl.split('/').pop();
+        const payCheck = await db.query('SELECT id FROM "Payment" WHERE id = $1', [paymentId]);
+        if (payCheck.rows.length === 0) {
+          // Stale notification referring to non-existent payment. Delete and skip.
+          await db.query('DELETE FROM "AppNotification" WHERE id = $1', [item.id]);
+          continue;
+        }
+      }
+
       // Check if it is a dispatch/approval notification (handles both pending approval for farmer and approved dispatch for cold storage)
       const match = item.message.match(/dispatch\s+(?:of\s+)?(\d+)\s+bags/i);
       if (match && (
@@ -76,6 +94,11 @@ async function getNotifications(req, res) {
 
     const pendingBills = await notificationRepository.getPendingBills(farmerId);
     pendingBills.forEach(bill => {
+      const billNotifId = `bill-${bill.id}`;
+      if (readNotifIds.has(billNotifId)) {
+        return; // Skip read bill notifications
+      }
+
       const dueDate = bill.dueDate ? new Date(bill.dueDate) : new Date(new Date(bill.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000);
       const diffDays = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
 
@@ -93,7 +116,7 @@ async function getNotifications(req, res) {
           }
         }
         notifications.push({
-          id: `bill-${bill.id}`,
+          id: billNotifId,
           title: 'Payment Due',
           message: `Storage rent of ₹${parseFloat(bill.amount).toLocaleString('en-IN')} is due for ${bill.periodLabel || 'recent storage period'}.`,
           type: 'billing',
@@ -116,7 +139,26 @@ async function markAsRead(req, res) {
   const { id } = req.params;
   try {
     if (id.startsWith('bill-')) {
-      return res.json({ success: true });
+      const billIdStr = id.replace('bill-', '');
+      const billRes = await db.query('SELECT "farmerId", amount, "periodLabel" FROM "BillingEntry" WHERE id = $1', [billIdStr]);
+      if (billRes.rows.length > 0) {
+        const bill = billRes.rows[0];
+        const farmerId = bill.farmerId;
+        const farmerDetailsRes = await db.query('SELECT "coldStorageId" FROM "Farmer" WHERE id = $1', [farmerId]);
+        const coldStorageId = farmerDetailsRes.rows.length > 0 ? farmerDetailsRes.rows[0].coldStorageId : 'cmmp9txv0000ai3t4wush9trs';
+        const now = new Date();
+        const title = 'Payment Due';
+        const message = `Storage rent of ₹${parseFloat(bill.amount).toLocaleString('en-IN')} is due for ${bill.periodLabel || 'recent storage period'}.`;
+        
+        await db.query(
+          `INSERT INTO "AppNotification" (
+            "id", "coldStorageId", "userId", "type", "title", "message", "isRead", "createdAt", "updatedAt"
+          ) VALUES ($1, $2, $3, 'billing', $4, $5, true, $6, $6)
+          ON CONFLICT (id) DO UPDATE SET "isRead" = true, "updatedAt" = NOW()`,
+          [id, coldStorageId, farmerId, title, message, now]
+        );
+      }
+      return res.json({ success: true, message: 'Bill notification marked as read' });
     }
 
     // Check the notification to see who it belongs to

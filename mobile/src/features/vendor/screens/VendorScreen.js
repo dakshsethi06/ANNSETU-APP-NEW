@@ -92,10 +92,8 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
       try {
         const { fetchNotifications } = require('../../notifications/services/notificationService');
         const list = await fetchNotifications('default_vendor');
-        if (list && list.length > 0) {
-          const hasUnread = list.some(n => !n.isRead);
-          setHasUnreadNotifications(hasUnread);
-        }
+        const hasUnread = list && list.some(n => !n.isRead);
+        setHasUnreadNotifications(!!hasUnread);
       } catch (err) {
         console.warn('VendorScreen background notification poll failed:', err.message);
       }
@@ -366,7 +364,17 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
       ) : activeTab === 'market' ? (
         <MarketTab />
       ) : activeTab === 'notifications' ? (
-        <NotificationsTab farmerId="default_vendor" onBack={() => setActiveTab('home')} />
+        <NotificationsTab
+          farmerId="default_vendor"
+          onBack={() => setActiveTab('home')}
+          onMarkRead={() => {
+            const { fetchNotifications } = require('../../notifications/services/notificationService');
+            fetchNotifications('default_vendor').then(list => {
+              const hasUnread = list && list.some(n => !n.isRead);
+              setHasUnreadNotifications(!!hasUnread);
+            }).catch(() => {});
+          }}
+        />
       ) : activeTab === 'profile' ? (
         <ProfileTab onSwitchRole={onSwitchRole} onLogout={onLogout} />
       ) : (

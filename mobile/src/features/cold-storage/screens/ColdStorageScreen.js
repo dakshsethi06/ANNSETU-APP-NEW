@@ -426,7 +426,14 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
               userRole="coldstorage"
             />
           ) : activeTab === 'notifications' ? (
-            <NotificationsTab farmerId={profile.id} onBack={() => setActiveTab('home')} />
+            <NotificationsTab
+              farmerId={profile.id}
+              onBack={() => setActiveTab('home')}
+              onMarkRead={() => {
+                const { fetchNotifications } = require('../../notifications/services/notificationService');
+                fetchNotifications(profile.id).then(list => setNotifications(list || [])).catch(() => {});
+              }}
+            />
           ) : activeTab === 'profile' ? (
             <ProfileTab
               farmerData={{ name: profile.name, phone: loggedInPhone }}

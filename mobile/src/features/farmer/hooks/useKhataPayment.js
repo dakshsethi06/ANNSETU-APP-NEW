@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Alert, NativeModules } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import RazorpayCheckout from 'react-native-razorpay';
@@ -25,7 +25,17 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   const [razorpayOrderData, setRazorpayOrderData] = useState(null);
   const [isOnlineSuccess, setIsOnlineSuccess] = useState(false);
 
+  const [paymentAmount, setPaymentAmount] = useState('');
+
   const pendingRent = parseFloat(farmerData?.pendingRent || 0);
+
+  useEffect(() => {
+    if (pendingRent > 0) {
+      setPaymentAmount(pendingRent.toString());
+    } else {
+      setPaymentAmount('0');
+    }
+  }, [pendingRent]);
 
   const adjustDay = (val) => {
     let nextDay = pickerDay + val;
@@ -84,8 +94,16 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     }
   };
 
-  const handlePayPress = async () => {
-    if (pendingRent <= 0) {
+  const handlePayPress = async (customAmount) => {
+    let targetAmount = pendingRent;
+    if (customAmount !== undefined && customAmount !== '') {
+      const parsed = parseFloat(customAmount);
+      if (!isNaN(parsed) && parsed > 0) {
+        targetAmount = parsed;
+      }
+    }
+
+    if (targetAmount <= 0) {
       Alert.alert(
         lang === 'en' ? 'No Payment Required' : 'कोई भुगतान आवश्यक नहीं है',
         lang === 'en' ? 'Your net payable amount is ₹0.' : 'आपकी शुद्ध देय राशि ₹0 है।'
@@ -100,7 +118,7 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       const response = await fetch(`${BACKEND_URL}/api/payments/order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ farmerId })
+        body: JSON.stringify({ farmerId, amount: targetAmount })
       });
 
       if (!response.ok) {
@@ -120,25 +138,33 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   };
 
   const handleOnlineCheckout = async () => {
+    console.log('[handleOnlineCheckout] Method started.');
     if (!razorpayOrderData) {
+      console.log('[handleOnlineCheckout] Error: razorpayOrderData is null');
       Alert.alert('Error', 'Payment details are not loaded.');
       return;
     }
 
+    console.log('[handleOnlineCheckout] razorpayOrderData:', razorpayOrderData);
+
     const isMock = razorpayOrderData.order_id?.startsWith('order_mock_');
     const hasNativeSDK = !!NativeModules.RazorpayCheckout;
+    console.log('[handleOnlineCheckout] isMock:', isMock, 'hasNativeSDK:', hasNativeSDK);
 
     if (isMock || !hasNativeSDK || !RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
+      console.log('[handleOnlineCheckout] Falling back to Web Checkout URL:', razorpayOrderData.payment_link_url);
       if (razorpayOrderData.payment_link_url) {
         setPaymentUrl(razorpayOrderData.payment_link_url);
         return;
       } else {
+        console.log('[handleOnlineCheckout] Error: payment_link_url is missing.');
         Alert.alert('Error', 'Payment link URL not generated.');
         return;
       }
     }
 
     try {
+      console.log('[handleOnlineCheckout] Opening native Razorpay Checkout SDK.');
       const options = {
         description: `Rent payment for Farmer ${farmerData.id || farmerData.serial_number}`,
         image: 'https://annsetu.local/logo.png',
@@ -255,7 +281,8 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       paymentUrl, setPaymentUrl,
       razorpayOrderData, setRazorpayOrderData,
       isOnlineSuccess, setIsOnlineSuccess,
-      pendingRent
+      pendingRent,
+      paymentAmount, setPaymentAmount
     },
     handlers: {
       adjustDay, adjustMonth, adjustYear,

@@ -77,11 +77,13 @@ export function useStorageTabDashboard(loggedInPhone) {
     }
   };
 
-  const handleSelectFarmer = async (farmerId) => {
+  const handleSelectFarmer = async (farmerId, isRefresh = false) => {
     setSelectedFarmerId(farmerId);
-    setFarmerLoading(true);
+    if (!isRefresh) {
+      setFarmerLoading(true);
+      setDataLoading(true);
+    }
     setFarmerError(null);
-    setDataLoading(true);
 
     try {
       const farmers = await fetchFarmers('', farmerId);
@@ -123,12 +125,14 @@ export function useStorageTabDashboard(loggedInPhone) {
       setWeatherData(weather);
     } catch (err) {
       console.warn('Failed to fetch live farmer data:', err.message);
-      setFarmerError(err.message || 'Failed to load farmer details');
-      setFarmerData(null);
-      setHoldingsList([]);
-      setNotificationsList([]);
-      setLedgerList([]);
-      setWeatherData(null);
+      if (!isRefresh) {
+        setFarmerError(err.message || 'Failed to load farmer details');
+        setFarmerData(null);
+        setHoldingsList([]);
+        setNotificationsList([]);
+        setLedgerList([]);
+        setWeatherData(null);
+      }
     } finally {
       setFarmerLoading(false);
       setDataLoading(false);

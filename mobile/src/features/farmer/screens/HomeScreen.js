@@ -178,6 +178,12 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 farmerId={selectedFarmerId}
                 onBack={() => setActiveTab('home')}
                 onNavigateToTab={(tabName) => setActiveTab(tabName)}
+                onMarkRead={() => {
+                  const { fetchNotifications } = require('../../notifications/services/notificationService');
+                  fetchNotifications(selectedFarmerId).then(list => {
+                    setNotificationsList(list || []);
+                  }).catch(() => {});
+                }}
               />
             )}
 
@@ -196,7 +202,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 farmerData={farmerData}
                 ledgerList={ledgerList}
                 holdingsList={holdingsList}
-                onPaymentSuccess={() => handleSelectFarmer(selectedFarmerId)}
+                onPaymentSuccess={() => handleSelectFarmer(selectedFarmerId, true)}
               />
             )}
 

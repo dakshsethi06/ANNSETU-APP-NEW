@@ -6,7 +6,7 @@ import s from '../styles/notificationsTabStyles';
 import { fetchNotifications, markNotificationRead } from '../services/notificationService';
 import { fetchFarmers, BACKEND_URL } from '../../../core/network/api';
 
-export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) {
+export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, onMarkRead }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paymentDetailVisible, setPaymentDetailVisible] = useState(false);
@@ -58,6 +58,9 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
       setPaymentDetail(null);
       setNotifications(prev => prev.filter(n => n.id !== notifId));
       loadNotifications();
+      if (onMarkRead) {
+        onMarkRead();
+      }
     } catch (err) {
       console.warn(`Payment ${action} failed:`, err.message);
       Alert.alert('Error', err.message || `Failed to ${action} payment.`);
@@ -139,10 +142,11 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
         return;
       }
 
-      setNotifications(prev =>
-        prev.map(n => n.id === item.id ? { ...n, isRead: true } : n)
-      );
+      setNotifications(prev => prev.filter(n => n.id !== item.id));
       await markNotificationRead(item.id);
+      if (onMarkRead) {
+        onMarkRead();
+      }
 
       if (onNavigateToTab && (
         item.title.toLowerCase().includes('approval') ||

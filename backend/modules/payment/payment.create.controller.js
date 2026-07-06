@@ -2,23 +2,26 @@ const paymentRepository = require('./payment.repository');
 const razorpayService = require('./razorpay.service');
 
 async function createOrder(req, res) {
-  const { farmerId } = req.body;
+  const { farmerId, amount } = req.body;
   if (!farmerId) {
     return res.status(400).json({ success: false, error: 'farmerId is required.' });
   }
 
   try {
-    const pendingRent = await paymentRepository.getFarmerPendingRent(farmerId);
-    if (pendingRent <= 0) {
+    let finalAmount = amount ? parseFloat(amount) : 0;
+    if (!finalAmount) {
+      finalAmount = await paymentRepository.getFarmerPendingRent(farmerId);
+    }
+    if (finalAmount <= 0) {
       return res.status(400).json({ success: false, error: 'No pending rent balance to pay.' });
     }
 
-    const amountPaise = Math.round(pendingRent * 100);
+    const amountPaise = Math.round(finalAmount * 100);
     const receipt = `rcpt_${farmerId}_${Date.now().toString().slice(-6)}`;
 
-    let serverIp = req.headers.host || '10.36.66.6:3001';
+    let serverIp = req.headers.host || '192.168.200.24:3001';
     if (serverIp.includes('localhost') || serverIp.includes('127.0.0.1')) {
-      serverIp = '10.36.66.6:3001';
+      serverIp = '192.168.200.24:3001';
     }
 
     const isMock = razorpayService.isMockMode();
@@ -60,7 +63,7 @@ async function createOrder(req, res) {
     await paymentRepository.createPendingPayment({
       orderId: orderId,
       farmerId: farmerId,
-      amount: pendingRent,
+      amount: finalAmount,
       note: `Online Rent Payment via App for account ${farmerId}`
     });
 
@@ -68,7 +71,7 @@ async function createOrder(req, res) {
       success: true,
       order_id: orderId,
       key_id: razorpayService.keyId,
-      amount: pendingRent,
+      amount: finalAmount,
       currency: 'INR',
       payment_link_url: paymentLinkUrl
     });

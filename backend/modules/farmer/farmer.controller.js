@@ -1,6 +1,7 @@
 const farmerRepository = require('./farmer.repository');
 const crypto = require('crypto');
 const db = require('../../config/database');
+const pdfService = require('./pdf.service');
 
 function hashMpin(mpin) {
   if (!mpin) return '';
@@ -185,4 +186,124 @@ async function resetMpin(req, res) {
   }
 }
 
-module.exports = { getFarmers, registerFarmer, getLedger, loginMpin, resetMpin };
+async function downloadStatement(req, res) {
+  try {
+    const { id } = req.params;
+    
+    // Get farmer profile
+    const farmerRes = await db.query('SELECT name, phone, "openingBalance" FROM "Farmer" WHERE id = $1', [id]);
+    if (farmerRes.rows.length === 0) {
+      return res.status(404).send('Farmer profile not found.');
+    }
+    const farmer = farmerRes.rows[0];
+
+    const ledger = await farmerRepository.getFarmerLedger(id);
+
+    // Generate CSV contents
+    let csv = `Annsetu Farmer Account Statement\n`;
+    csv += `Farmer Name,${farmer.name}\n`;
+    csv += `Phone,${farmer.phone}\n`;
+    csv += `Opening Balance,₹${parseFloat(farmer.openingBalance || 0).toFixed(2)}\n\n`;
+    
+    csv += `Date,Description,Amount (₹),Balance (₹)\n`;
+    
+    // Ledger is sorted descending in getFarmerLedger, so let's reverse it to chronological order for the statement
+    const chronological = [...ledger].reverse();
+    
+    chronological.forEach(item => {
+      const formattedDate = new Date(item.date).toLocaleDateString('en-IN');
+      const amountStr = item.amount < 0 
+        ? `-${Math.abs(item.amount).toFixed(2)}` 
+        : `+${Math.abs(item.amount).toFixed(2)}`;
+      csv += `"${formattedDate}","${item.title.replace(/"/g, '""')}",${amountStr},${item.balance.toFixed(2)}\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=statement_${farmer.name.replace(/\s+/g, '_')}.csv`);
+    return res.send(csv);
+  } catch (error) {
+    console.error('Download statement error:', error.message);
+    return res.status(500).send('Failed to generate statement file.');
+  }
+}
+
+async function downloadStatementPdf(req, res) {
+  try {
+    const { id } = req.params;
+
+    // Get farmer profile
+    const farmerRes = await db.query('SELECT * FROM "Farmer" WHERE id = $1', [id]);
+    if (farmerRes.rows.length === 0) {
+      return res.status(404).send('Farmer profile not found.');
+    }
+    const farmer = farmerRes.rows[0];
+
+    // Get cold storage onboarding details
+    const csRes = await db.query(
+      'SELECT "displayName", address, phone FROM "ColdStorageOnboarding" WHERE id = $1',
+      [farmer.coldStorageId]
+    );
+    const coldStorage = csRes.rows.length > 0 ? csRes.rows[0] : { displayName: 'Annsetu Cold Storage', address: 'Tundla', phone: '9999999999' };
+    const coldStorageDetails = {
+      name: coldStorage.displayName,
+      address: coldStorage.address,
+      phone: coldStorage.phone
+    };
+
+    // Get ledger and payment lists
+    const ledger = await farmerRepository.getFarmerLedger(id);
+    const paymentsRes = await db.query(
+      'SELECT * FROM "Payment" WHERE "farmerId" = $1 ORDER BY "createdAt" DESC',
+      [id]
+    );
+    const payments = paymentsRes.rows;
+
+    // Calculate Summary stats
+    const totalCharged = ledger.reduce((sum, item) => item.amount < 0 ? sum + Math.abs(item.amount) : sum, 0);
+    const totalPaid = ledger.reduce((sum, item) => item.amount > 0 ? sum + item.amount : sum, 0);
+    const pendingRent = parseFloat(farmer.pendingRent || 0);
+
+    const summary = {
+      totalCharged,
+      totalPaid,
+      netPayable: pendingRent
+    };
+
+    // Format Dates
+    const currentDateStr = new Date().toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    let periodStr = '';
+    if (ledger.length > 0) {
+      const oldestDate = new Date(ledger[ledger.length - 1].date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      const newestDate = new Date(ledger[0].date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      periodStr = `${oldestDate} - ${newestDate}`;
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const filename = `Khata_Statement_${todayStr}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+
+    pdfService.buildStatementPdf(res, {
+      farmer,
+      coldStorage: coldStorageDetails,
+      ledger,
+      payments,
+      summary,
+      currentDateStr,
+      periodStr
+    });
+  } catch (error) {
+    console.error('Download statement PDF error:', error.message);
+    return res.status(500).send('Failed to generate PDF statement.');
+  }
+}
+
+module.exports = { getFarmers, registerFarmer, getLedger, downloadStatement, downloadStatementPdf, loginMpin, resetMpin };

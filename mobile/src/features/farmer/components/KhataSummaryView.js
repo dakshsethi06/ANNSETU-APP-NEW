@@ -93,21 +93,11 @@ export default function KhataSummaryView({
             <Text style={styles.detailValue}>{storageDuration}</Text>
           </View>
 
-          <View style={styles.summaryDetailItem}>
+          <View style={[styles.summaryDetailItem, { borderBottomWidth: 0 }]}>
             <Text style={styles.detailLabel}>{lang === 'en' ? 'Payment Amount' : 'भुगतान राशि'}</Text>
             <Text style={[styles.detailValue, { color: '#DC2626' }]}>
-              ₹{pendingRent.toLocaleString('en-IN')}
+              ₹{Number(pendingRent || 0).toLocaleString('en-IN')}
             </Text>
-          </View>
-
-          <View style={[styles.summaryDetailItem, { borderBottomWidth: 0 }]}>
-            <Text style={styles.detailLabel}>{lang === 'en' ? 'Payment Status' : 'भुगतान की स्थिति'}</Text>
-            <View style={styles.statusBadgeContainer}>
-              <Feather name="clock" size={13} color="#B45309" style={{ marginRight: 6 }} />
-              <Text style={styles.statusBadgeText}>
-                {lang === 'en' ? 'Pending Verification' : 'सत्यापन लंबित'}
-              </Text>
-            </View>
           </View>
         </View>
 

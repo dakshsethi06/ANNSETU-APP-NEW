@@ -57,6 +57,10 @@ async function getFarmerByPhone(phone) {
 }
 
 async function getFarmerLedger(farmerId) {
+  // Fetch opening balance of the farmer
+  const farmerRes = await db.query('SELECT "openingBalance" FROM "Farmer" WHERE id = $1', [farmerId]);
+  const openingBalance = farmerRes.rows.length > 0 ? parseFloat(farmerRes.rows[0].openingBalance || 0) : 0;
+
   // 1. Fetch Nikasi bills
   const nikasiRes = await db.query(`
     SELECT 
@@ -83,7 +87,7 @@ async function getFarmerLedger(farmerId) {
   const paymentRes = await db.query(`
     SELECT 
       id,
-      COALESCE(note, 'Payment Received (' || "paymentMode" || ')') || COALESCE(' - Ref: ' || reference, '') AS title,
+      'Payment Received (' || "paymentMode" || ')' || COALESCE(' - Ref: ' || reference, '') AS title,
       "createdAt" AS date,
       amount AS amount
     FROM "Payment"
@@ -100,7 +104,7 @@ async function getFarmerLedger(farmerId) {
   // Sort ascending by date to compute rolling balance
   entries.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  let runningBalance = 0;
+  let runningBalance = openingBalance;
   const entriesWithRunning = entries.map(entry => {
     // If it's a charge (negative amount), it increases the dues (balance)
     // If it's a payment (positive amount), it decreases the dues

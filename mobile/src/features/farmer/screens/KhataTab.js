@@ -1,11 +1,15 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, TextInput, Linking, ActivityIndicator, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import * as IntentLauncher from 'expo-intent-launcher';
 
 import styles from '../styles/khataTabStyles';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import { useKhataPayment } from '../hooks/useKhataPayment';
+import { BACKEND_URL } from '../../../core/network/config';
 
 // Components and Modals
 import KhataSummaryView from '../components/KhataSummaryView';
@@ -16,6 +20,74 @@ import SuccessModal from '../modals/SuccessModal';
 
 export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [], userRole = 'farmer', onPaymentSuccess }) {
   const { state, handlers } = useKhataPayment(farmerData, holdingsList, onPaymentSuccess);
+  const [pdfDownloading, setPdfDownloading] = React.useState(false);
+
+  const handleDownloadStatementPdf = async () => {
+    const farmerId = farmerData?.id || farmerData?.serial_number;
+    if (!farmerId) {
+      Alert.alert('Error', 'Farmer profile identifier not found.');
+      return;
+    }
+
+    setPdfDownloading(true);
+
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const filename = `Khata_Statement_${todayStr}.pdf`;
+      const fileUri = `${FileSystem.documentDirectory}${filename}`;
+      const url = `${BACKEND_URL}/api/farmers/${encodeURIComponent(farmerId)}/statement/download-pdf`;
+
+      const downloadResult = await FileSystem.downloadAsync(url, fileUri);
+
+      if (downloadResult.status === 200) {
+        if (Platform.OS === 'android') {
+          try {
+            const contentUri = await FileSystem.getContentUriAsync(downloadResult.uri);
+            await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+              data: contentUri,
+              flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+              type: 'application/pdf',
+            });
+            Alert.alert(
+              state.lang === 'en' ? 'Success' : 'सफलता',
+              state.lang === 'en' ? 'Statement downloaded successfully.' : 'विवरण सफलतापूर्वक डाउनलोड हो गया।'
+            );
+          } catch (intentErr) {
+            console.warn('Intent launcher failed, falling back to Sharing:', intentErr.message);
+            await Sharing.shareAsync(downloadResult.uri, {
+              mimeType: 'application/pdf',
+              dialogTitle: 'Khata Statement PDF',
+              UTI: 'com.adobe.pdf'
+            });
+          }
+        } else {
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: 'Khata Statement PDF',
+            UTI: 'com.adobe.pdf'
+          });
+          Alert.alert(
+            state.lang === 'en' ? 'Success' : 'सफलता',
+            state.lang === 'en' ? 'Statement downloaded successfully.' : 'विवरण सफलतापूर्वक डाउनलोड हो गया।'
+          );
+        }
+      } else {
+        throw new Error(`Server returned status code ${downloadResult.status}`);
+      }
+    } catch (error) {
+      console.warn('PDF statement download failed:', error.message);
+      Alert.alert(
+        state.lang === 'en' ? 'Download Failed' : 'डाउनलोड विफल',
+        `${state.lang === 'en' ? 'Failed to download statement PDF.' : 'विवरण पीडीएफ डाउनलोड करने में विफल।'} Error: ${error.message}`,
+        [
+          { text: state.lang === 'en' ? 'Cancel' : 'रद्द करें', style: 'cancel' },
+          { text: state.lang === 'en' ? 'Retry' : 'पुनः प्रयास करें', onPress: handleDownloadStatementPdf }
+        ]
+      );
+    } finally {
+      setPdfDownloading(false);
+    }
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -36,11 +108,12 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
   const totalPaid = ledgerList.reduce((sum, item) => item.amount > 0 ? sum + item.amount : sum, 0);
 
   if (state.showSummary) {
+    const displayPaymentAmount = state.razorpayOrderData?.amount ?? (parseFloat(state.paymentAmount) || state.pendingRent);
     return (
       <View style={{ flex: 1 }}>
         <KhataSummaryView
           lang={state.lang}
-          pendingRent={state.pendingRent}
+          pendingRent={displayPaymentAmount}
           farmerData={farmerData}
           holdingsList={holdingsList}
           formatDate={formatDate}
@@ -181,7 +254,7 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
             <TouchableOpacity
               style={styles.btnStatement}
               activeOpacity={0.8}
-              onPress={() => Alert.alert(state.lang === 'en' ? 'Download' : 'डाउनलोड', state.lang === 'en' ? 'Downloading...' : 'डाउनलोड हो रहा है...')}
+              onPress={handleDownloadStatementPdf}
             >
               <Feather name="download" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
               <Text style={styles.btnStatementText}>{state.lang === 'en' ? 'Statement' : 'विवरण'}</Text>
@@ -196,6 +269,42 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
             </TouchableOpacity>
           </View>
         </LinearGradient>
+
+        {/* Partial Payment Option Card */}
+        <View style={styles.partialPayCard}>
+          <View style={styles.partialPayLeft}>
+            <Text style={styles.partialPayTitle}>
+              {state.lang === 'en' ? 'Partial Payment' : 'आंशिक भुगतान'}
+            </Text>
+            <Text style={styles.partialPaySub}>
+              {state.lang === 'en' ? 'Pay custom or full amount' : 'कस्टम या पूर्ण राशि का भुगतान करें'}
+            </Text>
+          </View>
+          <View style={styles.partialPayRight}>
+            <View style={styles.partialInputWrapper}>
+              <Text style={styles.currencyPrefix}>₹</Text>
+              <TextInput
+                style={styles.partialTextInput}
+                keyboardType="numeric"
+                value={state.paymentAmount}
+                onChangeText={(val) => state.setPaymentAmount(val.replace(/[^0-9.]/g, ''))}
+                placeholder="0"
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.btnPayPartial}
+              activeOpacity={0.8}
+              onPress={() => handlers.handlePayPress(state.paymentAmount)}
+            >
+              <Feather name="credit-card" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
+              <Text style={styles.btnPayPartialText}>
+                {state.lang === 'en' 
+                  ? (parseFloat(state.paymentAmount) === state.pendingRent ? 'Pay All' : 'Pay') 
+                  : 'भुगतान'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
@@ -240,6 +349,40 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
           )}
         </View>
       </ScrollView>
+      {pdfDownloading && (
+        <View style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999
+        }}>
+          <View style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: 14,
+            padding: 24,
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 4,
+            elevation: 5
+          }}>
+            <ActivityIndicator size="large" color="#1E5C2E" style={{ marginBottom: 12 }} />
+            <Text style={{
+              fontSize: 14,
+              fontWeight: '700',
+              color: '#1B4332'
+            }}>
+              {state.lang === 'en' ? 'Generating PDF...' : 'पीडीएफ तैयार हो रहा है...'}
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
