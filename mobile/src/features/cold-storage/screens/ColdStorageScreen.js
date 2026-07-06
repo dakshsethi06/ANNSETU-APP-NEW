@@ -439,6 +439,8 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
               farmerData={{ name: profile.name, phone: loggedInPhone }}
               onSwitchRole={onSwitchRole}
               onLogout={onLogout}
+              loggedInPhone={loggedInPhone}
+              userRole="ColdStorage"
             />
           ) : (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

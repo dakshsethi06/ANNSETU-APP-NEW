@@ -1,16 +1,28 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { FONTS } from '../../../core/theme/theme';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import s from '../styles/profileTabStyles';
+import SupportModal from '../../support/modals/SupportModal';
 
-export default function ProfileTab({ farmerData, onSwitchRole, onLogout }) {
+export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedInPhone, userRole }) {
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
   const profileName = farmerData?.name || 'SN Sharma Trading';
-  const profileSubtitle = farmerData
-    ? `Farmer · ${farmerData.village || farmerData.district || 'Tundla'}, ${farmerData.state || 'UP'}`
-    : 'Vendor · Tundla, Firozabad';
-  const currentRole = farmerData ? 'Farmer / किसान' : 'Vendor / व्यापारी';
+  
+  const isColdStorage = userRole === 'ColdStorage' || userRole === 'ColdStorageFacility';
+  const currentRole = isColdStorage 
+    ? 'Cold Storage / कोल्ड स्टोरेज' 
+    : farmerData 
+      ? 'Farmer / किसान' 
+      : 'Vendor / व्यापारी';
+
+  const profileSubtitle = isColdStorage
+    ? `Cold Storage · ${farmerData?.village || farmerData?.district || 'Tundla'}, ${farmerData?.state || 'UP'}`
+    : farmerData
+      ? `Farmer · ${farmerData.village || farmerData.district || 'Tundla'}, ${farmerData.state || 'UP'}`
+      : 'Vendor · Tundla, Firozabad';
+
   const avatarChar = profileName ? profileName.charAt(0).toUpperCase() : 'S';
 
   const menuItems = [
@@ -46,8 +58,8 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout }) {
     },
     {
       id: '6',
-      title: 'Support / सहायता',
-      subtitle: 'Chat, tickets, help',
+      title: 'Contact Support / सहायता',
+      subtitle: 'Chat, tickets, help / चैट, टिकट, मदद',
       icon: 'message-square',
     },
     {
@@ -115,7 +127,21 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout }) {
         <View style={s.menuCard}>
           {menuItems.map((item, idx) => (
             <View key={item.id}>
-              <TouchableOpacity style={s.menuItem} activeOpacity={0.7}>
+              <TouchableOpacity 
+                style={s.menuItem} 
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (item.id === '6') {
+                    setSupportModalVisible(true);
+                  } else {
+                    Alert.alert(
+                      item.title,
+                      `${item.title} section is coming soon!`,
+                      [{ text: 'OK' }]
+                    );
+                  }
+                }}
+              >
                 <View style={s.menuItemLeft}>
                   <View style={s.menuIconBadge}>
                     <Feather name={item.icon} size={18} color="#71717A" />
@@ -148,6 +174,14 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout }) {
           </Text>
         </View>
       </ScrollView>
+
+      <SupportModal
+        visible={supportModalVisible}
+        onClose={() => setSupportModalVisible(false)}
+        userName={profileName}
+        userPhone={loggedInPhone || farmerData?.phone}
+        userRole={userRole || (farmerData ? 'Farmer' : 'Vendor')}
+      />
     </SafeAreaView>
   );
 }

@@ -6,3 +6,4 @@ export * from '../../features/cold-storage/services/storageService';
 export * from '../../features/mandi/services/amadService';
 export * from '../../features/notifications/services/notificationService';
 export * from '../../features/farmer/services/locationService';
+export * from '../../features/support/services/supportService';

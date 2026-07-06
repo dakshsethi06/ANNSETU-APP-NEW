@@ -211,6 +211,8 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 farmerData={farmerData}
                 onSwitchRole={onSwitchRole}
                 onLogout={onLogout}
+                loggedInPhone={loggedInPhone}
+                userRole="Farmer"
               />
             )}
 

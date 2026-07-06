@@ -12,7 +12,7 @@ import { fetchMandiPrices } from '../../../core/network/api';
 
 const { width } = Dimensions.get('window');
 
-export default function VendorScreen({ onSwitchRole, onLogout }) {
+export default function VendorScreen({ loggedInPhone, onSwitchRole, onLogout }) {
   const [activeTab, setActiveTab] = useState('home');
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
 
@@ -376,7 +376,13 @@ export default function VendorScreen({ onSwitchRole, onLogout }) {
           }}
         />
       ) : activeTab === 'profile' ? (
-        <ProfileTab onSwitchRole={onSwitchRole} onLogout={onLogout} />
+        <ProfileTab
+          farmerData={{ name: 'SN Sharma Trading', phone: loggedInPhone }}
+          onSwitchRole={onSwitchRole}
+          onLogout={onLogout}
+          loggedInPhone={loggedInPhone}
+          userRole="Vendor"
+        />
       ) : (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ color: '#1E5C2E', fontSize: 16 }}>{activeTab} Tab Content</Text>

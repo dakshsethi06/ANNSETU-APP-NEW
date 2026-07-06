@@ -1,30 +1,36 @@
 import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { useAuthStore } from '../features/auth/store/useAuthStore';
 
-import LoginScreen from '../features/auth/screens/LoginScreen';
+// Composing modular navigators, never feature screens directly!
+import AuthNavigator from '../features/auth/AuthNavigator';
+import FarmerNavigator from '../features/farmer/FarmerNavigator';
+
+// Legacy screens for Vendor and ColdStorageFacility to maintain compilation compatibility
 import VendorScreen from '../features/vendor/screens/VendorScreen';
-import HomeScreen from '../features/farmer/screens/HomeScreen';
 import ColdStorageScreen from '../features/cold-storage/screens/ColdStorageScreen';
 
-export default function AppNavigator({
-  role,
-  setRole,
-  session,
-  onLoginSuccess,
-  setHidePreviewFromLogin,
-  setShowRoleSwitcher,
+/**
+ * Root navigator composing modular stacks and managing preview configurations.
+ */
+export default function RootNavigator({
   showRoleSwitcher,
+  setShowRoleSwitcher,
   isKeyboardVisible,
-  hidePreviewFromLogin,
-  onLogout
+  hidePreviewFromLogin
 }) {
+  const { session, role, setRole, logout } = useAuthStore();
+
+  const handleLoginSuccess = (phone) => {
+    useAuthStore.getState().setSession({ user: { phone: '+91' + phone } });
+  };
+
   const renderScreen = () => {
     switch (role) {
       case 'Farmer':
         return (
-          <LoginScreen 
-            onLoginSuccess={onLoginSuccess} 
-            onHidePreviewChange={setHidePreviewFromLogin}
+          <AuthNavigator 
+            onLoginSuccess={handleLoginSuccess} 
           />
         );
       case 'Vendor':
@@ -32,15 +38,15 @@ export default function AppNavigator({
           <VendorScreen 
             loggedInPhone={session?.user?.phone}
             onSwitchRole={() => setShowRoleSwitcher(true)}
-            onLogout={onLogout}
+            onLogout={logout}
           />
         );
       case 'ColdStorage':
         return (
-          <HomeScreen 
+          <FarmerNavigator 
             loggedInPhone={session?.user?.phone} 
             onSwitchRole={() => setShowRoleSwitcher(true)}
-            onLogout={onLogout}
+            onLogout={logout}
           />
         );
       case 'ColdStorageFacility':
@@ -48,11 +54,11 @@ export default function AppNavigator({
           <ColdStorageScreen 
             loggedInPhone={session?.user?.phone}
             onSwitchRole={() => setShowRoleSwitcher(true)}
-            onLogout={onLogout}
+            onLogout={logout}
           />
         );
       default:
-        return <LoginScreen onLoginSuccess={onLoginSuccess} />;
+        return <AuthNavigator onLoginSuccess={handleLoginSuccess} />;
     }
   };
 
