@@ -6,9 +6,6 @@ const { createAppNotification } = require('../../shared/notifications/notificati
 async function initiatePayment(req, res) {
   console.log('[Payment Controller] initiatePayment called with body:', req.body);
   const { farmerId, amount, paymentMode, coldStorageId: bodyColdStorageId } = req.body;
-  if (!farmerId || !amount) {
-    return res.status(400).json({ success: false, error: 'farmerId and amount are required' });
-  }
 
   try {
     const farmerRes = await db.query('SELECT name, "coldStorageId" FROM "Farmer" WHERE id = $1', [farmerId]);

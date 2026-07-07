@@ -4,9 +4,6 @@ const razorpayService = require('./razorpay.service');
 async function createOrder(req, res) {
   console.log('[Create Order API] Incoming body:', req.body);
   const { farmerId, amount } = req.body;
-  if (!farmerId) {
-    return res.status(400).json({ success: false, error: 'farmerId is required.' });
-  }
 
   try {
     let finalAmount = amount ? parseFloat(amount) : 0;
