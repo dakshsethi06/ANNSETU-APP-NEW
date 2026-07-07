@@ -8,24 +8,11 @@ async function downloadStatementPdf(req, res) {
     const { id } = req.params;
     const { fromDate, toDate } = req.query;
 
-    const logPath = require('path').join(__dirname, '..', '..', '..', 'request_logs.txt');
-    require('fs').appendFileSync(logPath, `[Statement PDF] id: ${id}, fromDate: ${fromDate}, toDate: ${toDate}, time: ${new Date().toISOString()}\n`);
 
     const farmerRes = await db.query('SELECT * FROM "Farmer" WHERE id = $1', [id]);
     if (farmerRes.rows.length === 0) return res.status(404).send('Farmer profile not found.');
     const farmer = farmerRes.rows[0];
 
-    const bankRes = await db.query('SELECT "bankName", "accountNumber", ifsc FROM "FarmerBankAccount" WHERE "farmerId" = $1 AND "isPrimary" = true LIMIT 1', [id]);
-    let bankAccount = bankRes.rows[0] || (await db.query('SELECT "bankName", "accountNumber", ifsc FROM "FarmerBankAccount" WHERE "farmerId" = $1 LIMIT 1', [id])).rows[0];
-    
-    let bankName = bankAccount ? bankAccount.bankName : 'N/A';
-    let maskedAccount = 'N/A';
-    let ifsc = bankAccount ? bankAccount.ifsc : 'N/A';
-
-    if (bankAccount && bankAccount.accountNumber) {
-      const accNum = bankAccount.accountNumber.trim();
-      maskedAccount = accNum.length > 4 ? 'XXXX' + accNum.slice(-4) : 'XXXX' + accNum;
-    }
 
     const csRes = await db.query('SELECT "displayName", address, phone FROM "ColdStorageOnboarding" WHERE id = $1', [farmer.coldStorageId]);
     const coldStorage = csRes.rows.length > 0 ? csRes.rows[0] : { displayName: 'Annsetu Cold Storage', address: 'Tundla', phone: '9999999999' };
@@ -90,7 +77,7 @@ async function downloadStatementPdf(req, res) {
 
     pdfService.buildStatementPdf(res, {
       farmer, coldStorage: coldStorageDetails, ledger: filteredChronological.reverse(), payments, summary,
-      bankName, maskedAccount, ifsc, currentDateStr, periodStr,
+      currentDateStr, periodStr,
       openingBalance: periodOpeningBalance, closingBalance: periodClosingBalance
     });
   } catch (error) {

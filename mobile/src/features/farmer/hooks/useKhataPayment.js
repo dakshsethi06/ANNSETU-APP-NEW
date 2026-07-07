@@ -24,17 +24,19 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     }
   }, [pendingRent]);
 
-  // Sub-hooks integration
   const datePicker = useDatePickerState();
   const verification = useVerificationState(lang, paymentId, datePicker.paymentDate, onPaymentSuccess);
   const online = useOnlinePayment(farmerData, lang, onPaymentSuccess, setShowSummary, setPaymentId);
 
   const handlePayPress = async (customAmount) => {
+<<<<<<< HEAD
+=======
     online.setRazorpayOrderData(null); // Clear old order data before fetch
     
     console.log('[handlePayPress] Received customAmount:', customAmount);
     console.log('[handlePayPress] Current state paymentAmount:', paymentAmount);
     console.log('[handlePayPress] Current pendingRent:', pendingRent);
+>>>>>>> eeff13c3b06c9e49551835593016da673983823f
     let targetAmount = pendingRent;
     if (customAmount !== undefined && customAmount !== '') {
       const parsed = parseFloat(customAmount);

@@ -1,4 +1,6 @@
 const appNotificationRepository = require('../../modules/notification/notification.repository');
+const { sendEmail } = require('./emailService');
+const { sendSMS } = require('./smsService');
 
 async function logOutboundNotification({
   coldStorageId = null, channel, eventType, recipientPhone = null, recipientEmail = null, recipientName = null,
@@ -26,6 +28,107 @@ async function ensureUserForFarmer(farmerId) {
   } catch (err) { console.error(`Error in ensureUserForFarmer for ${farmerId}:`, err.message); }
 }
 
+async function sendEmailWithLog({
+  to,
+  subject,
+  text = null,
+  html = null,
+  coldStorageId = null,
+  eventType = 'SYSTEM_ALERT',
+  recipientName = null,
+  relatedModel = null,
+  relatedId = null,
+  metadata = null
+}) {
+  try {
+    const result = await sendEmail({ to, subject, text, html });
+    await logOutboundNotification({
+      coldStorageId,
+      channel: 'EMAIL',
+      eventType,
+      recipientEmail: to,
+      recipientName,
+      subject,
+      message: text || html || '',
+      status: 'SENT',
+      provider: result.provider,
+      providerMessageId: result.providerMessageId,
+      relatedModel,
+      relatedId,
+      metadata
+    });
+    return result;
+  } catch (error) {
+    const isConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+    await logOutboundNotification({
+      coldStorageId,
+      channel: 'EMAIL',
+      eventType,
+      recipientEmail: to,
+      recipientName,
+      subject,
+      message: text || html || '',
+      status: 'FAILED',
+      provider: isConfigured ? 'smtp' : 'console',
+      errorMessage: error.message,
+      relatedModel,
+      relatedId,
+      metadata
+    });
+    throw error;
+  }
+}
+
+async function sendSMSWithLog({
+  to,
+  message,
+  coldStorageId = null,
+  eventType = 'SYSTEM_ALERT',
+  recipientName = null,
+  relatedModel = null,
+  relatedId = null,
+  metadata = null
+}) {
+  try {
+    const result = await sendSMS({ to, message });
+    await logOutboundNotification({
+      coldStorageId,
+      channel: 'SMS',
+      eventType,
+      recipientPhone: to,
+      recipientName,
+      message,
+      status: 'SENT',
+      provider: result.provider,
+      providerMessageId: result.providerMessageId,
+      relatedModel,
+      relatedId,
+      metadata
+    });
+    return result;
+  } catch (error) {
+    const isSmsConfigured = !!(
+      (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER) ||
+      process.env.SMS_API_URL
+    );
+    await logOutboundNotification({
+      coldStorageId,
+      channel: 'SMS',
+      eventType,
+      recipientPhone: to,
+      recipientName,
+      message,
+      status: 'FAILED',
+      provider: isSmsConfigured ? 'sms-api' : 'console',
+      errorMessage: error.message,
+      relatedModel,
+      relatedId,
+      metadata
+    });
+    throw error;
+  }
+}
+
 async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9trs', userId, lotId = null, type = 'info', title, message, icon = 'info', actionUrl = null, alertDate = null }) {
   try {
     if (userId) await ensureUserForFarmer(userId);
@@ -41,7 +144,7 @@ async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9tr
         console.warn('Failed to dispatch background push:', pushErr.message);
       }
 
-      // Automatically send SMS & Email via centralized notification-service
+      // Automatically send SMS & Email via consolidated logging dispatchers
       try {
         const db = require('../../config/database');
         const farmerRes = await db.query('SELECT name, phone FROM "Farmer" WHERE id = $1', [userId]);
@@ -65,9 +168,9 @@ async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9tr
         }
 
         if (recipientPhone || recipientEmail) {
-          const { sendSMS, sendEmail } = require('../notification');
+          if (recipientPhone) {
             const formattedPhone = recipientPhone.startsWith('+') ? recipientPhone : `+91${recipientPhone}`;
-            await sendSMS({
+            await sendSMSWithLog({
               to: formattedPhone,
               message: `[${title}] ${message}`,
               coldStorageId,
@@ -76,9 +179,10 @@ async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9tr
               relatedModel: lotId ? 'AmadLot' : null,
               relatedId: lotId
             }).catch(err => console.warn('[Auto Notification Hook] Failed to send SMS:', err.message));
+          }
 
           if (recipientEmail) {
-            await sendEmail({
+            await sendEmailWithLog({
               to: recipientEmail,
               subject: `AnnSetu Alert: ${title}`,
               text: `Dear ${recipientName || 'User'},\n\n${message}\n\nThank you,\nAnnSetu Team`,
@@ -102,4 +206,9 @@ async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9tr
   }
 }
 
-module.exports = { logOutboundNotification, createAppNotification };
+module.exports = {
+  logOutboundNotification,
+  createAppNotification,
+  sendEmail: sendEmailWithLog,
+  sendSMS: sendSMSWithLog
+};

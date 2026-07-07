@@ -9,6 +9,7 @@ import { KhataVerificationReceiptUpload } from './KhataVerificationReceiptUpload
 
 export default function KhataVerificationView({
   lang,
+  pendingRent,
   utrNumber,
   setUtrNumber,
   receiptFile,
@@ -48,6 +49,18 @@ export default function KhataVerificationView({
           {t('khata.payment_verification_details')}
         </Text>
 
+<<<<<<< HEAD
+        <View style={[styles.summaryDetailsCard, { marginBottom: 16, paddingVertical: 12 }]}>
+          <View style={[styles.summaryDetailItem, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+            <Text style={styles.detailLabel}>{lang === 'en' ? 'Verifying Amount' : 'सत्यापन राशि'}</Text>
+            <Text style={[styles.detailValue, { color: '#2D6A4F', fontWeight: 'bold' }]}>
+              ₹{Number(pendingRent || 0).toLocaleString('en-IN')}
+            </Text>
+          </View>
+        </View>
+
+=======
+>>>>>>> eeff13c3b06c9e49551835593016da673983823f
         <KhataVerificationFormFields
           lang={lang}
           utrNumber={utrNumber}

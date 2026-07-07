@@ -30,7 +30,10 @@ export default function KhataTab({
 }) {
   const { t, i18n } = useTranslation();
   const { state, handlers } = useKhataPayment(farmerData, holdingsList, onPaymentSuccess);
+<<<<<<< HEAD
+=======
 
+>>>>>>> eeff13c3b06c9e49551835593016da673983823f
   const { pdfDownloading, receiptDownloading, handleConfirmTimeline } = useKhataDownloads(farmerData, state.lang);
   const [selectedEntry, setSelectedEntry] = React.useState(null);
   const [dateModalVisible, setDateModalVisible] = React.useState(false);
@@ -42,7 +45,40 @@ export default function KhataTab({
   const [imageLoading, setImageLoading] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
 
+<<<<<<< HEAD
+  if (state.showVerificationForm) {
+    return (
+      <KhataVerificationView
+        lang={state.lang} pendingRent={state.pendingRent} holdingsList={holdingsList}
+        utrNumber={state.utrNumber} setUtrNumber={state.setUtrNumber}
+        receiptFile={state.receiptFile} receiptFileName={state.receiptFileName} setReceiptFile={state.setReceiptFile} setReceiptFileName={state.setReceiptFileName}
+        paymentDate={state.paymentDate} onUploadReceipt={handlers.handleUploadReceipt} onOpenDatePicker={() => state.setDatePickerVisible(true)}
+        onSubmit={handlers.handleFormSubmit} onBackPress={() => state.setShowVerificationForm(false)}
+      />
+    );
+  }
+  if (state.showSummary) {
+    const displayPaymentAmount = state.razorpayOrderData?.amount ?? (parseFloat(state.paymentAmount) || state.pendingRent);
+    return (
+      <KhataSummaryView
+        lang={state.lang} pendingRent={displayPaymentAmount} farmerData={farmerData} holdingsList={holdingsList} formatDate={formatDate}
+        onBackPress={() => state.setShowSummary(false)} onPayNow={handlers.handleOnlineCheckout}
+        onAlreadyPaid={() => { state.setShowSummary(false); state.setShowVerificationForm(true); }}
+      />
+    );
+  }
+  if (selectedEntry) {
+    return (
+      <KhataDetailsView
+        lang={state.lang} selectedEntry={selectedEntry} setSelectedEntry={setSelectedEntry} farmerData={farmerData} state={state} BACKEND_URL={BACKEND_URL}
+        imageModalVisible={imageModalVisible} setImageModalVisible={setImageModalVisible} fullImageUrl={fullImageUrl} setFullImageUrl={setFullImageUrl}
+        imageLoading={imageLoading} setImageLoading={setImageLoading} imageError={imageError} setImageError={setImageError} receiptDownloading={receiptDownloading}
+      />
+    );
+  }
+=======
 
+>>>>>>> eeff13c3b06c9e49551835593016da673983823f
   return (
     <View style={styles.container}>
       {state.showVerificationForm ? (

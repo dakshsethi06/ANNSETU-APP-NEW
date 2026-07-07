@@ -13,7 +13,10 @@ if (hasValidUrl) {
       connectionString: config.databaseUrl,
       ssl: {
         rejectUnauthorized: false
-      }
+      },
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000
     });
     console.log('✅ PostgreSQL connection pool initialized successfully.');
   } catch (error) {

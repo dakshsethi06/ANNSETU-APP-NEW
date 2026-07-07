@@ -1,6 +1,6 @@
 const db = require('../../../config/database');
 const crypto = require('crypto');
-const { sendSMS, sendEmail } = require('../../../shared/notification');
+const { sendSMS, sendEmail } = require('../../../shared/notifications');
 
 async function sendProfileOtp(req, res) {
   const { id, targetType, targetValue } = req.body;
