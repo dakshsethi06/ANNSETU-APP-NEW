@@ -8,6 +8,7 @@ import { KhataVerificationReceiptUpload } from './KhataVerificationReceiptUpload
 
 export default function KhataVerificationView({
   lang,
+  pendingRent,
   utrNumber,
   setUtrNumber,
   receiptFile,
@@ -45,7 +46,6 @@ export default function KhataVerificationView({
           {lang === 'en' ? 'Payment Verification Details' : 'भुगतान सत्यापन विवरण'}
         </Text>
 
-<<<<<<< Updated upstream
         <View style={[styles.summaryDetailsCard, { marginBottom: 16, paddingVertical: 12 }]}>
           <View style={[styles.summaryDetailItem, { borderBottomWidth: 0, paddingBottom: 0 }]}>
             <Text style={styles.detailLabel}>{lang === 'en' ? 'Verifying Amount' : 'सत्यापन राशि'}</Text>
@@ -55,22 +55,6 @@ export default function KhataVerificationView({
           </View>
         </View>
 
-        {/* UTR Input */}
-        <View style={styles.formGroup}>
-          <Text style={styles.formLabel}>
-            {lang === 'en' ? 'UTR / Transaction Reference Number *' : 'यूटीआर / लेनदेन संदर्भ संख्या *'}
-          </Text>
-          <TextInput
-            style={styles.formInput}
-            placeholder={lang === 'en' ? 'Enter UTR/Transaction ID' : 'यूटीआर/लेनदेन आईडी दर्ज करें'}
-            placeholderTextColor="#A1A1AA"
-            value={utrNumber}
-            onChangeText={setUtrNumber}
-            autoCapitalize="characters"
-            autoCorrect={false}
-          />
-        </View>
-=======
         <KhataVerificationFormFields
           lang={lang}
           utrNumber={utrNumber}
@@ -78,7 +62,6 @@ export default function KhataVerificationView({
           paymentDate={paymentDate}
           onOpenDatePicker={onOpenDatePicker}
         />
->>>>>>> Stashed changes
 
         <KhataVerificationReceiptUpload
           lang={lang}

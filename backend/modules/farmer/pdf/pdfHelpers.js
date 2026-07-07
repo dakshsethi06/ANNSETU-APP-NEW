@@ -4,9 +4,13 @@ const path = require('path');
 function drawHeaderBand(doc, title, primaryColor) {
   doc.rect(0, 0, 595.28, 90).fill(primaryColor);
 
-  const logoPath = path.join(__dirname, '..', '..', '..', 'mobile', 'assets', 'ann_setu_logo.png');
+  const logoPath = path.join(__dirname, '..', '..', '..', '..', 'mobile', 'assets', 'ann_setu_logo.png');
+  const fallbackLogoPath = path.join(__dirname, '..', '..', '..', '..', 'ann_setu_logo.png');
+  
   if (fs.existsSync(logoPath)) {
     doc.image(logoPath, 30, 22, { width: 45 });
+  } else if (fs.existsSync(fallbackLogoPath)) {
+    doc.image(fallbackLogoPath, 30, 22, { width: 45 });
   } else {
     doc.circle(52, 45, 22).fill('#FFFFFF');
     doc.fillColor(primaryColor).font('Helvetica-Bold').fontSize(15).text('AS', 42, 38, { width: 20, align: 'center' });
