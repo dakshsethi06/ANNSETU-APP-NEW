@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream
-export const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://192.168.1.5:3001';
-=======
 export const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://10.36.66.6:3001';
->>>>>>> Stashed changes
 export const USE_BACKEND = true;
 
 export const API_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
