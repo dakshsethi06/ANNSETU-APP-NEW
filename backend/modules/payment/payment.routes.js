@@ -6,15 +6,16 @@ const verifyPayment = require('./payment.verify.controller');
 const handleWebhook = require('./payment.webhook.controller');
 const manualController = require('./payment.manual.controller');
 const viewsController = require('./payment.views.controller');
+const { validateCreateOrder, validateInitiatePayment, validateGetPaymentDetails } = require('./payment.validator');
 
 // Online payments (Razorpay)
-router.post('/payments/order', createOrder);
+router.post('/payments/order', validateCreateOrder, createOrder);
 router.post('/payments/verify', verifyPayment);
 router.post('/payments/webhook', handleWebhook);
 
 // Offline / Manual payments
-router.post('/payments/initiated', manualController.initiatePayment);
-router.get('/payments/:id', manualController.getPaymentDetails);
+router.post('/payments/initiated', validateInitiatePayment, manualController.initiatePayment);
+router.get('/payments/:id', validateGetPaymentDetails, manualController.getPaymentDetails);
 router.post('/payments/:id/approve', manualController.approvePayment);
 router.post('/payments/:id/reject', manualController.rejectPayment);
 
@@ -23,3 +24,4 @@ router.get('/payments/mock-checkout/:orderId', viewsController.renderMockCheckou
 router.get('/payments/success', viewsController.renderSuccessPage);
 
 module.exports = router;
+

@@ -68,18 +68,48 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
   useEffect(() => {
     if (!selectedFarmerId) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const { fetchNotifications } = require('../../notifications/services/notificationService');
-        const list = await fetchNotifications(selectedFarmerId);
-        setNotificationsList(list || []);
-      } catch (err) {
-        console.warn('HomeScreen background notification poll failed:', err.message);
-      }
-    }, 5000);
+    const { fetchNotifications, subscribeToNotifications } = require('../../notifications/services/notificationService');
 
-    return () => clearInterval(interval);
+    let isMounted = true;
+    fetchNotifications(selectedFarmerId)
+      .then(list => {
+        if (isMounted) setNotificationsList(list || []);
+      })
+      .catch(err => {
+        console.warn('HomeScreen initial notification fetch failed:', err.message);
+      });
+
+    const unsubscribe = subscribeToNotifications(
+      selectedFarmerId,
+      (newNotif) => {
+        setNotificationsList(prev => {
+          if (prev.some(n => n.id === newNotif.id)) return prev;
+          return [{
+            id: newNotif.id,
+            title: newNotif.title,
+            message: newNotif.message,
+            type: newNotif.type,
+            createdAt: newNotif.createdAt,
+            isRead: newNotif.isRead,
+            timeLabel: 'Just now',
+            actionUrl: newNotif.actionUrl
+          }, ...prev];
+        });
+      },
+      (updatedNotif) => {
+        setNotificationsList(prev => prev.map(n => n.id === updatedNotif.id ? { ...n, isRead: updatedNotif.isRead } : n));
+      },
+      (deletedNotif) => {
+        setNotificationsList(prev => prev.filter(n => n.id !== deletedNotif.id));
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [selectedFarmerId]);
+
 
   // If a farmer is selected and loaded successfully, we show the bottom nav dashboard view.
   const hasSelectedFarmer = !!selectedFarmerId && !!farmerData && !farmerLoading && !dataLoading && !farmerError;

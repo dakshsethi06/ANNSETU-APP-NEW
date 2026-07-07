@@ -31,4 +31,15 @@ async function registerPushToken(req, res) {
   }
 }
 
-module.exports = { getNotifications, markAsRead, registerPushToken };
+async function cleanupNotifications(req, res) {
+  try {
+    const result = await notificationService.cleanupStaleNotifications();
+    return res.json({ success: true, message: 'Stale notifications cleaned up successfully.', deletedCount: result.deletedCount });
+  } catch (error) {
+    console.error('Cleanup notifications error:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to clean up stale notifications.' });
+  }
+}
+
+module.exports = { getNotifications, markAsRead, registerPushToken, cleanupNotifications };
+

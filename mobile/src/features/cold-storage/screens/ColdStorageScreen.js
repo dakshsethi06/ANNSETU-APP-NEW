@@ -187,18 +187,38 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
   useEffect(() => {
     if (!profile.id || profile.id === 'Loading...' || profile.id === 'NEW_CS') return;
 
-    const interval = setInterval(async () => {
-      try {
-        const { fetchNotifications } = require('../../notifications/services/notificationService');
-        const list = await fetchNotifications(profile.id);
-        setNotifications(list || []);
-      } catch (err) {
-        console.warn('ColdStorageScreen background notification poll failed:', err.message);
-      }
-    }, 5000);
+    const { subscribeToNotifications } = require('../../notifications/services/notificationService');
 
-    return () => clearInterval(interval);
+    const unsubscribe = subscribeToNotifications(
+      profile.id,
+      (newNotif) => {
+        setNotifications(prev => {
+          if (prev.some(n => n.id === newNotif.id)) return prev;
+          return [{
+            id: newNotif.id,
+            title: newNotif.title,
+            message: newNotif.message,
+            type: newNotif.type,
+            createdAt: newNotif.createdAt,
+            isRead: newNotif.isRead,
+            timeLabel: 'Just now',
+            actionUrl: newNotif.actionUrl
+          }, ...prev];
+        });
+      },
+      (updatedNotif) => {
+        setNotifications(prev => prev.map(n => n.id === updatedNotif.id ? { ...n, isRead: updatedNotif.isRead } : n));
+      },
+      (deletedNotif) => {
+        setNotifications(prev => prev.filter(n => n.id !== deletedNotif.id));
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
   }, [profile.id]);
+
 
   const handleQuickAction = (label) => {
     if (label === 'Manage Request') {

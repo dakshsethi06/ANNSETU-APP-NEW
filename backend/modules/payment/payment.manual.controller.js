@@ -6,9 +6,6 @@ const { createAppNotification } = require('../../shared/notifications/notificati
 async function initiatePayment(req, res) {
   console.log('[Payment Controller] initiatePayment called with body:', req.body);
   const { farmerId, amount, paymentMode, coldStorageId: bodyColdStorageId } = req.body;
-  if (!farmerId || !amount) {
-    return res.status(400).json({ success: false, error: 'farmerId and amount are required' });
-  }
 
   try {
     const farmerRes = await db.query('SELECT name, "coldStorageId" FROM "Farmer" WHERE id = $1', [farmerId]);
@@ -39,7 +36,7 @@ async function initiatePayment(req, res) {
 }
 
 async function verifyManualPayment(req, res) {
-  const { paymentId, utrNumber, receiptFile, paymentDate } = req.body;
+  const { paymentId, utrNumber, receiptFile, paymentDate, paymentMode, bankName } = req.body;
   console.log('[Payment Controller] verifyPayment (manual) called for ID:', paymentId, 'UTR:', utrNumber);
   
   try {
@@ -140,9 +137,14 @@ async function verifyManualPayment(req, res) {
     const parsedDate = paymentDate ? new Date(paymentDate) : new Date();
     await db.query(
       `UPDATE "Payment"
-       SET "status" = 'PENDING', "reference" = $1, "note" = $2, "createdAt" = $3
+       SET "status" = 'PENDING', 
+           "reference" = $1, 
+           "note" = $2, 
+           "createdAt" = $3,
+           "paymentMode" = COALESCE($5, "paymentMode"),
+           "bankName" = COALESCE($6, "bankName")
        WHERE id = $4`,
-      [utrNumber, finalReceiptPath, parsedDate, paymentId]
+      [utrNumber, finalReceiptPath, parsedDate, paymentId, paymentMode, bankName]
     );
 
     await createAppNotification({
@@ -212,7 +214,14 @@ async function approvePayment(req, res) {
     const payment = paymentCheck.rows[0];
     const { farmerId, coldStorageId, amount, reference } = payment;
 
-    await db.query('UPDATE "Payment" SET "status" = \'APPROVED\' WHERE id = $1', [id]);
+    await db.query(
+      `UPDATE "Payment"
+       SET "status" = 'APPROVED',
+           "bankName" = COALESCE("bankName", 'Verified Bank'),
+           "bankTransactionId" = COALESCE("bankTransactionId", $2)
+       WHERE id = $1`,
+      [id, reference]
+    );
 
     let remainingAmount = parseFloat(amount);
     const nikasiRes = await db.query(

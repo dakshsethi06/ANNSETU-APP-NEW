@@ -9,61 +9,48 @@ const mockTickets = [];
  * Live Freshdesk creation handler.
  */
 async function createTicketLive({ name, phone, email, category, subject, description, role, attachments }) {
-  const domain = process.env.FRESHDESK_DOMAIN;
-  const apiKey = process.env.FRESHDESK_API_KEY;
+  const { FRESHDESK_DOMAIN: domain, FRESHDESK_API_KEY: apiKey } = process.env;
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
   const url = `https://${cleanDomain}/api/v2/tickets`;
   const authHeader = Buffer.from(`${apiKey}:X`).toString('base64');
   
-  const cleanPhoneForEmail = phone ? phone.replace(/[^0-9]/g, '') : 'user';
-  const userEmail = email || `${cleanPhoneForEmail}@annsetu.mock`;
+  const userEmail = email || `${phone ? phone.replace(/[^0-9]/g, '') : 'user'}@annsetu.mock`;
   const ticketSubject = `[${category || 'General'}] ${subject}`;
   const ticketDescription = buildTicketDescriptionHtml({ category, name, phone, role, description });
 
-  try {
-    let response;
-    if (attachments && attachments.length > 0) {
-      const formData = new FormData();
-      formData.append('subject', ticketSubject);
-      formData.append('description', ticketDescription);
-      formData.append('name', name || 'App User');
-      if (phone) formData.append('phone', phone);
-      formData.append('email', userEmail);
-      formData.append('priority', '1');
-      formData.append('status', '2');
+  const headers = { Authorization: `Basic ${authHeader}` };
+  let data;
 
-      for (const file of attachments) {
-        if (file.base64) {
-          const buffer = Buffer.from(file.base64, 'base64');
-          const blob = new Blob([buffer], { type: file.type });
-          formData.append('attachments[]', blob, file.name);
-        }
+  if (attachments?.length) {
+    data = new FormData();
+    data.append('subject', ticketSubject);
+    data.append('description', ticketDescription);
+    data.append('name', name || 'App User');
+    if (phone) data.append('phone', phone);
+    data.append('email', userEmail);
+    data.append('priority', '1');
+    data.append('status', '2');
+
+    attachments.forEach(file => {
+      if (file.base64) {
+        data.append('attachments[]', new Blob([Buffer.from(file.base64, 'base64')], { type: file.type }), file.name);
       }
+    });
+  } else {
+    headers['Content-Type'] = 'application/json';
+    data = {
+      subject: ticketSubject,
+      description: ticketDescription,
+      name: name || 'App User',
+      phone: phone || undefined,
+      email: userEmail,
+      priority: 1,
+      status: 2,
+    };
+  }
 
-      response = await axios.post(url, formData, {
-        headers: {
-          'Authorization': `Basic ${authHeader}`
-        }
-      });
-    } else {
-      const payload = {
-        subject: ticketSubject,
-        description: ticketDescription,
-        name: name || 'App User',
-        phone: phone || undefined,
-        email: userEmail,
-        priority: 1,
-        status: 2,
-      };
-
-      response = await axios.post(url, payload, {
-        headers: {
-          'Authorization': `Basic ${authHeader}`,
-          'Content-Type': 'application/json'
-        }
-      });
-    }
-
+  try {
+    const response = await axios.post(url, data, { headers });
     return {
       success: true,
       ticketId: response.data.id,
@@ -71,7 +58,7 @@ async function createTicketLive({ name, phone, email, category, subject, descrip
       source: 'freshdesk'
     };
   } catch (error) {
-    console.error('[Freshdesk Service] API connection error:', error.response ? error.response.data : error.message);
+    console.error('[Freshdesk Service] API connection error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.description || 'Failed to connect to Freshdesk. Please check backend config.');
   }
 }
@@ -83,16 +70,16 @@ async function createTicketMock({ name, phone, email, category, subject, descrip
   const ticketSubject = `[${category || 'General'}] ${subject}`;
   const ticketDescription = buildTicketDescriptionHtml({ category, name, phone, role, description });
 
-  console.log('----------------------------------------------------');
-  console.log('[SUPPORT PROXY] Freshdesk credentials not configured.');
-  console.log(`[SUPPORT PROXY] Requester Name: ${name}`);
-  console.log(`[SUPPORT PROXY] Phone Number: ${phone}`);
-  console.log(`[SUPPORT PROXY] Role: ${role}`);
-  console.log(`[SUPPORT PROXY] Category: ${category}`);
-  console.log(`[SUPPORT PROXY] Subject: ${subject}`);
-  console.log(`[SUPPORT PROXY] Description: ${description}`);
-  console.log(`[SUPPORT PROXY] Attachments Count: ${attachments ? attachments.length : 0}`);
-  console.log('----------------------------------------------------');
+  console.log(`----------------------------------------------------
+[SUPPORT PROXY] Freshdesk credentials not configured.
+[SUPPORT PROXY] Requester Name: ${name}
+[SUPPORT PROXY] Phone Number: ${phone}
+[SUPPORT PROXY] Role: ${role}
+[SUPPORT PROXY] Category: ${category}
+[SUPPORT PROXY] Subject: ${subject}
+[SUPPORT PROXY] Description: ${description}
+[SUPPORT PROXY] Attachments Count: ${attachments ? attachments.length : 0}
+----------------------------------------------------`);
 
   if (process.env.SMTP_HOST && process.env.SMTP_USER) {
     try {
@@ -100,24 +87,16 @@ async function createTicketMock({ name, phone, email, category, subject, descrip
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT || '587'),
         secure: process.env.SMTP_PORT === '465',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
       });
 
-      const emailAttachments = [];
-      if (attachments && attachments.length > 0) {
-        for (const file of attachments) {
-          if (file.base64) {
-            emailAttachments.push({
-              filename: file.name,
-              content: Buffer.from(file.base64, 'base64'),
-              contentType: file.type
-            });
-          }
-        }
-      }
+      const emailAttachments = (attachments || [])
+        .filter(f => f.base64)
+        .map(f => ({
+          filename: f.name,
+          content: Buffer.from(f.base64, 'base64'),
+          contentType: f.type
+        }));
 
       await transporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -133,14 +112,13 @@ async function createTicketMock({ name, phone, email, category, subject, descrip
   }
 
   const mockTicketId = Math.floor(100000 + Math.random() * 900000);
-  
   mockTickets.push({
     id: mockTicketId,
     subject: ticketSubject,
-    description: description,
+    description,
     name: name || 'App User',
-    phone: phone,
-    email: email,
+    phone,
+    email,
     status: 2,
     category: category || 'General',
     created_at: new Date().toISOString(),
@@ -165,35 +143,19 @@ async function listTicketsLive(phone) {
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
   const cleanPhone = phone ? phone.trim() : '';
   const authHeader = Buffer.from(`${apiKey}:X`).toString('base64');
+  const headers = { Authorization: `Basic ${authHeader}`, 'Content-Type': 'application/json' };
 
   try {
     const contactsUrl = `https://${cleanDomain}/api/v2/contacts?phone=${encodeURIComponent(cleanPhone)}`;
-    console.log(`[Freshdesk Service] Finding contact from: ${contactsUrl}`);
-    const contactsResponse = await axios.get(contactsUrl, {
-      headers: {
-        'Authorization': `Basic ${authHeader}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
+    const contactsResponse = await axios.get(contactsUrl, { headers });
     const contacts = contactsResponse.data || [];
-    if (contacts.length === 0) {
-      console.log(`[Freshdesk Service] No contact found for phone ${cleanPhone}`);
-      return [];
-    }
+    if (contacts.length === 0) return [];
 
-    const contactId = contacts[0].id;
-    const ticketsUrl = `https://${cleanDomain}/api/v2/tickets?requester_id=${contactId}&include=description`;
-    console.log(`[Freshdesk Service] Listing tickets for requester ${contactId} from: ${ticketsUrl}`);
-    const response = await axios.get(ticketsUrl, {
-      headers: {
-        'Authorization': `Basic ${authHeader}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const ticketsUrl = `https://${cleanDomain}/api/v2/tickets?requester_id=${contacts[0].id}&include=description`;
+    const response = await axios.get(ticketsUrl, { headers });
     return response.data || [];
   } catch (error) {
-    console.error('[Freshdesk Service] List tickets error:', error.response ? error.response.data : error.message);
+    console.error('[Freshdesk Service] List tickets error:', error.response?.data || error.message);
     throw new Error('Failed to retrieve tickets from Freshdesk.');
   }
 }
@@ -220,16 +182,12 @@ async function getTicketConversationsLive(ticketId) {
   const authHeader = Buffer.from(`${apiKey}:X`).toString('base64');
 
   try {
-    console.log(`[Freshdesk Service] Fetching conversations from: ${url}`);
     const response = await axios.get(url, {
-      headers: {
-        'Authorization': `Basic ${authHeader}`,
-        'Content-Type': 'application/json'
-      }
+      headers: { Authorization: `Basic ${authHeader}`, 'Content-Type': 'application/json' }
     });
     return response.data;
   } catch (error) {
-    console.error('[Freshdesk Service] Get conversations error:', error.response ? error.response.data : error.message);
+    console.error('[Freshdesk Service] Get conversations error:', error.response?.data || error.message);
     throw new Error('Failed to retrieve conversations for ticket.');
   }
 }

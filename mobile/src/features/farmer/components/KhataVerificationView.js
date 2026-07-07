@@ -1,14 +1,14 @@
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, Text, TextInput } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import styles from '../styles/khataTabStyles';
+import { KhataVerificationFormFields } from './KhataVerificationFormFields';
+import { KhataVerificationReceiptUpload } from './KhataVerificationReceiptUpload';
 
 export default function KhataVerificationView({
   lang,
-  pendingRent,
-  holdingsList = [],
   utrNumber,
   setUtrNumber,
   receiptFile,
@@ -22,12 +22,9 @@ export default function KhataVerificationView({
   onBackPress
 }) {
   const { t } = useTranslation();
-  const holding = holdingsList && holdingsList.length > 0 ? holdingsList[0] : null;
-  const bookingId = holding?.lot_id || 'BK-99210';
 
   return (
     <View style={styles.container}>
-      {/* ─── Top Header ─── */}
       <View style={styles.topHeader}>
         <View style={styles.topHeaderLeft}>
           <AnnsetuLogo size={38} backgroundColor="#1E5C2E" iconColor="#FFFFFF" style={{ marginRight: 10 }} />
@@ -36,7 +33,6 @@ export default function KhataVerificationView({
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Back to Payment Summary link */}
         <TouchableOpacity
           style={styles.backLinkRow}
           activeOpacity={0.7}
@@ -52,94 +48,23 @@ export default function KhataVerificationView({
           {t('khata.payment_verification_details')}
         </Text>
 
-        <View style={[styles.summaryDetailsCard, { marginBottom: 16, paddingVertical: 12 }]}>
-          <View style={[styles.summaryDetailItem, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-            <Text style={styles.detailLabel}>{lang === 'en' ? 'Verifying Amount' : 'सत्यापन राशि'}</Text>
-            <Text style={[styles.detailValue, { color: '#2D6A4F', fontWeight: 'bold' }]}>
-              ₹{Number(pendingRent || 0).toLocaleString('en-IN')}
-            </Text>
-          </View>
-        </View>
+        <KhataVerificationFormFields
+          lang={lang}
+          utrNumber={utrNumber}
+          setUtrNumber={setUtrNumber}
+          paymentDate={paymentDate}
+          onOpenDatePicker={onOpenDatePicker}
+        />
 
-        {/* UTR Input */}
-        <View style={styles.formGroup}>
-          <Text style={styles.formLabel}>
-            {t('khata.utr_label')}
-          </Text>
-          <TextInput
-            style={styles.formInput}
-            placeholder={t('khata.utr_placeholder')}
-            placeholderTextColor="#A1A1AA"
-            value={utrNumber}
-            onChangeText={setUtrNumber}
-            autoCapitalize="characters"
-            autoCorrect={false}
-          />
-        </View>
+        <KhataVerificationReceiptUpload
+          lang={lang}
+          receiptFile={receiptFile}
+          receiptFileName={receiptFileName}
+          setReceiptFile={setReceiptFile}
+          setReceiptFileName={setReceiptFileName}
+          onUploadReceipt={onUploadReceipt}
+        />
 
-        {/* Receipt Upload */}
-        <View style={styles.formGroup}>
-          <Text style={styles.formLabel}>
-            {t('khata.payment_receipt_label')}
-          </Text>
-
-          {receiptFileName || receiptFile ? (
-            <View style={styles.uploadedFileRow}>
-              <Feather name="file-text" size={20} color="#1E4032" style={{ marginRight: 10 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.uploadedFileName} numberOfLines={1}>
-                  {receiptFileName || (receiptFile.startsWith('data:') ? 'Receipt Document' : receiptFile)}
-                </Text>
-                <Text style={styles.uploadedFileSub}>
-                  {t('khata.file_ready')}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => {
-                  setReceiptFile('');
-                  setReceiptFileName('');
-                }}
-                style={styles.clearFileBtn}
-              >
-                <Feather name="x-circle" size={20} color="#EF4444" />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.uploadAreaContainer}
-              activeOpacity={0.8}
-              onPress={onUploadReceipt}
-            >
-              <Feather name="upload-cloud" size={32} color="#2D6A4F" style={{ marginBottom: 8 }} />
-              <Text style={styles.uploadAreaTextMain}>
-                {t('khata.choose_file')}
-              </Text>
-              <Text style={styles.uploadAreaTextSub}>
-                JPG, PNG, PDF (Max 5 MB)
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Date of Payment */}
-        <View style={styles.formGroup}>
-          <Text style={styles.formLabel}>
-            {t('khata.date_of_payment')}
-          </Text>
-          <TouchableOpacity
-            style={styles.dateSelectorTrigger}
-            activeOpacity={0.8}
-            onPress={onOpenDatePicker}
-          >
-            <Feather name="calendar" size={16} color="#2D6A4F" style={{ marginRight: 8 }} />
-            <Text style={styles.dateSelectorText}>
-              {paymentDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-            </Text>
-            <Feather name="chevron-down" size={16} color="#71717A" style={{ marginLeft: 'auto' }} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Submit Verification Button */}
         <TouchableOpacity
           style={[styles.doneBtn, { marginTop: 12 }]}
           activeOpacity={0.8}

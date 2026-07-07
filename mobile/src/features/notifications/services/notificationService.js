@@ -1,4 +1,5 @@
 import { BACKEND_URL } from '../../../core/network/config';
+import { supabase } from '../../../core/network/supabase';
 
 export async function fetchNotifications(farmerId) {
   try {
@@ -34,3 +35,39 @@ export async function markNotificationRead(notificationId) {
     return null;
   }
 }
+
+/**
+ * Subscribe to real-time notification changes (INSERT, UPDATE, DELETE) for a specific user.
+ */
+export function subscribeToNotifications(userId, onNotificationReceived, onNotificationUpdated, onNotificationDeleted) {
+  if (!userId) return () => {};
+
+  const channel = supabase
+    .channel(`app-notifications:${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // INSERT, UPDATE, DELETE
+        schema: 'public',
+        table: 'AppNotification',
+        filter: `userId=eq.${userId}`
+      },
+      (payload) => {
+        console.log(`[Realtime Notification] Event: ${payload.eventType}`, payload);
+        if (payload.eventType === 'INSERT') {
+          if (onNotificationReceived) onNotificationReceived(payload.new);
+        } else if (payload.eventType === 'UPDATE') {
+          if (onNotificationUpdated) onNotificationUpdated(payload.new);
+        } else if (payload.eventType === 'DELETE') {
+          if (onNotificationDeleted) onNotificationDeleted(payload.old);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    console.log(`[Realtime Notification] Unsubscribing channel for user ${userId}`);
+    supabase.removeChannel(channel);
+  };
+}
+

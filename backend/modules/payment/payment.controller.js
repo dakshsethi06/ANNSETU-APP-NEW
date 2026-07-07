@@ -38,9 +38,9 @@ async function createOrder(req, res) {
 
     let orderId;
     let paymentLinkUrl;
-    let serverIp = req.headers.host || '192.168.200.24:3001';
+    let serverIp = req.headers.host || '192.168.1.24:3001';
     if (serverIp.includes('localhost') || serverIp.includes('127.0.0.1')) {
-      serverIp = '192.168.200.24:3001';
+      serverIp = '192.168.1.24:3001';
     }
     const isMockMode = !process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_KEY_SECRET === 'mock_secret_daksh_sethi';
 
@@ -57,9 +57,9 @@ async function createOrder(req, res) {
 
       // Create a real Razorpay Hosted Payment Link
       try {
-        let serverIp = req.headers.host || '192.168.200.24:3001';
+        let serverIp = req.headers.host || '192.168.1.24:3001';
         if (serverIp.includes('localhost') || serverIp.includes('127.0.0.1')) {
-          serverIp = '192.168.200.24:3001';
+          serverIp = '192.168.1.24:3001';
         }
         const callbackUrl = `http://${serverIp}/api/payments/success`;
 

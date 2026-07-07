@@ -84,7 +84,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, mpin }),
+        body: JSON.stringify({ phone, mpin, role: loginMode }),
       });
 
       const data = await response.json();

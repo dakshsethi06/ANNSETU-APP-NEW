@@ -4,21 +4,6 @@ async function createSupportTicket(req, res) {
   try {
     const { name, phone, email, category, subject, description, role, attachments } = req.body;
 
-    // Simple request validations
-    if (!subject || !subject.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Subject is required.'
-      });
-    }
-
-    if (!description || !description.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Description is required.'
-      });
-    }
-
     const result = await supportService.createTicket({
       name: name ? name.trim() : undefined,
       phone: phone ? phone.trim() : undefined,
@@ -48,13 +33,6 @@ async function createSupportTicket(req, res) {
 async function getTickets(req, res) {
   try {
     const { phone } = req.query;
-    if (!phone) {
-      return res.status(400).json({
-        success: false,
-        message: 'Phone number is required.'
-      });
-    }
-
     const tickets = await supportService.listTickets(phone);
     return res.status(200).json({
       success: true,
@@ -94,3 +72,4 @@ async function getConversations(req, res) {
 }
 
 module.exports = { createSupportTicket, getTickets, getConversations };
+

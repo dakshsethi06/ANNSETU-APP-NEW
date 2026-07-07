@@ -3,7 +3,9 @@ import { Alert, View, ActivityIndicator, Platform, Keyboard } from 'react-native
 import * as Updates from 'expo-updates';
 import * as Notifications from 'expo-notifications';
 import { supabase } from './src/core/network/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppNavigator from './src/navigation/AppNavigator';
+
 
 // Configure push notification alert settings when the app is foregrounded
 Notifications.setNotificationHandler({
@@ -59,6 +61,11 @@ export default function App() {
   const determineRole = async (phone) => {
     if (!phone) return;
     try {
+      const savedRole = await AsyncStorage.getItem('user_role');
+      if (savedRole) {
+        setRole(savedRole);
+        return;
+      }
       const { fetchUserRole } = require('./src/core/network/api');
       const detectedRole = await fetchUserRole(phone);
       setRole(detectedRole);
@@ -149,30 +156,46 @@ export default function App() {
     );
   }
 
-  const handleLoginSuccess = (phone, registrationRole) => {
+  const handleLoginSuccess = async (phone, registrationRole) => {
     setSession({
       user: {
         phone: '+91' + phone,
       }
     });
     
-    if (registrationRole === 'coldstorage') {
-      setRole('ColdStorageFacility');
-    } else if (registrationRole === 'vendor') {
-      setRole('Vendor');
-    } else if (registrationRole === 'farmer') {
-      setRole('ColdStorage');
+    let resolvedRole = 'ColdStorage';
+    if (registrationRole === 'coldstorage' || registrationRole === 'ColdStorageFacility') {
+      resolvedRole = 'ColdStorageFacility';
+    } else if (registrationRole === 'vendor' || registrationRole === 'Vendor') {
+      resolvedRole = 'Vendor';
+    } else if (registrationRole === 'farmer' || registrationRole === 'ColdStorage') {
+      resolvedRole = 'ColdStorage';
     } else {
-      // Normal login without explicit registration role
-      determineRole('+91' + phone);
+      try {
+        const { fetchUserRole } = require('./src/core/network/api');
+        resolvedRole = await fetchUserRole('+91' + phone);
+      } catch (e) {
+        resolvedRole = 'ColdStorage';
+      }
+    }
+    setRole(resolvedRole);
+    try {
+      await AsyncStorage.setItem('user_role', resolvedRole);
+    } catch (err) {
+      console.warn('Failed to save user role to AsyncStorage:', err);
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     supabase.auth.signOut();
     setSession(null);
     setRole('Farmer');
     setShowRoleSwitcher(false);
+    try {
+      await AsyncStorage.removeItem('user_role');
+    } catch (err) {
+      console.warn('Failed to clear user role from AsyncStorage:', err);
+    }
   };
 
   return (
