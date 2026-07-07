@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import styles from '../styles/khataTabStyles';
 
 export default function KhataSummaryView({
-  lang,
   pendingRent,
   farmerData,
   holdingsList = [],
@@ -14,13 +14,14 @@ export default function KhataSummaryView({
   onPayNow,
   onAlreadyPaid
 }) {
+  const { t } = useTranslation();
   const holding = holdingsList && holdingsList.length > 0 ? holdingsList[0] : null;
   const csName = holding?.cold_storage || 'Annsetu Storage Center';
   const bookingId = holding?.lot_id || 'BK-99210';
   const commodity = holding?.crop || farmerData?.commodity || 'Potato';
   const quantity = holding?.bags
-    ? `${holding.bags} ${lang === 'en' ? 'Bags' : 'बोरी'}`
-    : `350 ${lang === 'en' ? 'Bags' : 'बोरी'}`;
+    ? `${holding.bags} ${holding.bags === 1 ? t('khata.bags_unit_one') : t('khata.bags_unit_other')}`
+    : `350 ${t('khata.bags_unit_other')}`;
 
   const formatDateRangeAndDuration = (dateStr) => {
     if (!dateStr) return '';
@@ -34,7 +35,8 @@ export default function KhataSummaryView({
       const formattedAmad = amadDateObj.toLocaleDateString('en-IN', options);
       const formattedToday = today.toLocaleDateString('en-IN', options);
 
-      return `${formattedAmad} - ${formattedToday} (${diffDays} ${lang === 'en' ? 'days' : 'दिन'})`;
+      const daysUnit = diffDays === 1 ? t('khata.days_unit_one') : t('khata.days_unit_other');
+      return `${formattedAmad} - ${formattedToday} (${diffDays} ${daysUnit})`;
     } catch (e) {
       return dateStr;
     }
@@ -42,7 +44,7 @@ export default function KhataSummaryView({
 
   const storageDuration = holding?.amadDate
     ? formatDateRangeAndDuration(holding.amadDate)
-    : `${formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))} - ${formatDate(new Date())} (30 ${lang === 'en' ? 'days' : 'दिन'})`;
+    : `${formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))} - ${formatDate(new Date())} (30 ${t('khata.days_unit_other')})`;
 
   return (
     <View style={styles.container}>
@@ -62,64 +64,64 @@ export default function KhataSummaryView({
           onPress={onBackPress}
         >
           <Feather name="arrow-left" size={16} color="#2D6A4F" style={{ marginRight: 6 }} />
-          <Text style={styles.backLinkText}>{lang === 'en' ? 'Back to Khata' : 'खाता पर वापस जाएं'}</Text>
+          <Text style={styles.backLinkText}>{t('khata.back_to_khata')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.summaryPageTitle}>{lang === 'en' ? 'Payment Summary' : 'भुगतान सारांश'}</Text>
+        <Text style={styles.summaryPageTitle}>{t('khata.payment_summary')}</Text>
 
         <View style={styles.summaryDetailsCard}>
           <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{lang === 'en' ? 'Cold Storage' : 'कोल्ड स्टोरेज'}</Text>
+            <Text style={styles.detailLabel}>{t('khata.cold_storage')}</Text>
             <Text style={styles.detailValue}>{csName}</Text>
           </View>
 
           <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{lang === 'en' ? 'Booking ID' : 'बुकिंग आईडी'}</Text>
+            <Text style={styles.detailLabel}>{t('khata.booking_id')}</Text>
             <Text style={styles.detailValue}>{bookingId}</Text>
           </View>
 
           <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{lang === 'en' ? 'Commodity' : 'फसल'}</Text>
+            <Text style={styles.detailLabel}>{t('khata.commodity')}</Text>
             <Text style={styles.detailValue}>{commodity}</Text>
           </View>
 
           <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{lang === 'en' ? 'Quantity' : 'मात्रा'}</Text>
+            <Text style={styles.detailLabel}>{t('khata.quantity')}</Text>
             <Text style={styles.detailValue}>{quantity}</Text>
           </View>
 
           <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{lang === 'en' ? 'Storage Duration' : 'भंडारण अवधि'}</Text>
+            <Text style={styles.detailLabel}>{t('khata.storage_duration')}</Text>
             <Text style={styles.detailValue}>{storageDuration}</Text>
           </View>
 
           <View style={[styles.summaryDetailItem, { borderBottomWidth: 0 }]}>
-            <Text style={styles.detailLabel}>{lang === 'en' ? 'Payment Amount' : 'भुगतान राशि'}</Text>
+            <Text style={styles.detailLabel}>{t('khata.payment_amount')}</Text>
             <Text style={[styles.detailValue, { color: '#DC2626' }]}>
               ₹{Number(pendingRent || 0).toLocaleString('en-IN')}
             </Text>
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.doneBtn}
-          activeOpacity={0.8}
-          onPress={onPayNow}
-        >
-          <Text style={styles.doneBtnText}>
-            {lang === 'en' ? 'Pay Now' : 'अभी भुगतान करें'}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.doneBtn}
+            activeOpacity={0.8}
+            onPress={onPayNow}
+          >
+            <Text style={styles.doneBtnText}>
+              {t('khata.pay_now')}
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.alreadyPaidBtn}
-          activeOpacity={0.8}
-          onPress={onAlreadyPaid}
-        >
-          <Text style={styles.alreadyPaidBtnText}>
-            {lang === 'en' ? 'Already Paid' : 'पहले ही भुगतान कर दिया'}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.alreadyPaidBtn}
+            activeOpacity={0.8}
+            onPress={onAlreadyPaid}
+          >
+            <Text style={styles.alreadyPaidBtnText}>
+              {t('khata.already_paid')}
+            </Text>
+          </TouchableOpacity>
       </ScrollView>
     </View>
   );

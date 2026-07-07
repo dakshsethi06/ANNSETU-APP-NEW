@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Alert, Platform, StatusBar, TextInput, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { fetchMandiPrices } from '../services/mandiService';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import StateModal from '../../../core/modals/StateModal';
@@ -9,6 +10,7 @@ import { FONTS } from '../../../core/theme/theme';
 import s from '../styles/mandiTabStyles';
 
 export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('mandi'); // 'mandi' or 'auction'
   const [selectedCrop, setSelectedCrop] = useState('All');
   const [cropInput, setCropInput] = useState('');
@@ -150,10 +152,10 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
       {/* ─── Search Form Overlay ─── */}
       {searchVisible && (
         <View style={s.filterForm}>
-          <Text style={s.filterFormTitle}>Search Live Mandi API</Text>
+          <Text style={s.filterFormTitle}>{t('mandi.search_live_api')}</Text>
 
           <View style={s.inputGroup}>
-            <Text style={s.inputLabel}>Crop Name / फसल</Text>
+            <Text style={s.inputLabel}>{t('mandi.crop_name')}</Text>
             <View style={s.textInputWrapper}>
               <Feather name="edit-2" size={14} color="#A1A1AA" style={{ marginRight: 8 }} />
               <TextInput
@@ -168,8 +170,8 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
 
           <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
             <TouchableOpacity style={[s.filterInputRow, { flex: 1 }]} onPress={() => setStateModalVisible(true)}>
-              <Text style={s.filterInputLabel}>State</Text>
-              <Text style={s.filterInputValue}>{tempState || 'Choose state'}</Text>
+              <Text style={s.filterInputLabel}>{t('register.state')}</Text>
+              <Text style={s.filterInputValue}>{tempState || t('mandi.choose_state')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -177,8 +179,8 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
               onPress={() => setCityModalVisible(true)}
               disabled={!tempState}
             >
-              <Text style={s.filterInputLabel}>Mandi / City</Text>
-              <Text style={s.filterInputValue}>{tempCity || 'All Mandis'}</Text>
+              <Text style={s.filterInputLabel}>{t('register.district')}</Text>
+              <Text style={s.filterInputValue}>{tempCity || t('mandi.all_mandis')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -217,14 +219,14 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
             onPress={() => setTab('mandi')}
             activeOpacity={0.8}
           >
-            <Text style={[s.tabText, tab === 'mandi' && s.tabTextActive]}>Mandi Rates</Text>
+            <Text style={[s.tabText, tab === 'mandi' && s.tabTextActive]}>{t('mandi.mandi_rates')}</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[s.tabBtn, tab === 'auction' && s.tabBtnActive]} 
             onPress={() => setTab('auction')}
             activeOpacity={0.8}
           >
-            <Text style={[s.tabText, tab === 'auction' && s.tabTextActive]}>Auction Prices</Text>
+            <Text style={[s.tabText, tab === 'auction' && s.tabTextActive]}>{t('mandi.auction_prices')}</Text>
           </TouchableOpacity>
         </View>
       </View>

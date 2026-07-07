@@ -6,13 +6,15 @@ import styles from '../styles/authStyles';
 import { COLORS } from '../../../core/theme/theme';
 import RegisterScreen from './RegisterScreen';
 import OTPScreen from './OtpScreen';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
+  const { t, i18n } = useTranslation();
   const [currentScreen, setCurrentScreen] = useState('login'); // 'login' | 'register' | 'otp'
   const [loginMode, setLoginMode] = useState('farmer'); // 'farmer' | 'coldstorage'
   const [phone, setPhone] = useState('');
   const [mpin, setMpin] = useState('');
-  const [lang, setLang] = useState('en');
+
   const [loading, setLoading] = useState(false);
   const [registrationData, setRegistrationData] = useState(null);
 
@@ -203,7 +205,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
   };
 
   if (currentScreen === 'register') {
-    return <RegisterScreen onBack={() => setCurrentScreen('login')} onNext={handleRegisterOTP} lang={lang} setLang={setLang} />;
+    return <RegisterScreen onBack={() => setCurrentScreen('login')} onNext={handleRegisterOTP} lang={i18n.language} setLang={(l) => i18n.changeLanguage(l)} />;
   }
 
   if (currentScreen === 'otp') {
@@ -234,22 +236,22 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
           <Text style={styles.brandName}>Annsetu</Text>
           <Text style={styles.brandSubtitle}>
             {loginMode === 'farmer'
-              ? (lang === 'en' ? 'Cold Storage Management Platform' : 'कोल्ड स्टोरेज प्रबंधन मंच')
-              : (lang === 'en' ? 'Partner Access Portal' : 'साझेदार पहुंच पोर्टल')}
+              ? t('auth.platform_subtitle')
+              : t('auth.partner_subtitle')}
           </Text>
 
           <View style={styles.langToggle}>
             <TouchableOpacity
-              style={[styles.langButton, lang === 'en' && styles.langButtonActive]}
-              onPress={() => setLang('en')}
+              style={[styles.langButton, i18n.language === 'en' && styles.langButtonActive]}
+              onPress={() => i18n.changeLanguage('en')}
             >
-              <Text style={[styles.langText, lang === 'en' && styles.langTextActive]}>English</Text>
+              <Text style={[styles.langText, i18n.language === 'en' && styles.langTextActive]}>English</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.langButton, lang === 'hi' && styles.langButtonActive]}
-              onPress={() => setLang('hi')}
+              style={[styles.langButton, i18n.language === 'hi' && styles.langButtonActive]}
+              onPress={() => i18n.changeLanguage('hi')}
             >
-              <Text style={[styles.langText, lang === 'hi' && styles.langTextActive]}>हिंदी</Text>
+              <Text style={[styles.langText, i18n.language === 'hi' && styles.langTextActive]}>हिंदी</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -257,22 +259,22 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
         <View style={styles.bottomSection}>
           <Text style={styles.title}>
             {loginMode === 'farmer'
-              ? (lang === 'en' ? 'Welcome Back' : 'स्वागत है')
-              : (lang === 'en' ? 'Cold Storage Login' : 'कोल्ड स्टोरेज लॉगिन')}
+              ? t('auth.welcome_back')
+              : t('auth.cold_storage_login')}
           </Text>
           <Text style={styles.subtitle}>
             {loginMode === 'farmer'
-              ? (lang === 'en' ? 'Enter your mobile number to continue' : 'जारी रखने के लिए मोबाइल नंबर दर्ज करें')
-              : (lang === 'en' ? 'Enter your registered number to receive OTP' : 'OTP प्राप्त करने के लिए पंजीकृत मोबाइल नंबर दर्ज करें')}
+              ? t('auth.enter_mobile')
+              : t('auth.enter_registered')}
           </Text>
 
-          <Text style={styles.label}>{lang === 'en' ? 'Mobile Number' : 'मोबाइल नंबर'}</Text>
+          <Text style={styles.label}>{t('auth.mobile_number')}</Text>
           <View style={styles.inputContainer}>
             <Text style={styles.inputPrefix}>+91</Text>
             <View style={styles.inputDivider} />
             <TextInput
               style={styles.input}
-              placeholder={lang === 'en' ? '10-digit mobile number' : '10 अंकों का मोबाइल नंबर'}
+              placeholder={t('auth.mobile_placeholder')}
               placeholderTextColor="#6B7B6B"
               keyboardType="numeric"
               maxLength={10}
@@ -283,12 +285,12 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
 
           {loginMode === 'farmer' && (
             <>
-              <Text style={styles.label}>{lang === 'en' ? 'Enter MPIN' : 'एमपीआईएन दर्ज करें'}</Text>
+              <Text style={styles.label}>{t('auth.enter_mpin')}</Text>
               <View style={styles.inputContainer}>
                 <Feather name="lock" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
-                  placeholder={lang === 'en' ? 'Enter 4-digit MPIN' : '4 अंकों का एमपीआईएन दर्ज करें'}
+                  placeholder={t('auth.mpin_placeholder')}
                   placeholderTextColor="#6B7B6B"
                   keyboardType="numeric"
                   maxLength={4}
@@ -306,7 +308,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
                 }}
               >
                 <Text style={{ color: '#1E5C2E', fontSize: 14, fontWeight: 'bold', textDecorationLine: 'underline' }}>
-                  {lang === 'en' ? 'Forgot MPIN? Click Here' : 'एमपीआईएन भूल गए? रीसेट करें'}
+                  {t('auth.forgot_mpin')}
                 </Text>
               </TouchableOpacity>
             </>
@@ -322,8 +324,8 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             ) : (
               <Text style={styles.primaryButtonText}>
                 {loginMode === 'coldstorage'
-                  ? (lang === 'en' ? 'Get OTP' : 'OTP प्राप्त करें')
-                  : (lang === 'en' ? 'Login' : 'लॉगिन करें')}
+                  ? t('auth.get_otp')
+                  : t('auth.login_btn')}
               </Text>
             )}
           </TouchableOpacity>
@@ -332,8 +334,8 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             <Feather name="shield" size={14} color="#6B7B6B" />
             <Text style={styles.secureNoteText}>
               {loginMode === 'farmer'
-                ? (lang === 'en' ? 'Secured with verification & data encryption' : 'OTP और डेटा एन्क्रिप्शन से सुरक्षित')
-                : (lang === 'en' ? 'Cold Storage Authorized Sign-In' : 'कोल्ड स्टोरेज अधिकृत साइन-इन')}
+                ? t('auth.secure_note')
+                : t('auth.cs_secure_note')}
             </Text>
           </View>
 
@@ -345,9 +347,9 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
               </View>
 
               <View style={styles.createAccountContainer}>
-                <Text style={styles.createAccountText}>{lang === 'en' ? 'New to Annsetu?' : 'Annsetu पर नए हैं?'}</Text>
+                <Text style={styles.createAccountText}>{t('auth.new_to_annsetu')}</Text>
                 <TouchableOpacity onPress={() => setCurrentScreen('register')}>
-                  <Text style={styles.createAccountLink}>{lang === 'en' ? 'Create Account' : 'खाता बनाएं'}</Text>
+                  <Text style={styles.createAccountLink}>{t('auth.create_account')}</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -364,7 +366,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
           <View style={{ backgroundColor: '#FAF7F0', borderRadius: 20, padding: 24, borderWidth: 1, borderColor: '#E8E0CE' }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1E5C2E' }}>
-                {lang === 'en' ? 'Reset Security MPIN' : 'सुरक्षा एमपीआईएन रीसेट करें'}
+                {t('auth.reset_mpin_title')}
               </Text>
               <TouchableOpacity onPress={() => setResetModalVisible(false)}>
                 <Feather name="x" size={22} color="#1E5C2E" />
@@ -372,7 +374,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             </View>
 
             <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8 }}>
-              {lang === 'en' ? 'Mobile Number' : 'मोबाइल नंबर'}
+              {t('auth.mobile_number')}
             </Text>
             <View style={[styles.inputContainer, { marginBottom: 16 }]}>
               <Text style={styles.inputPrefix}>+91</Text>
@@ -388,13 +390,13 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             </View>
 
             <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8 }}>
-              {lang === 'en' ? 'Verification OTP' : 'सत्यापन ओटीपी'}
+              {t('auth.verification_otp')}
             </Text>
             <View style={[styles.inputContainer, { marginBottom: 16 }]}>
               <Feather name="shield" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
               <TextInput
                 style={styles.input}
-                placeholder={lang === 'en' ? 'Enter 1234 to verify' : 'सत्यापित करने के लिए 1234 दर्ज करें'}
+                placeholder={t('auth.otp_verify_placeholder')}
                 keyboardType="numeric"
                 maxLength={4}
                 value={resetOtp}
@@ -403,13 +405,13 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             </View>
 
             <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8 }}>
-              {lang === 'en' ? 'New 4-Digit MPIN' : 'नया 4 अंकों का एमपीआईएन'}
+              {t('auth.new_mpin_label')}
             </Text>
             <View style={[styles.inputContainer, { marginBottom: 24 }]}>
               <Feather name="lock" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
               <TextInput
                 style={styles.input}
-                placeholder={lang === 'en' ? 'Enter new 4-digit MPIN' : 'नया 4 अंकों का एमपीआईएन दर्ज करें'}
+                placeholder={t('auth.new_mpin_placeholder')}
                 keyboardType="numeric"
                 maxLength={4}
                 value={resetNewMpin}
@@ -426,7 +428,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.primaryButtonText}>
-                  {lang === 'en' ? 'Reset MPIN' : 'एमपीआईएन रीसेट करें'}
+                  {t('auth.reset_mpin_btn')}
                 </Text>
               )}
             </TouchableOpacity>

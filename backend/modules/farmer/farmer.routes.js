@@ -12,6 +12,8 @@ router.get('/farmers/:id/statement/download-pdf', farmerController.downloadState
 router.get('/farmers/:id/statement/download-receipt-pdf', farmerController.downloadReceiptPdf);
 router.post('/farmers/login-mpin', validateLoginMpin, farmerController.loginMpin);
 router.post('/farmers/reset-mpin', validateResetMpin, farmerController.resetMpin);
+router.put('/farmers/:id', farmerController.updateFarmer);
+router.post('/otp/send-verification', farmerController.sendProfileOtp);
+router.post('/otp/verify-and-update', farmerController.verifyAndUpdateProfile);
 
 module.exports = router;
-

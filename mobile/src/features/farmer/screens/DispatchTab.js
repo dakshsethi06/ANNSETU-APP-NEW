@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Platform, Modal, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { COLORS, SHADOWS, FONTS } from '../../../core/theme/theme';
 import s from '../styles/dispatchTabStyles';
 import { BACKEND_URL } from '../../../core/network/api';
 
 export default function DispatchTab({ farmerId, onBackPress }) {
+  const { t } = useTranslation();
   const [dispatches, setDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [otpModalVisible, setOtpModalVisible] = useState(false);
@@ -147,7 +149,7 @@ export default function DispatchTab({ farmerId, onBackPress }) {
         <TouchableOpacity style={s.backBtn} onPress={onBackPress} activeOpacity={0.7}>
           <Feather name="arrow-left" size={20} color="#1E5C2E" />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Dispatch / निकासी</Text>
+        <Text style={s.headerTitle}>{t('dispatch.dispatch_title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -198,7 +200,7 @@ export default function DispatchTab({ farmerId, onBackPress }) {
           {filteredDispatches.length === 0 ? (
             <View style={s.emptyState}>
               <Feather name="truck" size={48} color="#A1A1AA" />
-              <Text style={s.emptyText}>No dispatch entries found / कोई निकासी प्रविष्टि नहीं मिली</Text>
+              <Text style={s.emptyText}>{t('dispatch.no_dispatch_entries')}</Text>
             </View>
           ) : (
             filteredDispatches.map((item) => {
@@ -250,14 +252,14 @@ export default function DispatchTab({ farmerId, onBackPress }) {
                   {item.status === 'IN_TRANSIT' && (
                     <View style={s.transitRow}>
                       <Feather name="truck" size={14} color="#1D4ED8" style={{ marginRight: 6 }} />
-                      <Text style={s.transitText}>In Transit / मार्ग में</Text>
+                      <Text style={s.transitText}>{t('dispatch.in_transit')}</Text>
                     </View>
                   )}
 
                   {item.status === 'DISPATCHED' && (
                     <View style={s.deliveredRow}>
                       <Feather name="check-circle" size={14} color="#047857" style={{ marginRight: 6 }} />
-                      <Text style={s.deliveredText}>Delivered & confirmed</Text>
+                      <Text style={s.deliveredText}>{t('dispatch.delivered_confirmed')}</Text>
                     </View>
                   )}
                 </View>

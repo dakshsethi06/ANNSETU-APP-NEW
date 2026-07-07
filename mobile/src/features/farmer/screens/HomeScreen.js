@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Keyboard } from 'react-native';
 import { COLORS } from '../../../core/theme/theme';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import MandiTab from '../../mandi/screens/MandiTab';
 import StockTab from '../../inventory/screens/StockTab';
@@ -20,6 +21,7 @@ import { useStorageTabDashboard } from '../hooks/useStorageTabDashboard';
 import layoutStyles from '../styles/layoutStyles';
 
 export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
+  const { t } = useTranslation();
   // Navigation: 'home', 'stock', 'market', 'khata', 'profile'
   const [activeTab, setActiveTab] = useState('home');
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
@@ -212,7 +214,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                   const { fetchNotifications } = require('../../notifications/services/notificationService');
                   fetchNotifications(selectedFarmerId).then(list => {
                     setNotificationsList(list || []);
-                  }).catch(() => {});
+                  }).catch(() => { });
                 }}
               />
             )}
@@ -241,6 +243,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 farmerData={farmerData}
                 onSwitchRole={onSwitchRole}
                 onLogout={onLogout}
+                onRefreshFarmer={() => handleSelectFarmer(selectedFarmerId)}
                 loggedInPhone={loggedInPhone}
                 userRole="Farmer"
               />
@@ -281,7 +284,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 <View style={[layoutStyles.iconWrapper, activeTab === 'home' && layoutStyles.iconWrapperActive]}>
                   <Feather name="home" size={activeTab === 'home' ? 20 : 19} color={activeTab === 'home' ? '#1E5C2E' : '#71717A'} />
                 </View>
-                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'home' && layoutStyles.bottomNavLabelActive]}>Home</Text>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'home' && layoutStyles.bottomNavLabelActive]}>{t('nav.tab_home')}</Text>
               </TouchableOpacity>
 
               {/* Tab 2: My Stock */}
@@ -293,7 +296,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 <View style={[layoutStyles.iconWrapper, activeTab === 'stock' && layoutStyles.iconWrapperActive]}>
                   <Feather name="package" size={activeTab === 'stock' ? 20 : 19} color={activeTab === 'stock' ? '#1E5C2E' : '#71717A'} />
                 </View>
-                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'stock' && layoutStyles.bottomNavLabelActive]}>My Stock</Text>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'stock' && layoutStyles.bottomNavLabelActive]}>{t('nav.tab_stock')}</Text>
               </TouchableOpacity>
 
               {/* Tab 3: Market */}
@@ -305,7 +308,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 <View style={[layoutStyles.iconWrapper, activeTab === 'market' && layoutStyles.iconWrapperActive]}>
                   <Feather name="trending-up" size={activeTab === 'market' ? 20 : 19} color={activeTab === 'market' ? '#1E5C2E' : '#71717A'} />
                 </View>
-                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'market' && layoutStyles.bottomNavLabelActive]}>Market</Text>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'market' && layoutStyles.bottomNavLabelActive]}>{t('nav.tab_market')}</Text>
               </TouchableOpacity>
 
               {/* Tab 5: Khata */}
@@ -317,7 +320,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 <View style={[layoutStyles.iconWrapper, activeTab === 'khata' && layoutStyles.iconWrapperActive]}>
                   <Feather name="book-open" size={activeTab === 'khata' ? 20 : 19} color={activeTab === 'khata' ? '#1E5C2E' : '#71717A'} />
                 </View>
-                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'khata' && layoutStyles.bottomNavLabelActive]}>Khata</Text>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'khata' && layoutStyles.bottomNavLabelActive]}>{t('nav.tab_khata')}</Text>
               </TouchableOpacity>
 
               {/* Tab 6: Profile */}
@@ -329,7 +332,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 <View style={[layoutStyles.iconWrapper, activeTab === 'profile' && layoutStyles.iconWrapperActive]}>
                   <Feather name="user" size={activeTab === 'profile' ? 20 : 19} color={activeTab === 'profile' ? '#1E5C2E' : '#71717A'} />
                 </View>
-                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'profile' && layoutStyles.bottomNavLabelActive]}>Profile</Text>
+                <Text style={[layoutStyles.bottomNavLabel, activeTab === 'profile' && layoutStyles.bottomNavLabelActive]}>{t('nav.tab_profile')}</Text>
               </TouchableOpacity>
             </View>
           )}

@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { supabase } from '../../../core/network/supabase';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import localStyles from '../styles/otpStyles';
+import { useTranslation } from 'react-i18next';
 
 // Prototype Colors
 const PROTO = {
@@ -17,6 +18,7 @@ const PROTO = {
 };
 
 export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
+    const { t } = useTranslation();
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [verified, setVerified] = useState(false);
@@ -43,7 +45,7 @@ export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
     const handleVerify = async () => {
         const otpCode = otp.join('');
         if (otpCode.length < 6) {
-            Alert.alert('Error', 'Please enter a valid 6-digit OTP.');
+            Alert.alert('Error', t('otp.invalid_otp_alert'));
             return;
         }
 
@@ -70,7 +72,7 @@ export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
                 }
             }, 800);
         } catch (error) {
-            Alert.alert('Verification Failed', error.message || 'Invalid OTP');
+            Alert.alert(t('otp.verification_failed'), error.message || 'Invalid OTP');
             setLoading(false);
         }
     };
@@ -98,9 +100,9 @@ export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
 
                 {/* Header text from App.tsx */}
                 <View style={{ marginTop: 24, marginBottom: 32 }}>
-                    <Text style={localStyles.headerTitle}>Verify OTP</Text>
+                    <Text style={localStyles.headerTitle}>{t('otp.verification_code_title')}</Text>
                     <Text style={localStyles.headerSubtitle}>
-                        OTP sent to <Text style={{ color: PROTO.foreground, fontWeight: '500' }}>+91 {phone}</Text>
+                        {t('otp.otp_sent_to')} <Text style={{ color: PROTO.foreground, fontWeight: '500' }}>+91 {phone}</Text>
                     </Text>
                 </View>
 
@@ -138,22 +140,20 @@ export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
                     ) : verified ? (
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Feather name="check" size={16} color="#ffffff" style={{ marginRight: 6 }} />
-                            <Text style={localStyles.primaryButtonText}>Verified!</Text>
+                            <Text style={localStyles.primaryButtonText}>{t('otp.verified')}</Text>
                         </View>
                     ) : (
-                        <Text style={localStyles.primaryButtonText}>Verify OTP</Text>
+                        <Text style={localStyles.primaryButtonText}>{t('otp.verify_continue_btn')}</Text>
                     )}
                 </TouchableOpacity>
 
                 {/* Resend OTP row */}
                 <View style={localStyles.resendContainer}>
-                    <Text style={localStyles.resendText}>Didn't receive?</Text>
                     <TouchableOpacity onPress={() => {/* Resend logic */ }}>
-                        <Text style={localStyles.resendLink}>Resend in 0:28</Text>
+                        <Text style={localStyles.resendLink}>{t('otp.resend_code')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
         </KeyboardAvoidingView>
     );
 }
-

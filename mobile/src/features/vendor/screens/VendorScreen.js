@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Platform, Dimensions, StatusBar } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import styles from '../styles/vendorScreenStyles';
 import StockTab from '../../inventory/screens/StockTab';
@@ -13,6 +14,7 @@ import { fetchMandiPrices } from '../../../core/network/api';
 const { width } = Dimensions.get('window');
 
 export default function VendorScreen({ loggedInPhone, onSwitchRole, onLogout }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('home');
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
 
@@ -135,7 +137,6 @@ export default function VendorScreen({ loggedInPhone, onSwitchRole, onLogout }) 
     };
   }, []);
 
-
   const renderTabIcon = (name, tabName) => {
     const isActive = activeTab === tabName;
     return (
@@ -177,7 +178,7 @@ export default function VendorScreen({ loggedInPhone, onSwitchRole, onLogout }) 
                     <AnnsetuLogo size={24} backgroundColor="transparent" iconColor="#FFFFFF" />
                   </View>
                   <View style={styles.profileTextGroup}>
-                    <Text style={styles.roleLabel}>Vendor / व्यापारी</Text>
+                    <Text style={styles.roleLabel}>{t('profile.vendor_role_display')}</Text>
                     <Text style={styles.profileName}>SN Sharma Trading</Text>
                     <View style={styles.locationRow}>
                       <Feather name="map-pin" size={11} color="rgba(255, 255, 255, 0.5)" />
@@ -278,7 +279,7 @@ export default function VendorScreen({ loggedInPhone, onSwitchRole, onLogout }) 
             {/* Live Mandi Prices */}
             <View style={styles.sectionContainer}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionTitle}>Live Mandi Prices / आज के भाव</Text>
+                <Text style={styles.sectionTitle}>{t('mandi.live_mandi_prices')}</Text>
                 <TouchableOpacity onPress={() => setActiveTab('market')} activeOpacity={0.7}>
                   <Text style={styles.viewAllText}>View All ›</Text>
                 </TouchableOpacity>
@@ -406,7 +407,7 @@ export default function VendorScreen({ loggedInPhone, onSwitchRole, onLogout }) 
             fetchNotifications('default_vendor').then(list => {
               const hasUnread = list && list.some(n => !n.isRead);
               setHasUnreadNotifications(!!hasUnread);
-            }).catch(() => {});
+            }).catch(() => { });
           }}
         />
       ) : activeTab === 'profile' ? (
@@ -453,5 +454,3 @@ export default function VendorScreen({ loggedInPhone, onSwitchRole, onLogout }) 
     </SafeAreaView>
   );
 }
-
-

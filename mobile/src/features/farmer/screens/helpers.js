@@ -1,4 +1,5 @@
 import { COLORS } from '../../../core/theme/theme';
+import i18n from '../../../core/localization';
 
 export const getCommodityIcon = (name) => {
   switch (name) {
@@ -10,12 +11,12 @@ export const getCommodityIcon = (name) => {
 };
 
 export const getCommodityTranslation = (name) => {
-  switch (name) {
-    case 'Potato': return 'Aloo';
-    case 'Tomato': return 'Tamatar';
-    case 'Ladyfinger': return 'Bhindi';
-    default: return '';
+  if (!name) return '';
+  const key = name.toLowerCase();
+  if (i18n.exists(`commodities.${key}.sub`)) {
+    return i18n.t(`commodities.${key}.sub`);
   }
+  return '';
 };
 
 export const getWeatherGradient = (condition) => {

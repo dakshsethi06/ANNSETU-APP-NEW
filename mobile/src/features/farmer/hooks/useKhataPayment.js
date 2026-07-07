@@ -1,20 +1,27 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDatePickerState } from './useDatePickerState';
 import { useVerificationState } from './useVerificationState';
 import { useOnlinePayment } from './useOnlinePayment';
 
 export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
+
   const [showSummary, setShowSummary] = useState(false);
   const [paymentMode, setPaymentMode] = useState('UPI');
   const [bankName, setBankName] = useState('');
   const [paymentId, setPaymentId] = useState('');
-  const [lang, setLang] = useState('en');
   const [paymentAmount, setPaymentAmount] = useState('');
 
   const pendingRent = parseFloat(farmerData?.pendingRent || 0);
 
   useEffect(() => {
-    setPaymentAmount(pendingRent > 0 ? pendingRent.toString() : '0');
+    if (pendingRent > 0) {
+      setPaymentAmount(pendingRent.toString());
+    } else {
+      setPaymentAmount('0');
+    }
   }, [pendingRent]);
 
   const datePicker = useDatePickerState();
@@ -22,6 +29,14 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   const online = useOnlinePayment(farmerData, lang, onPaymentSuccess, setShowSummary, setPaymentId);
 
   const handlePayPress = async (customAmount) => {
+<<<<<<< HEAD
+=======
+    online.setRazorpayOrderData(null); // Clear old order data before fetch
+    
+    console.log('[handlePayPress] Received customAmount:', customAmount);
+    console.log('[handlePayPress] Current state paymentAmount:', paymentAmount);
+    console.log('[handlePayPress] Current pendingRent:', pendingRent);
+>>>>>>> eeff13c3b06c9e49551835593016da673983823f
     let targetAmount = pendingRent;
     if (customAmount !== undefined && customAmount !== '') {
       const parsed = parseFloat(customAmount);
@@ -57,7 +72,8 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       receiptFileName: verification.receiptFileName, setReceiptFileName: verification.setReceiptFileName,
       paymentDate: datePicker.paymentDate, setPaymentDate: datePicker.setPaymentDate,
       datePickerVisible: datePicker.datePickerVisible, setDatePickerVisible: datePicker.setDatePickerVisible,
-      lang, setLang,
+      lang: i18n.language,
+      setLang: (l) => i18n.changeLanguage(l),
       pickerDay: datePicker.pickerDay, setPickerDay: datePicker.setPickerDay,
       pickerMonth: datePicker.pickerMonth, setPickerMonth: datePicker.setPickerMonth,
       pickerYear: datePicker.pickerYear, setPickerYear: datePicker.setPickerYear,

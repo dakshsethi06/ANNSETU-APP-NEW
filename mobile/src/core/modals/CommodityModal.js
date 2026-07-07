@@ -1,13 +1,16 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import commonStyles from '../styles/commonStyles';
 import { COLORS } from '../theme/theme';
 
 export default function CommodityModal({ visible, onClose, selectedCommodity, onSelectCommodity }) {
+  const { t } = useTranslation();
+
   const commodities = [
-    { name: 'Potato', icon: '🥔', translation: 'Aloo' },
-    { name: 'Tomato', icon: '🍅', translation: 'Tamatar' },
-    { name: 'Ladyfinger', icon: '🫛', translation: 'Bhindi' },
+    { id: 'Potato', name: t('commodities.potato.name'), icon: '🥔', translation: t('commodities.potato.sub') },
+    { id: 'Tomato', name: t('commodities.tomato.name'), icon: '🍅', translation: t('commodities.tomato.sub') },
+    { id: 'Ladyfinger', name: t('commodities.ladyfinger.name'), icon: '🫛', translation: t('commodities.ladyfinger.sub') },
   ];
 
   return (
@@ -20,7 +23,7 @@ export default function CommodityModal({ visible, onClose, selectedCommodity, on
       <View style={commonStyles.modalOverlay}>
         <View style={commonStyles.modalContainer}>
           <View style={commonStyles.modalHeader}>
-            <Text style={commonStyles.modalTitle}>Select Commodity</Text>
+            <Text style={commonStyles.modalTitle}>{t('register.search')}</Text>
             <TouchableOpacity style={commonStyles.modalCloseBtn} onPress={onClose}>
               <Text style={commonStyles.modalCloseText}>✕</Text>
             </TouchableOpacity>
@@ -29,14 +32,14 @@ export default function CommodityModal({ visible, onClose, selectedCommodity, on
           <View style={{ paddingVertical: 8 }}>
             {commodities.map((item) => (
               <TouchableOpacity
-                key={item.name}
+                key={item.id}
                 style={[
                   commonStyles.stateItem,
-                  selectedCommodity === item.name && commonStyles.stateItemSelected,
+                  selectedCommodity === item.id && commonStyles.stateItemSelected,
                   { paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }
                 ]}
                 onPress={() => {
-                  onSelectCommodity(item.name);
+                  onSelectCommodity(item.id);
                   onClose();
                 }}
                 activeOpacity={0.7}
@@ -44,12 +47,12 @@ export default function CommodityModal({ visible, onClose, selectedCommodity, on
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <Text style={{ fontSize: 24 }}>{item.icon}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    {selectedCommodity === item.name && <View style={commonStyles.activeStripe} />}
+                    {selectedCommodity === item.id && <View style={commonStyles.activeStripe} />}
                     <View>
                       <Text
                         style={[
                           commonStyles.stateItemText,
-                          selectedCommodity === item.name && commonStyles.stateItemTextSelected,
+                          selectedCommodity === item.id && commonStyles.stateItemTextSelected,
                         ]}
                       >
                         {item.name}
@@ -60,7 +63,7 @@ export default function CommodityModal({ visible, onClose, selectedCommodity, on
                     </View>
                   </View>
                 </View>
-                {selectedCommodity === item.name && <Text style={commonStyles.checkMark}>✓</Text>}
+                {selectedCommodity === item.id && <Text style={commonStyles.checkMark}>✓</Text>}
               </TouchableOpacity>
             ))}
           </View>

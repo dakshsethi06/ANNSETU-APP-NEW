@@ -6,6 +6,9 @@ const { resetMpin } = require('./controllers/resetMpin.controller');
 const { downloadStatement } = require('./controllers/downloadStatement.controller');
 const { downloadStatementPdf } = require('./controllers/downloadStatementPdf.controller');
 const { downloadReceiptPdf } = require('./controllers/downloadReceiptPdf.controller');
+const { updateFarmer } = require('./controllers/updateFarmer.controller');
+const { sendProfileOtp } = require('./controllers/sendProfileOtp.controller');
+const { verifyAndUpdateProfile } = require('./controllers/verifyAndUpdateProfile.controller');
 
 module.exports = {
   getFarmers,
@@ -15,5 +18,8 @@ module.exports = {
   resetMpin,
   downloadStatement,
   downloadStatementPdf,
-  downloadReceiptPdf
+  downloadReceiptPdf,
+  updateFarmer,
+  sendProfileOtp,
+  verifyAndUpdateProfile
 };

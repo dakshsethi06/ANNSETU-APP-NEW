@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import styles from '../styles/khataTabStyles';
 import { KhataVerificationFormFields } from './KhataVerificationFormFields';
@@ -21,6 +22,8 @@ export default function KhataVerificationView({
   onSubmit,
   onBackPress
 }) {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.container}>
       <View style={styles.topHeader}>
@@ -38,14 +41,15 @@ export default function KhataVerificationView({
         >
           <Feather name="arrow-left" size={16} color="#2D6A4F" style={{ marginRight: 6 }} />
           <Text style={styles.backLinkText}>
-            {lang === 'en' ? 'Back to Summary' : 'सारांश पर वापस जाएं'}
+            {t('khata.back_to_summary')}
           </Text>
         </TouchableOpacity>
 
         <Text style={styles.summaryPageTitle}>
-          {lang === 'en' ? 'Payment Verification Details' : 'भुगतान सत्यापन विवरण'}
+          {t('khata.payment_verification_details')}
         </Text>
 
+<<<<<<< HEAD
         <View style={[styles.summaryDetailsCard, { marginBottom: 16, paddingVertical: 12 }]}>
           <View style={[styles.summaryDetailItem, { borderBottomWidth: 0, paddingBottom: 0 }]}>
             <Text style={styles.detailLabel}>{lang === 'en' ? 'Verifying Amount' : 'सत्यापन राशि'}</Text>
@@ -55,6 +59,8 @@ export default function KhataVerificationView({
           </View>
         </View>
 
+=======
+>>>>>>> eeff13c3b06c9e49551835593016da673983823f
         <KhataVerificationFormFields
           lang={lang}
           utrNumber={utrNumber}
@@ -78,7 +84,7 @@ export default function KhataVerificationView({
           onPress={onSubmit}
         >
           <Text style={styles.doneBtnText}>
-            {lang === 'en' ? 'Submit' : 'जमा करें'}
+            {t('khata.submit_btn')}
           </Text>
         </TouchableOpacity>
       </ScrollView>

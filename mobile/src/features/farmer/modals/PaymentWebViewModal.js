@@ -2,9 +2,12 @@ import React from 'react';
 import { Modal, SafeAreaView, View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import styles from '../styles/khataTabStyles';
 
-export default function PaymentWebViewModal({ visible, paymentUrl, lang, onClose, onPaymentSuccess }) {
+export default function PaymentWebViewModal({ visible, paymentUrl, onClose, onPaymentSuccess }) {
+  const { t } = useTranslation();
+
   return (
     <Modal
       visible={visible}
@@ -21,7 +24,7 @@ export default function PaymentWebViewModal({ visible, paymentUrl, lang, onClose
             <Feather name="x" size={24} color="#1E5C2E" />
           </TouchableOpacity>
           <Text style={styles.webHeaderTitle}>
-            {lang === 'en' ? 'Complete Payment' : 'भुगतान पूरा करें'}
+            {t('khata.complete_payment')}
           </Text>
         </View>
         {paymentUrl ? (
