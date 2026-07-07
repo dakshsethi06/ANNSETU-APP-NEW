@@ -107,8 +107,9 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
   const totalCharged = ledgerList.reduce((sum, item) => item.amount < 0 ? sum + Math.abs(item.amount) : sum, 0);
   const totalPaid = ledgerList.reduce((sum, item) => item.amount > 0 ? sum + item.amount : sum, 0);
 
+  const displayPaymentAmount = state.razorpayOrderData?.amount ?? (parseFloat(state.paymentAmount) || state.pendingRent);
+
   if (state.showSummary) {
-    const displayPaymentAmount = state.razorpayOrderData?.amount ?? (parseFloat(state.paymentAmount) || state.pendingRent);
     return (
       <View style={{ flex: 1 }}>
         <KhataSummaryView
@@ -159,7 +160,7 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
         {state.verificationStep === 1 ? (
           <KhataVerificationView
             lang={state.lang}
-            pendingRent={state.pendingRent}
+            pendingRent={displayPaymentAmount}
             holdingsList={holdingsList}
             utrNumber={state.utrNumber}
             setUtrNumber={state.setUtrNumber}

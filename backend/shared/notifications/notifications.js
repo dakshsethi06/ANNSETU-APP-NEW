@@ -43,7 +43,7 @@ async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9tr
 
       // Automatically send SMS & Email via centralized notification-service
       try {
-        const db = require('../../db');
+        const db = require('../../config/database');
         const farmerRes = await db.query('SELECT name, phone FROM "Farmer" WHERE id = $1', [userId]);
         const userRes = await db.query('SELECT email FROM "User" WHERE id = $1', [userId]);
 

@@ -14,11 +14,11 @@ import { fetchTicketConversations } from '../services/supportService';
 // Helper mapping Freshdesk status IDs to text/colors
 const getStatusLabel = (statusId) => {
   switch (statusId) {
-    case 2: return { labelEn: 'Open', labelHi: 'खुला है', color: '#3B82F6', bg: '#EFF6FF' };
-    case 3: return { labelEn: 'Pending', labelHi: 'लंबित', color: '#F59E0B', bg: '#FEF3C7' };
-    case 4: return { labelEn: 'Resolved', labelHi: 'सुलझा हुआ', color: '#10B981', bg: '#D1FAE5' };
-    case 5: return { labelEn: 'Closed', labelHi: 'बंद', color: '#6B7280', bg: '#F3F4F6' };
-    default: return { labelEn: 'Open', labelHi: 'सक्रिय', color: '#3B82F6', bg: '#EFF6FF' };
+    case 2: return { labelEn: 'Open', color: '#3B82F6', bg: '#EFF6FF' };
+    case 3: return { labelEn: 'Pending', color: '#F59E0B', bg: '#FEF3C7' };
+    case 4: return { labelEn: 'Resolved', color: '#10B981', bg: '#D1FAE5' };
+    case 5: return { labelEn: 'Closed', color: '#6B7280', bg: '#F3F4F6' };
+    default: return { labelEn: 'Open', color: '#3B82F6', bg: '#EFF6FF' };
   }
 };
 
@@ -70,13 +70,12 @@ export default function TicketHistoryTab({ tickets, loadingTickets, onSelectTab 
         <Feather name="clipboard" size={48} color={COLORS.textLight} style={{ marginBottom: 12 }} />
         <Text style={s.noTicketsTitle}>No Tickets Found</Text>
         <Text style={s.noTicketsSub}>You haven't submitted any support requests yet.</Text>
-        <Text style={s.noTicketsSub}>आपने अभी तक कोई टिकट नहीं भेजा है।</Text>
         
         <TouchableOpacity 
           style={[s.submitBtn, { paddingHorizontal: 30, marginTop: 24 }]} 
           onPress={() => onSelectTab('form')}
         >
-          <Text style={s.submitBtnText}>Create New Ticket / नया टिकट बनाएं</Text>
+          <Text style={s.submitBtnText}>Create New Ticket</Text>
         </TouchableOpacity>
       </View>
     );
@@ -84,7 +83,7 @@ export default function TicketHistoryTab({ tickets, loadingTickets, onSelectTab 
 
   return (
     <ScrollView contentContainerStyle={s.historyContent} showsVerticalScrollIndicator={false}>
-      <Text style={s.historyTitle}>Your Previous Support Tickets / आपके टिकट</Text>
+      <Text style={s.historyTitle}>Your Previous Support Tickets</Text>
       {tickets.map(ticket => {
         const isExpanded = selectedTicketId === ticket.id;
         const statusInfo = getStatusLabel(ticket.status);
@@ -106,7 +105,7 @@ export default function TicketHistoryTab({ tickets, loadingTickets, onSelectTab 
                   <Text style={s.ticketCardId}>Ticket #{ticket.id}</Text>
                   <View style={[s.statusBadge, { backgroundColor: statusInfo.bg }]}>
                     <Text style={[s.statusBadgeText, { color: statusInfo.color }]}>
-                      {statusInfo.labelEn} / {statusInfo.labelHi}
+                      {statusInfo.labelEn}
                     </Text>
                   </View>
                 </View>
@@ -121,7 +120,7 @@ export default function TicketHistoryTab({ tickets, loadingTickets, onSelectTab 
                 <View style={s.dividerLine} />
                 
                 {/* Original Description */}
-                <Text style={s.expandedSectionTitle}>Your Query / आपका विवरण:</Text>
+                <Text style={s.expandedSectionTitle}>Your Query:</Text>
                 <View style={s.originalDescriptionBox}>
                   <Text style={s.originalDescriptionText}>
                     {ticket.description ? ticket.description.replace(/<\/?[^>]+(>|$)/g, "") : 'No description provided.'}
@@ -129,14 +128,12 @@ export default function TicketHistoryTab({ tickets, loadingTickets, onSelectTab 
                 </View>
 
                 {/* Conversations / Agent Replies */}
-                <Text style={s.expandedSectionTitle}>Conversation & Updates / बातचीत अपडेट:</Text>
+                <Text style={s.expandedSectionTitle}>Conversation & Updates:</Text>
                 {loadingConversations && !conversations[ticket.id] ? (
                   <ActivityIndicator size="small" color={COLORS.greenMid} style={{ padding: 12 }} />
                 ) : !conversations[ticket.id] || conversations[ticket.id].length === 0 ? (
                   <Text style={s.noConversationsText}>
                     No updates from support agents yet. We will contact you soon!
-                    {"\n"}
-                    अभी तक कोई अपडेट नहीं है। हम जल्द ही आपसे संपर्क करेंगे।
                   </Text>
                 ) : (
                   <View style={s.conversationsContainer}>
@@ -156,7 +153,7 @@ export default function TicketHistoryTab({ tickets, loadingTickets, onSelectTab 
                           ]}
                         >
                           <Text style={s.chatBubbleSender}>
-                            {reply.incoming ? 'You / आप' : 'Annsetu Support / ग्राहक सेवा'}
+                            {reply.incoming ? 'You' : 'Annsetu Support'}
                           </Text>
                           <Text style={s.chatBubbleText}>{cleanReplyText}</Text>
                           {replyDate ? <Text style={s.chatBubbleTime}>{replyDate}</Text> : null}

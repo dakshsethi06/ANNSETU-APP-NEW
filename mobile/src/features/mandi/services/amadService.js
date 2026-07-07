@@ -18,7 +18,9 @@ export async function addAmad(amadData) {
 
 export async function fetchHoldings() {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/holdings`);
+    const response = await fetch(`${BACKEND_URL}/api/holdings?t=${Date.now()}`, {
+      headers: { 'Cache-Control': 'no-cache' }
+    });
     if (!response.ok) throw new Error(`Server returned status ${response.status}`);
     const data = await response.json();
     if (!data.success) throw new Error(data.error || 'Failed to fetch holdings');

@@ -2,8 +2,10 @@ import { BACKEND_URL } from '../../../core/network/config';
 
 export async function fetchNotifications(farmerId) {
   try {
-    const url = `${BACKEND_URL}/api/notifications?farmerId=${encodeURIComponent(farmerId)}`;
-    const response = await fetch(url);
+    const url = `${BACKEND_URL}/api/notifications?farmerId=${encodeURIComponent(farmerId)}&t=${Date.now()}`;
+    const response = await fetch(url, {
+      headers: { 'Cache-Control': 'no-cache' }
+    });
     if (!response.ok) throw new Error(`Server returned status ${response.status}`);
     const data = await response.json();
     if (!data.success) throw new Error(data.error || 'Failed to fetch notifications');

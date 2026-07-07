@@ -78,6 +78,7 @@ export function useStorageTabDashboard(loggedInPhone) {
   };
 
   const handleSelectFarmer = async (farmerId, isRefresh = false) => {
+    console.log('[handleSelectFarmer] Called with farmerId:', farmerId, 'isRefresh:', isRefresh);
     setSelectedFarmerId(farmerId);
     if (!isRefresh) {
       setFarmerLoading(true);
@@ -97,6 +98,8 @@ export function useStorageTabDashboard(loggedInPhone) {
           selectedFarmer = local;
         }
       }
+
+      console.log('[handleSelectFarmer] Loaded selectedFarmer profile pendingRent:', selectedFarmer?.pendingRent);
 
       if (selectedFarmer) {
         setFarmerData(selectedFarmer);
@@ -118,6 +121,8 @@ export function useStorageTabDashboard(loggedInPhone) {
           return null;
         })
       ]);
+
+      console.log('[handleSelectFarmer] Loaded ledger items count:', ledger?.length);
 
       setHoldingsList(holdings.filter((h) => h.id === farmerId) || []);
       setNotificationsList(notifications || []);

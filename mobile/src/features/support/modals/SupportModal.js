@@ -56,7 +56,7 @@ export default function SupportModal({ visible, onClose, userName, userPhone, us
           <TouchableOpacity style={s.closeBtn} onPress={handleClose} activeOpacity={0.7}>
             <Feather name="arrow-left" size={24} color={COLORS.greenDeep} />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Help & Support / सहायता</Text>
+          <Text style={s.headerTitle}>Help & Support</Text>
           <View style={{ width: 40 }} />
         </View>
 

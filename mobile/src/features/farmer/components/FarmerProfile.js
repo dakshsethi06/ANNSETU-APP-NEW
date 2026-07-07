@@ -4,7 +4,18 @@ import { Feather } from '@expo/vector-icons';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import s from '../styles/farmerProfileStyles';
 
-export default function FarmerProfile({ farmerData, totalStockMt, totalBags, pendingRent, activeAlertsCount, hasUnreadNotifications, onNotificationsPress, onUpdateStockPress }) {
+export default function FarmerProfile({ 
+  farmerData, 
+  totalStockMt, 
+  totalBags, 
+  pendingRent, 
+  activeAlertsCount, 
+  hasUnreadNotifications, 
+  onNotificationsPress, 
+  onUpdateStockPress,
+  onKhataPress,
+  onStockPress
+}) {
   return (
     <View style={s.container}>
       {/* Absolute decorative background circles */}
@@ -39,20 +50,27 @@ export default function FarmerProfile({ farmerData, totalStockMt, totalBags, pen
 
       {/* Stats Row */}
       <View style={s.statsRow}>
-        <View style={s.statCard}>
+        <TouchableOpacity 
+          style={s.statCard} 
+          activeOpacity={0.8}
+          onPress={onStockPress}
+        >
           <Text style={s.statLabel}>Total Stock</Text>
           <Text style={s.statValue}>{totalStockMt.toFixed(1)} MT</Text>
           <Text style={s.statSub}>{totalBags} bags</Text>
-        </View>
+        </TouchableOpacity>
 
-        
-        <View style={s.statCard}>
+        <TouchableOpacity 
+          style={s.statCard} 
+          activeOpacity={0.8}
+          onPress={onKhataPress}
+        >
           <Text style={s.statLabel}>Pending Rent</Text>
           <Text style={[s.statValue, { color: '#FCA5A5' }]}>
             ₹{pendingRent.toLocaleString('en-IN')}
           </Text>
           <Text style={s.statSub}>{pendingRent > 0 ? 'Overdue' : 'No dues'}</Text>
-        </View>
+        </TouchableOpacity>
         
         <View style={s.statCard}>
           <Text style={s.statLabel}>Aging Alerts</Text>

@@ -15,11 +15,11 @@ import { COLORS, SPACING } from '../../../core/theme/theme';
 import { createSupportTicket } from '../services/supportService';
 
 const CATEGORIES = [
-  { id: 'storage', labelEn: 'Crop Storage', labelHi: 'कोल्ड स्टोरेज' },
-  { id: 'payment', labelEn: 'Payment / Fees', labelHi: 'भुगतान / किराया' },
-  { id: 'mandi', labelEn: 'Mandi Rates', labelHi: 'मंडी भाव' },
-  { id: 'app', labelEn: 'App Problems', labelHi: 'ऐप की समस्या' },
-  { id: 'other', labelEn: 'Other Issue', labelHi: 'अन्य समस्या' }
+  { id: 'storage', labelEn: 'Crop Storage' },
+  { id: 'payment', labelEn: 'Payment / Fees' },
+  { id: 'mandi', labelEn: 'Mandi Rates' },
+  { id: 'app', labelEn: 'App Problems' },
+  { id: 'other', labelEn: 'Other Issue' }
 ];
 
 export default function NewTicketTab({ userName, userPhone, userRole, onClose, onRefreshHistory }) {
@@ -35,11 +35,11 @@ export default function NewTicketTab({ userName, userPhone, userRole, onClose, o
 
   const handleSubmit = async () => {
     if (!subject.trim()) {
-      Alert.alert('Required Field', 'Please enter a subject for your request. / कृपया विषय दर्ज करें।');
+      Alert.alert('Required Field', 'Please enter a subject for your request.');
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Required Field', 'Please enter a description of the issue. / कृपया समस्या का विवरण लिखें।');
+      Alert.alert('Required Field', 'Please enter a description of the issue.');
       return;
     }
 
@@ -83,7 +83,7 @@ export default function NewTicketTab({ userName, userPhone, userRole, onClose, o
         const selectedAsset = result.assets[0];
         const sizeInMb = selectedAsset.size / (1024 * 1024);
         if (sizeInMb > 5) {
-          Alert.alert('File Too Large', 'Please select a file smaller than 5MB. / कृपया 5MB से छोटी फ़ाइल चुनें।');
+          Alert.alert('File Too Large', 'Please select a file smaller than 5MB.');
           return;
         }
 
@@ -126,7 +126,6 @@ export default function NewTicketTab({ userName, userPhone, userRole, onClose, o
       <View style={s.centerContainer}>
         <ActivityIndicator size="large" color={COLORS.greenMid} />
         <Text style={s.loadingText}>Submitting support ticket...</Text>
-        <Text style={s.subText}>अनुरोध सबमिट किया जा रहा है...</Text>
       </View>
     );
   }
@@ -137,21 +136,19 @@ export default function NewTicketTab({ userName, userPhone, userRole, onClose, o
         <View style={s.successBadge}>
           <Feather name="check-circle" size={64} color={COLORS.greenMid} />
         </View>
-        <Text style={s.successTitle}>Ticket Registered / टिकट दर्ज हुआ</Text>
+        <Text style={s.successTitle}>Ticket Registered</Text>
         <Text style={s.ticketIdText}>Ticket ID: #{ticketId}</Text>
         
         <View style={s.successCard}>
-          <Text style={s.successInfoLabel}>Registered Phone / पंजीकृत मोबाइल:</Text>
+          <Text style={s.successInfoLabel}>Registered Phone:</Text>
           <Text style={s.successInfoValue}>{displayPhone}</Text>
           <Text style={s.successCardSub}>
             Our agent will review your request and get in touch with you shortly.
-            {"\n"}
-            हमारे प्रतिनिधि जल्द ही आपसे संपर्क करेंगे।
           </Text>
         </View>
 
         <TouchableOpacity style={s.doneBtn} onPress={onClose} activeOpacity={0.8}>
-          <Text style={s.doneBtnText}>Close / बंद करें</Text>
+          <Text style={s.doneBtnText}>Close</Text>
         </TouchableOpacity>
       </View>
     );
@@ -163,15 +160,15 @@ export default function NewTicketTab({ userName, userPhone, userRole, onClose, o
         <View style={s.errorBadge}>
           <Feather name="alert-triangle" size={64} color={COLORS.errorRed} />
         </View>
-        <Text style={s.errorTitle}>Submission Failed / विफल</Text>
+        <Text style={s.errorTitle}>Submission Failed</Text>
         <Text style={s.errorDescription}>{errorMessage}</Text>
 
         <TouchableOpacity style={s.retryBtn} onPress={() => setStatus('idle')} activeOpacity={0.8}>
-          <Text style={s.retryBtnText}>Try Again / पुनः प्रयास करें</Text>
+          <Text style={s.retryBtnText}>Try Again</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={s.cancelTextBtn} onPress={onClose}>
-          <Text style={s.cancelTextBtnLabel}>Cancel / रद्द करें</Text>
+          <Text style={s.cancelTextBtnLabel}>Cancel</Text>
         </TouchableOpacity>
       </View>
     );
@@ -194,7 +191,7 @@ export default function NewTicketTab({ userName, userPhone, userRole, onClose, o
         </View>
       </View>
 
-      <Text style={s.fieldLabel}>Select Topic / श्रेणी चुनें <Text style={{ color: COLORS.errorRed }}>*</Text></Text>
+      <Text style={s.fieldLabel}>Select Topic <Text style={{ color: COLORS.errorRed }}>*</Text></Text>
       <View style={s.categoryGrid}>
         {CATEGORIES.map(cat => {
           const active = category === cat.id;
@@ -208,28 +205,25 @@ export default function NewTicketTab({ userName, userPhone, userRole, onClose, o
               <Text style={[s.categoryPillText, active && s.categoryPillTextActive]}>
                 {cat.labelEn}
               </Text>
-              <Text style={[s.categoryPillSubText, active && s.categoryPillSubTextActive]}>
-                {cat.labelHi}
-              </Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      <Text style={s.fieldLabel}>Subject / विषय <Text style={{ color: COLORS.errorRed }}>*</Text></Text>
+      <Text style={s.fieldLabel}>Subject <Text style={{ color: COLORS.errorRed }}>*</Text></Text>
       <TextInput
         style={s.input}
-        placeholder="e.g. Rent payment issue / किराया भुगतान में समस्या"
+        placeholder="e.g. Rent payment issue"
         placeholderTextColor="#999"
         value={subject}
         onChangeText={setSubject}
         maxLength={80}
       />
 
-      <Text style={s.fieldLabel}>Description / समस्या का विवरण <Text style={{ color: COLORS.errorRed }}>*</Text></Text>
+      <Text style={s.fieldLabel}>Description <Text style={{ color: COLORS.errorRed }}>*</Text></Text>
       <TextInput
         style={[s.input, s.multilineInput]}
-        placeholder="Please describe your problem in detail... (अपनी समस्या का विस्तार से वर्णन करें)"
+        placeholder="Please describe your problem in detail..."
         placeholderTextColor="#999"
         value={description}
         onChangeText={setDescription}
@@ -238,7 +232,7 @@ export default function NewTicketTab({ userName, userPhone, userRole, onClose, o
         textAlignVertical="top"
       />
 
-      <Text style={s.fieldLabel}>Supporting Media / दस्तावेज़ (वैकल्पिक)</Text>
+      <Text style={s.fieldLabel}>Supporting Media (Optional)</Text>
       
       {attachments.length > 0 && (
         <View style={s.attachmentList}>
@@ -259,14 +253,14 @@ export default function NewTicketTab({ userName, userPhone, userRole, onClose, o
       {attachments.length < 3 ? (
         <TouchableOpacity style={s.attachBtn} onPress={handlePickDocument} activeOpacity={0.8}>
           <Feather name="paperclip" size={16} color={COLORS.greenDeep} style={{ marginRight: 8 }} />
-          <Text style={s.attachBtnText}>Attach File / फ़ाइल जोड़ें (Max 3)</Text>
+          <Text style={s.attachBtnText}>Attach File (Max 3)</Text>
         </TouchableOpacity>
       ) : (
-        <Text style={s.limitText}>Maximum 3 attachments allowed. / अधिकतम 3 फ़ाइलें जोड़ सकते हैं।</Text>
+        <Text style={s.limitText}>Maximum 3 attachments allowed.</Text>
       )}
 
       <TouchableOpacity style={s.submitBtn} onPress={handleSubmit} activeOpacity={0.8}>
-        <Text style={s.submitBtnText}>Submit Support Ticket / टिकट भेजें</Text>
+        <Text style={s.submitBtnText}>Submit Support Ticket</Text>
       </TouchableOpacity>
 
       <View style={{ height: 40 }} />

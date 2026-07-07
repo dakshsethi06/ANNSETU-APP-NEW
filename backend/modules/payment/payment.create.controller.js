@@ -2,6 +2,7 @@ const paymentRepository = require('./payment.repository');
 const razorpayService = require('./razorpay.service');
 
 async function createOrder(req, res) {
+  console.log('[Create Order API] Incoming body:', req.body);
   const { farmerId, amount } = req.body;
   if (!farmerId) {
     return res.status(400).json({ success: false, error: 'farmerId is required.' });
@@ -9,9 +10,20 @@ async function createOrder(req, res) {
 
   try {
     let finalAmount = amount ? parseFloat(amount) : 0;
+    console.log('[Create Order API] parsed amount:', amount, '-> finalAmount:', finalAmount);
     if (!finalAmount) {
       finalAmount = await paymentRepository.getFarmerPendingRent(farmerId);
+      console.log('[Create Order API] fallback to pending rent:', finalAmount);
     }
+    
+    // Capping logic check: if partial payment amount is greater than pending dues, cap it to pending dues
+    const pendingDues = await paymentRepository.getFarmerPendingRent(farmerId);
+    console.log('[Create Order API] farmer pendingDues:', pendingDues);
+    if (finalAmount > pendingDues) {
+      console.log('[Create Order API] Capping payment amount from:', finalAmount, 'to pendingDues:', pendingDues);
+      finalAmount = pendingDues;
+    }
+
     if (finalAmount <= 0) {
       return res.status(400).json({ success: false, error: 'No pending rent balance to pay.' });
     }

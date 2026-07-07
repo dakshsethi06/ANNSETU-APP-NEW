@@ -32,11 +32,34 @@ export default function PaymentWebViewModal({ visible, paymentUrl, lang, onClose
             domStorageEnabled={true}
             startInLoadingState={true}
             onNavigationStateChange={(navState) => {
-              if (navState.url.includes('/api/payments/success')) {
+              console.log('[WebView] Nav State URL Change:', navState.url);
+              if (navState.url && navState.url.includes('/api/payments/success')) {
                 if (onPaymentSuccess) {
+                  console.log('[WebView] Success URL detected in onNavigationStateChange! Calling onPaymentSuccess...');
                   onPaymentSuccess();
                 }
               }
+            }}
+            onLoadStart={(syntheticEvent) => {
+              const { nativeEvent } = syntheticEvent;
+              console.log('[WebView] Load Start URL:', nativeEvent.url);
+              if (nativeEvent.url && nativeEvent.url.includes('/api/payments/success')) {
+                if (onPaymentSuccess) {
+                  console.log('[WebView] Success URL detected in onLoadStart! Calling onPaymentSuccess...');
+                  onPaymentSuccess();
+                }
+              }
+            }}
+            onShouldStartLoadWithRequest={(request) => {
+              console.log('[WebView] Should Start Load Request URL:', request.url);
+              if (request.url.includes('/api/payments/success')) {
+                if (onPaymentSuccess) {
+                  console.log('[WebView] Success URL detected in onShouldStartLoadWithRequest! Calling onPaymentSuccess...');
+                  onPaymentSuccess();
+                }
+                return false; // Prevent loading the success HTML inside the WebView since we're closing it
+              }
+              return true;
             }}
             renderLoading={() => (
               <ActivityIndicator

@@ -1,26 +1,9 @@
-const farmerRepository = require('./farmer.repository');
-const crypto = require('crypto');
-const db = require('../../config/database');
-const pdfService = require('./pdf.service');
-
-function hashMpin(mpin) {
-  if (!mpin) return '';
-  return crypto.createHash('sha256').update(mpin.toString()).digest('hex');
-}
-
-function verifyMpin(mpin, storedHash) {
-  if (!storedHash) return false;
-  if (!mpin) return false;
-  if (storedHash.length !== 64) {
-    return storedHash.toString() === mpin.toString();
-  }
-  return hashMpin(mpin) === storedHash;
-}
+const farmerService = require('./farmer.service');
 
 async function getFarmers(req, res) {
   try {
     const { state, serial_number } = req.query;
-    const farmers = await farmerRepository.getFarmersData(state, serial_number);
+    const farmers = await farmerService.fetchFarmers(state, serial_number);
     return res.json({ success: true, farmers });
   } catch (error) {
     console.error('PostgreSQL farmers GET error:', error.message);
@@ -29,56 +12,21 @@ async function getFarmers(req, res) {
 }
 
 async function registerFarmer(req, res) {
-  const { serial_number, name, state, commodity, phone, fatherName, village, district, tehsil, mpin } = req.body;
-  if (!serial_number || !name) {
-    return res.status(400).json({ success: false, error: 'serial_number and name are required fields' });
-  }
-
   try {
-    const finalState = state || 'Rajasthan';
-    const finalCommodity = commodity || 'Potato';
-    const now = new Date();
-
-    const hashedMpin = hashMpin(mpin || '1234');
-
-    const params = [
-      serial_number, 'CS-' + serial_number, name, finalState, finalCommodity, true, 0.0, 10000.0, 0.0, false,
-      now, true, now, now, 'cmmp9txv0000ai3t4wush9trs', true, phone || null, fatherName || null,
-      village || null, district || null, tehsil || null, hashedMpin
-    ];
-
-    await farmerRepository.createFarmerRecord(params);
-
-    try {
-      const { logOutboundNotification, createAppNotification } = require('../../shared/notifications/notifications');
-      await logOutboundNotification({
-        coldStorageId: 'cmmp9txv0000ai3t4wush9trs', channel: 'SMS', eventType: 'FARMER_REGISTERED',
-        recipientPhone: phone || null, recipientName: name,
-        message: `Welcome ${name}! Your farmer account at SN Sharma Cold Storage has been registered. Account Number: CS-${serial_number}.`,
-        relatedModel: 'Farmer', relatedId: serial_number
-      });
-
-      await createAppNotification({
-        coldStorageId: 'cmmp9txv0000ai3t4wush9trs', userId: serial_number, type: 'info',
-        title: 'Welcome to Annsetu', message: `Welcome ${name}! Your account has been registered successfully.`, icon: 'info'
-      });
-    } catch (notifErr) { console.warn('Welcome notifications failed to trigger:', notifErr.message); }
-
-    return res.status(201).json({
-      success: true,
-      farmer: { serial_number, name, state: finalState, commodity: finalCommodity, phone: phone || null, fatherName: fatherName || null, village: village || null, district: district || null, tehsil: tehsil || null }
-    });
+    const farmer = await farmerService.registerNewFarmer(req.body);
+    return res.status(201).json({ success: true, farmer });
   } catch (error) {
     console.error('PostgreSQL farmers POST error:', error.message);
-    if (error.code === '23505') { return res.status(400).json({ success: false, error: `Farmer with serial number ${serial_number} already exists` }); }
+    if (error.code === '23505') {
+      return res.status(400).json({ success: false, error: `Farmer with serial number ${req.body.serial_number} already exists` });
+    }
     return res.status(500).json({ success: false, error: error.message || 'Failed to register farmer in database' });
   }
 }
 
 async function getLedger(req, res) {
   try {
-    const { id } = req.params;
-    const ledger = await farmerRepository.getFarmerLedger(id);
+    const ledger = await farmerService.fetchLedger(req.params.id);
     return res.json({ success: true, ledger });
   } catch (error) {
     console.error('PostgreSQL ledger GET error:', error.message);
@@ -87,222 +35,47 @@ async function getLedger(req, res) {
 }
 
 async function loginMpin(req, res) {
-  const { phone, mpin } = req.body;
-  if (!phone || !mpin) {
-    return res.status(400).json({ success: false, error: 'Phone number and MPIN are required.' });
-  }
-
   try {
-    // 1. Check if the phone number belongs to a Cold Storage Facility first
-    const csRes = await db.query('SELECT id, "displayName", mpin FROM "ColdStorageOnboarding" WHERE phone = $1', [phone]);
-    if (csRes.rows.length > 0) {
-      const cs = csRes.rows[0];
-      // Verification: using verifyMpin with SHA-256 hash (defaulting to '1111' hash if not set)
-      const csMpin = cs.mpin || '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c';
-      if (!verifyMpin(mpin, csMpin)) {
-        return res.status(401).json({ success: false, error: 'Invalid MPIN for Cold Storage. Please try again.' });
-      }
-      return res.json({
-        success: true,
-        role: 'ColdStorageFacility',
-        coldStorage: {
-          id: cs.id,
-          name: cs.displayName,
-          phone: phone
-        }
-      });
-    }
-
-    // 2. If not a Cold Storage, proceed with Farmer login
-    const farmer = await farmerRepository.getFarmerByPhone(phone);
-    if (!farmer) {
-      return res.status(404).json({ success: false, error: 'Farmer profile not found.' });
-    }
-
-    const farmerMpin = farmer.mpin || '1234';
-    if (!verifyMpin(mpin, farmerMpin)) {
-      return res.status(401).json({ success: false, error: 'Invalid MPIN. Please try again.' });
-    }
-
-    return res.json({
-      success: true,
-      role: 'ColdStorage', // Maps to Farmer Dashboard role
-      farmer: {
-        id: farmer.id,
-        name: farmer.name,
-        phone: farmer.phone,
-        state: farmer.state
-      }
-    });
+    const result = await farmerService.loginWithMpin(req.body.phone, req.body.mpin);
+    return res.json({ success: true, ...result });
   } catch (error) {
     console.error('PostgreSQL login-mpin error:', error.message);
-    return res.status(500).json({ success: false, error: 'Failed to authenticate via MPIN.' });
+    const status = error.statusCode || 500;
+    return res.status(status).json({ success: false, error: error.message || 'Failed to authenticate via MPIN.' });
   }
 }
 
 async function resetMpin(req, res) {
-  const { phone, otp, newMpin } = req.body;
-  if (!phone || !otp || !newMpin) {
-    return res.status(400).json({ success: false, error: 'Phone, OTP, and new MPIN are required.' });
-  }
-  if (otp !== '1234') {
-    return res.status(400).json({ success: false, error: 'Invalid verification OTP.' });
-  }
-  if (newMpin.length < 4) {
-    return res.status(400).json({ success: false, error: 'New MPIN must be at least 4 digits.' });
-  }
-
   try {
-    const db = require('../../config/database');
-    const cleanPhone = phone.replace('+91', '').trim();
-
-    // Check if the phone number belongs to a Cold Storage Facility first
-    const csRes = await db.query('SELECT id FROM "ColdStorageOnboarding" WHERE phone = $1', [cleanPhone]);
-    if (csRes.rows.length > 0) {
-      const cs = csRes.rows[0];
-      const hashedMpin = hashMpin(newMpin);
-      await db.query(
-        `UPDATE "ColdStorageOnboarding" SET "mpin" = $1, "updatedAt" = NOW() WHERE "id" = $2`,
-        [hashedMpin, cs.id]
-      );
-      return res.json({ success: true, message: 'MPIN reset successfully.' });
-    }
-
-    const farmer = await farmerRepository.getFarmerByPhone(phone);
-    if (!farmer) {
-      return res.status(404).json({ success: false, error: 'Farmer profile not found.' });
-    }
-
-    const hashedMpin = hashMpin(newMpin);
-    await db.query(
-      `UPDATE "Farmer" SET "mpin" = $1, "updatedAt" = NOW() WHERE "id" = $2`,
-      [hashedMpin, farmer.id]
-    );
-
+    await farmerService.resetUserMpin(req.body.phone, req.body.otp, req.body.newMpin);
     return res.json({ success: true, message: 'MPIN reset successfully.' });
   } catch (error) {
     console.error('PostgreSQL reset-mpin error:', error.message);
-    return res.status(500).json({ success: false, error: 'Failed to reset MPIN.' });
+    const status = error.statusCode || 500;
+    return res.status(status).json({ success: false, error: error.message || 'Failed to reset MPIN.' });
   }
 }
 
 async function downloadStatement(req, res) {
   try {
-    const { id } = req.params;
-    
-    // Get farmer profile
-    const farmerRes = await db.query('SELECT name, phone, "openingBalance" FROM "Farmer" WHERE id = $1', [id]);
-    if (farmerRes.rows.length === 0) {
-      return res.status(404).send('Farmer profile not found.');
-    }
-    const farmer = farmerRes.rows[0];
-
-    const ledger = await farmerRepository.getFarmerLedger(id);
-
-    // Generate CSV contents
-    let csv = `Annsetu Farmer Account Statement\n`;
-    csv += `Farmer Name,${farmer.name}\n`;
-    csv += `Phone,${farmer.phone}\n`;
-    csv += `Opening Balance,₹${parseFloat(farmer.openingBalance || 0).toFixed(2)}\n\n`;
-    
-    csv += `Date,Description,Amount (₹),Balance (₹)\n`;
-    
-    // Ledger is sorted descending in getFarmerLedger, so let's reverse it to chronological order for the statement
-    const chronological = [...ledger].reverse();
-    
-    chronological.forEach(item => {
-      const formattedDate = new Date(item.date).toLocaleDateString('en-IN');
-      const amountStr = item.amount < 0 
-        ? `-${Math.abs(item.amount).toFixed(2)}` 
-        : `+${Math.abs(item.amount).toFixed(2)}`;
-      csv += `"${formattedDate}","${item.title.replace(/"/g, '""')}",${amountStr},${item.balance.toFixed(2)}\n`;
-    });
-
+    const { csv, farmerName } = await farmerService.generateStatement(req.params.id);
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=statement_${farmer.name.replace(/\s+/g, '_')}.csv`);
+    res.setHeader('Content-Disposition', `attachment; filename=statement_${farmerName.replace(/\s+/g, '_')}.csv`);
     return res.send(csv);
   } catch (error) {
     console.error('Download statement error:', error.message);
-    return res.status(500).send('Failed to generate statement file.');
+    const status = error.statusCode || 500;
+    return res.status(status).send('Failed to generate statement file.');
   }
 }
 
 async function downloadStatementPdf(req, res) {
   try {
-    const { id } = req.params;
-
-    // Get farmer profile
-    const farmerRes = await db.query('SELECT * FROM "Farmer" WHERE id = $1', [id]);
-    if (farmerRes.rows.length === 0) {
-      return res.status(404).send('Farmer profile not found.');
-    }
-    const farmer = farmerRes.rows[0];
-
-    // Get cold storage onboarding details
-    const csRes = await db.query(
-      'SELECT "displayName", address, phone FROM "ColdStorageOnboarding" WHERE id = $1',
-      [farmer.coldStorageId]
-    );
-    const coldStorage = csRes.rows.length > 0 ? csRes.rows[0] : { displayName: 'Annsetu Cold Storage', address: 'Tundla', phone: '9999999999' };
-    const coldStorageDetails = {
-      name: coldStorage.displayName,
-      address: coldStorage.address,
-      phone: coldStorage.phone
-    };
-
-    // Get ledger and payment lists
-    const ledger = await farmerRepository.getFarmerLedger(id);
-    const paymentsRes = await db.query(
-      'SELECT * FROM "Payment" WHERE "farmerId" = $1 ORDER BY "createdAt" DESC',
-      [id]
-    );
-    const payments = paymentsRes.rows;
-
-    // Calculate Summary stats
-    const totalCharged = ledger.reduce((sum, item) => item.amount < 0 ? sum + Math.abs(item.amount) : sum, 0);
-    const totalPaid = ledger.reduce((sum, item) => item.amount > 0 ? sum + item.amount : sum, 0);
-    const pendingRent = parseFloat(farmer.pendingRent || 0);
-
-    const summary = {
-      totalCharged,
-      totalPaid,
-      netPayable: pendingRent
-    };
-
-    // Format Dates
-    const currentDateStr = new Date().toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    let periodStr = '';
-    if (ledger.length > 0) {
-      const oldestDate = new Date(ledger[ledger.length - 1].date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-      const newestDate = new Date(ledger[0].date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-      periodStr = `${oldestDate} - ${newestDate}`;
-    }
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const filename = `Khata_Statement_${todayStr}.pdf`;
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-
-    pdfService.buildStatementPdf(res, {
-      farmer,
-      coldStorage: coldStorageDetails,
-      ledger,
-      payments,
-      summary,
-      currentDateStr,
-      periodStr
-    });
+    await farmerService.generateStatementPdf(req.params.id, res);
   } catch (error) {
     console.error('Download statement PDF error:', error.message);
-    return res.status(500).send('Failed to generate PDF statement.');
+    const status = error.statusCode || 500;
+    return res.status(status).send('Failed to generate PDF statement.');
   }
 }
 

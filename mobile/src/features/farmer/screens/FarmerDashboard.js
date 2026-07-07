@@ -91,6 +91,8 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
           hasUnreadNotifications={hasUnreadNotifications}
           onNotificationsPress={onNotificationsPress}
           onUpdateStockPress={onUpdateStockPress}
+          onKhataPress={() => onActionPress('My Khata')}
+          onStockPress={() => onActionPress('My Stock')}
         />
 
 

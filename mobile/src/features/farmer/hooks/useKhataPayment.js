@@ -95,13 +95,28 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   };
 
   const handlePayPress = async (customAmount) => {
+    setRazorpayOrderData(null); // Clear old order data before fetch
+    
+    console.log('[handlePayPress] Received customAmount:', customAmount);
+    console.log('[handlePayPress] Current state paymentAmount:', paymentAmount);
+    console.log('[handlePayPress] Current pendingRent:', pendingRent);
+
     let targetAmount = pendingRent;
-    if (customAmount !== undefined && customAmount !== '') {
-      const parsed = parseFloat(customAmount);
+    let amountToParse = customAmount;
+    
+    // If customAmount is a gesture responder event object, fall back to state input
+    if (typeof customAmount === 'object' || customAmount === undefined) {
+      amountToParse = paymentAmount;
+    }
+
+    if (amountToParse !== undefined && amountToParse !== '') {
+      const parsed = parseFloat(amountToParse);
       if (!isNaN(parsed) && parsed > 0) {
         targetAmount = parsed;
       }
     }
+
+    console.log('[handlePayPress] Final targetAmount to be sent to API:', targetAmount);
 
     if (targetAmount <= 0) {
       Alert.alert(

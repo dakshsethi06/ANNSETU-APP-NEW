@@ -5,9 +5,13 @@ async function getFarmersData(state, serial_number) {
     SELECT 
       f.id AS "serial_number", f.name, f.state, f."primaryCrop" AS commodity, 
       f."fatherName", f.phone, f.village, f.district, f.tehsil,
-      COALESCE(SUM(nt."balanceDueAmount"), 0) AS "pendingRent"
+      (
+        COALESCE(f."openingBalance", 0)
+        + COALESCE((SELECT SUM("totalBillAmount") FROM "NikasiTransaction" WHERE "farmerId" = f.id), 0)
+        + COALESCE((SELECT SUM("amount") FROM "BillingEntry" WHERE "farmerId" = f.id), 0)
+        - COALESCE((SELECT SUM("amount") FROM "Payment" WHERE "farmerId" = f.id AND "status" IN ('APPROVED', 'PAID')), 0)
+      ) AS "pendingRent"
     FROM "Farmer" f
-    LEFT JOIN "NikasiTransaction" nt ON nt."farmerId" = f.id
     WHERE 1=1
   `;
   const params = [];
@@ -23,8 +27,6 @@ async function getFarmersData(state, serial_number) {
     params.push(serial_number);
     paramIndex++;
   }
-  
-  sql += ` GROUP BY f.id, f.name, f.state, f."primaryCrop", f."fatherName", f.phone, f.village, f.district, f.tehsil`;
   
   const result = await db.query(sql, params);
   return result.rows;

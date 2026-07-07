@@ -183,7 +183,7 @@ async function listTicketsLive(phone) {
     }
 
     const contactId = contacts[0].id;
-    const ticketsUrl = `https://${cleanDomain}/api/v2/tickets?requester_id=${contactId}`;
+    const ticketsUrl = `https://${cleanDomain}/api/v2/tickets?requester_id=${contactId}&include=description`;
     console.log(`[Freshdesk Service] Listing tickets for requester ${contactId} from: ${ticketsUrl}`);
     const response = await axios.get(ticketsUrl, {
       headers: {

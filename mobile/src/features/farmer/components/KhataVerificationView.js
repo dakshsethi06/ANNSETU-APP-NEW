@@ -50,6 +50,15 @@ export default function KhataVerificationView({
           {lang === 'en' ? 'Payment Verification Details' : 'भुगतान सत्यापन विवरण'}
         </Text>
 
+        <View style={[styles.summaryDetailsCard, { marginBottom: 16, paddingVertical: 12 }]}>
+          <View style={[styles.summaryDetailItem, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+            <Text style={styles.detailLabel}>{lang === 'en' ? 'Verifying Amount' : 'सत्यापन राशि'}</Text>
+            <Text style={[styles.detailValue, { color: '#2D6A4F', fontWeight: 'bold' }]}>
+              ₹{Number(pendingRent || 0).toLocaleString('en-IN')}
+            </Text>
+          </View>
+        </View>
+
         {/* UTR Input */}
         <View style={styles.formGroup}>
           <Text style={styles.formLabel}>

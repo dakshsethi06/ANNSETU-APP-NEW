@@ -2,11 +2,13 @@ import { BACKEND_URL } from '../../../core/network/config';
 
 export async function fetchFarmers(state = '', serialNumber = '') {
   try {
-    let url = `${BACKEND_URL}/api/farmers?`;
+    let url = `${BACKEND_URL}/api/farmers?t=${Date.now()}&`;
     if (state) url += `state=${encodeURIComponent(state)}&`;
     if (serialNumber) url += `serial_number=${encodeURIComponent(serialNumber)}&`;
     
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: { 'Cache-Control': 'no-cache' }
+    });
     if (!response.ok) throw new Error(`Server returned status ${response.status}`);
     const data = await response.json();
     if (!data.success) throw new Error(data.error || 'Failed to fetch farmers');
@@ -35,7 +37,9 @@ export async function addFarmer(farmerData) {
 
 export async function fetchFarmerLedger(farmerId) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/farmers/${encodeURIComponent(farmerId)}/ledger`);
+    const response = await fetch(`${BACKEND_URL}/api/farmers/${encodeURIComponent(farmerId)}/ledger?t=${Date.now()}`, {
+      headers: { 'Cache-Control': 'no-cache' }
+    });
     if (!response.ok) throw new Error(`Server returned status ${response.status}`);
     const data = await response.json();
     if (!data.success) throw new Error(data.error || 'Failed to fetch ledger');
