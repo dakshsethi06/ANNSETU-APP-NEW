@@ -22,11 +22,3 @@ mobile/android/
 
 # iOS
 mobile/ios/
-
-# Local reviews and changes documentation
-CHANGES MD/
-*_changes.md
-*review.md
-19.md
-21.md
-

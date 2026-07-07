@@ -25,7 +25,7 @@ This document consolidates findings from `architectural_review.md`, `supplementa
 ### 2. Architectural & Structural Debt
 8. **Conditional Rendering Navigation**: Mobile app uses `switch(role)` for root screens and `activeTab === 'name'` for inner screens. Android back button exits the app; tabs unmount and lose state.
    * **Change**: Replace with React Navigation using Stack, BottomTab, and Nested navigators.
-9. **God-Object Root Component**: `App.js` handles Supabase session, roles, keyboard, font loading, OTA checks, push tokens, and passes 9 props.
+9. **God-Object Root Component**: `App.js` handles Supabase session, roles, keyboard, font loading, OTA c hecks, push tokens, and passes 9 props.
    * **Change**: Manage global state (auth, settings) using Zustand.
 10. **Role Naming Inversion**: The role `'ColdStorage'` is used to designate a Farmer dashboard, while `'ColdStorageFacility'` represents the actual storage facility.
     * **Change**: Establish clear role constants (`FARMER`, `VENDOR`, `COLD_STORAGE_FACILITY`) via an enum or constants file.
