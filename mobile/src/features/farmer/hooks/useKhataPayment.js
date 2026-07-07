@@ -29,8 +29,11 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   const online = useOnlinePayment(farmerData, lang, onPaymentSuccess, setShowSummary, setPaymentId);
 
   const handlePayPress = async (customAmount) => {
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 =======
+=======
+>>>>>>> Stashed changes
     online.setRazorpayOrderData(null); // Clear old order data before fetch
     
     console.log('[handlePayPress] Received customAmount:', customAmount);

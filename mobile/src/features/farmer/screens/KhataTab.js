@@ -30,10 +30,14 @@ export default function KhataTab({
 }) {
   const { t, i18n } = useTranslation();
   const { state, handlers } = useKhataPayment(farmerData, holdingsList, onPaymentSuccess);
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 =======
 
 >>>>>>> eeff13c3b06c9e49551835593016da673983823f
+=======
+
+>>>>>>> Stashed changes
   const { pdfDownloading, receiptDownloading, handleConfirmTimeline } = useKhataDownloads(farmerData, state.lang);
   const [selectedEntry, setSelectedEntry] = React.useState(null);
   const [dateModalVisible, setDateModalVisible] = React.useState(false);
@@ -45,6 +49,7 @@ export default function KhataTab({
   const [imageLoading, setImageLoading] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
 
+<<<<<<< Updated upstream
 <<<<<<< HEAD
   if (state.showVerificationForm) {
     return (
@@ -158,3 +163,84 @@ export default function KhataTab({
         </View>
         );
 }
+=======
+  return (
+    <View style={styles.container}>
+      {state.showVerificationForm ? (
+        <KhataVerificationView
+          lang={state.lang} pendingRent={state.pendingRent} holdingsList={holdingsList}
+          utrNumber={state.utrNumber} setUtrNumber={state.setUtrNumber}
+          receiptFile={state.receiptFile} receiptFileName={state.receiptFileName} setReceiptFile={state.setReceiptFile} setReceiptFileName={state.setReceiptFileName}
+          paymentDate={state.paymentDate} onUploadReceipt={handlers.handleUploadReceipt} onOpenDatePicker={() => state.setDatePickerVisible(true)}
+          onSubmit={handlers.handleFormSubmit} onBackPress={() => state.setShowVerificationForm(false)}
+        />
+      ) : state.showSummary ? (
+        <KhataSummaryView
+          lang={state.lang} pendingRent={state.razorpayOrderData?.amount ?? (parseFloat(state.paymentAmount) || state.pendingRent)}
+          farmerData={farmerData} holdingsList={holdingsList} formatDate={formatDate}
+          onBackPress={() => state.setShowSummary(false)} onPayNow={handlers.handleOnlineCheckout}
+          onAlreadyPaid={() => { state.setShowSummary(false); state.setShowVerificationForm(true); }}
+        />
+      ) : selectedEntry ? (
+        <KhataDetailsView
+          lang={state.lang} selectedEntry={selectedEntry} setSelectedEntry={setSelectedEntry} farmerData={farmerData} state={state} BACKEND_URL={BACKEND_URL}
+          imageModalVisible={imageModalVisible} setImageModalVisible={setImageModalVisible} fullImageUrl={fullImageUrl} setFullImageUrl={setFullImageUrl}
+          imageLoading={imageLoading} setImageLoading={setImageLoading} imageError={imageError} setImageError={setImageError} receiptDownloading={receiptDownloading}
+        />
+      ) : (
+        <View style={{ flex: 1 }}>
+          <KhataHeader lang={state.lang} setLang={state.setLang} />
+          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <KhataBalanceCard lang={state.lang} pendingRent={state.pendingRent} setDateModalVisible={setDateModalVisible} handlePayPress={handlers.handlePayPress} />
+            <KhataPartialPayCard lang={state.lang} pendingRent={state.pendingRent} paymentAmount={state.paymentAmount} setPaymentAmount={state.setPaymentAmount} handlePayPress={handlers.handlePayPress} />
+            <KhataSummaryRow lang={state.lang} totalCharged={totalCharged} totalPaid={totalPaid} />
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>{state.lang === 'en' ? 'Ledger Entries' : 'खाता विवरण'}</Text>
+            </View>
+            <KhataLedgerBlock lang={state.lang} ledgerList={ledgerList} farmerData={farmerData} setSelectedEntry={setSelectedEntry} />
+          </ScrollView>
+        </View>
+      )}
+
+      <KhataTimelineModal
+        lang={state.lang} visible={dateModalVisible} onClose={() => setDateModalVisible(false)}
+        timelineOption={timelineOption} setTimelineOption={setTimelineOption}
+        fromDateStr={fromDateStr} setFromDateStr={setFromDateStr} toDateStr={toDateStr} setToDateStr={setToDateStr}
+        onConfirm={() => handleConfirmTimeline(timelineOption, fromDateStr, toDateStr, setDateModalVisible)}
+      />
+      <PaymentWebViewModal
+        visible={!!state.paymentUrl}
+        paymentUrl={state.paymentUrl}
+        lang={state.lang}
+        onClose={() => { state.setPaymentUrl(null); handlers.handleResetAll(); }}
+        onPaymentSuccess={() => {
+          state.setPaymentUrl(null);
+          state.setIsOnlineSuccess(true);
+          state.setVerificationSuccessModalVisible(true);
+        }}
+      />
+      <DatePickerModal visible={state.datePickerVisible} onClose={() => state.setDatePickerVisible(false)} onConfirm={handlers.handleConfirmDate} pickerDay={state.pickerDay} setPickerDay={state.setPickerDay} pickerMonth={state.pickerMonth} setPickerMonth={state.setPickerMonth} pickerYear={state.pickerYear} setPickerYear={state.setPickerYear} adjustDay={handlers.adjustDay} adjustMonth={handlers.adjustMonth} adjustYear={handlers.adjustYear} />
+      <SuccessModal
+        visible={state.verificationSuccessModalVisible}
+        onClose={() => { state.setVerificationSuccessModalVisible(false); handlers.handleResetAll(); }}
+        title={state.isOnlineSuccess
+          ? (state.lang === 'en' ? 'Payment Successful' : 'भुगतान सफल')
+          : (state.lang === 'en' ? 'Request Submitted' : 'अनुरोध जमा किया गया')
+        }
+        message={state.isOnlineSuccess
+          ? (state.lang === 'en' ? 'Your payment has been successfully processed. Dues are cleared.' : 'आपका भुगतान सफलतापूर्वक पूरा हो गया है।')
+          : (state.lang === 'en' ? 'Your payment verification request has been submitted successfully.' : 'आपका भुगतान सत्यापन अनुरोध सफलतापूर्वक जमा कर दिया गया है।')
+        }
+      />
+      <Modal visible={pdfDownloading} transparent={true} animationType="none">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 }}>
+            <ActivityIndicator size="large" color="#1E5C2E" style={{ marginBottom: 12 }} />
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#1B4332' }}>{state.lang === 'en' ? 'Generating PDF...' : 'पीडीएफ तैयार हो रहा है...'}</Text>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+>>>>>>> Stashed changes
