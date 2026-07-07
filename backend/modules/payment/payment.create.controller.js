@@ -48,9 +48,9 @@ async function createOrder(req, res) {
     const amountPaise = Math.round(finalAmount * 100);
     const receipt = `rcpt_${farmerId}_${Date.now().toString().slice(-6)}`;
 
-    let serverIp = req.headers.host || '192.168.1.24:3001';
+    let serverIp = req.headers.host || '10.36.66.6:3001';
     if (serverIp.includes('localhost') || serverIp.includes('127.0.0.1')) {
-      serverIp = '192.168.1.24:3001';
+      serverIp = '10.36.66.6:3001';
     }
 
     const isMock = razorpayService.isMockMode();

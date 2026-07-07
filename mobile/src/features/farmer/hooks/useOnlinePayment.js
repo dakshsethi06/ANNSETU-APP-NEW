@@ -9,36 +9,57 @@ export function useOnlinePayment(farmerData, lang, onPaymentSuccess, setShowSumm
   const [isOnlineSuccess, setIsOnlineSuccess] = useState(false);
 
   const handlePayPress = async (targetAmount) => {
+    console.log('[useOnlinePayment] handlePayPress called with targetAmount:', targetAmount);
     try {
       const farmerId = farmerData?.id || farmerData?.serial_number;
+      console.log('[useOnlinePayment] Using farmerId:', farmerId, 'and BACKEND_URL:', BACKEND_URL);
+      
       const response = await fetch(`${BACKEND_URL}/api/payments/order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ farmerId, amount: targetAmount })
       });
+      
+      console.log('[useOnlinePayment] API response status:', response.status);
       const orderData = await response.json();
+      console.log('[useOnlinePayment] API orderData:', orderData);
+      
       if (!orderData.success) throw new Error(orderData.error || 'Order generation failed.');
 
       setPaymentId(orderData.order_id);
       setRazorpayOrderData(orderData);
       setShowSummary(true);
+      console.log('[useOnlinePayment] Successfully set order data and showSummary = true');
     } catch (err) {
+      console.error('[useOnlinePayment] handlePayPress error:', err.message);
       Alert.alert('Error', err.message || 'Failed to initiate payment.');
     }
   };
 
   const handleOnlineCheckout = async () => {
-    if (!razorpayOrderData) return Alert.alert('Error', 'Payment details not loaded.');
+    console.log('[useOnlinePayment] handleOnlineCheckout triggered. Current razorpayOrderData:', razorpayOrderData);
+    if (!razorpayOrderData) {
+      console.warn('[useOnlinePayment] razorpayOrderData is null or empty!');
+      return Alert.alert('Error', 'Payment details not loaded.');
+    }
 
     const isMock = razorpayOrderData.order_id?.startsWith('order_mock_');
     const hasNativeSDK = !!NativeModules.RazorpayCheckout;
+    console.log('[useOnlinePayment] isMock:', isMock, 'hasNativeSDK:', hasNativeSDK);
 
     if (isMock || !hasNativeSDK || !RazorpayCheckout || typeof RazorpayCheckout.open !== 'function') {
-      if (razorpayOrderData.payment_link_url) return setPaymentUrl(razorpayOrderData.payment_link_url);
+      console.log('[useOnlinePayment] Mock mode or Native SDK not available. Falling back to WebView.');
+      if (razorpayOrderData.payment_link_url) {
+        console.log('[useOnlinePayment] Setting paymentUrl to:', razorpayOrderData.payment_link_url);
+        setPaymentUrl(razorpayOrderData.payment_link_url);
+        return;
+      }
+      console.error('[useOnlinePayment] payment_link_url is missing!');
       return Alert.alert('Error', 'Payment link URL not generated.');
     }
 
     try {
+      console.log('[useOnlinePayment] Opening Native Razorpay SDK...');
       const options = {
         description: `Rent payment for Farmer ${farmerData.id || farmerData.serial_number}`,
         image: 'https://annsetu.local/logo.png',
@@ -56,6 +77,7 @@ export function useOnlinePayment(farmerData, lang, onPaymentSuccess, setShowSumm
       };
 
       RazorpayCheckout.open(options).then(async (data) => {
+        console.log('[useOnlinePayment] Razorpay SDK checkout success:', data);
         const verifyRes = await fetch(`${BACKEND_URL}/api/payments/verify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -66,6 +88,7 @@ export function useOnlinePayment(farmerData, lang, onPaymentSuccess, setShowSumm
           })
         });
         const verifyData = await verifyRes.json();
+        console.log('[useOnlinePayment] Verification API result:', verifyData);
         if (!verifyData.success) throw new Error(verifyData.message || 'Signature rejected.');
 
         Alert.alert(
@@ -74,10 +97,16 @@ export function useOnlinePayment(farmerData, lang, onPaymentSuccess, setShowSumm
           [{ text: 'OK', onPress: () => { setShowSummary(false); if (onPaymentSuccess) onPaymentSuccess(); } }]
         );
       }).catch((error) => {
-        if (razorpayOrderData.payment_link_url) setPaymentUrl(razorpayOrderData.payment_link_url);
-        else Alert.alert('Payment Failed', (error && (error.description || error.message)) || 'Payment failed.');
+        console.warn('[useOnlinePayment] Razorpay SDK checkout failed or cancelled:', error);
+        if (razorpayOrderData.payment_link_url) {
+          console.log('[useOnlinePayment] Falling back to web view on error:', razorpayOrderData.payment_link_url);
+          setPaymentUrl(razorpayOrderData.payment_link_url);
+        } else {
+          Alert.alert('Payment Failed', (error && (error.description || error.message)) || 'Payment failed.');
+        }
       });
     } catch (sdkErr) {
+      console.error('[useOnlinePayment] SDK Exception:', sdkErr.message);
       if (razorpayOrderData.payment_link_url) setPaymentUrl(razorpayOrderData.payment_link_url);
     }
   };

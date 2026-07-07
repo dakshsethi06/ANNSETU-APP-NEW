@@ -126,7 +126,7 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
           fetchWeather(locationName).catch(() => null),
           fetchHoldings().catch(() => []),
           fetchNotifications(targetId).catch(() => []),
-          fetchFarmerLedger('default_farmer').catch(() => []),
+          fetchFarmerLedger(targetId).catch(() => []),
         ]);
 
         if (summary) {
