@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Platform, StatusBar, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { FONTS } from '../../../core/theme/theme';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
@@ -10,9 +8,10 @@ import { useTranslation } from 'react-i18next';
 import { updateFarmerProfile, sendProfileVerificationOtp, verifyAndUpdateFarmerProfile } from '../services/farmerService';
 import SupportModal from '../../support/modals/SupportModal';
 
-export default function ProfileTab({ farmerData, onSwitchRole, onLogout, onRefreshFarmer }) {
+export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedInPhone, userRole, onRefreshFarmer }) {
   const { t, i18n } = useTranslation();
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
 
   // Edit Profile modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -27,29 +26,21 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, onRefre
   const [otpCode, setOtpCode] = useState('');
   const [otpTarget, setOtpTarget] = useState({ type: 'phone', value: '' });
 
-  export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedInPhone, userRole }) {
-    const [supportModalVisible, setSupportModalVisible] = useState(false);
-    const profileName = farmerData?.name || 'SN Sharma Trading';
-    const roleLabel = farmerData ? t('register.roles.farmer.label') : t('register.roles.vendor.label');
-    const profileSubtitle = farmerData
-      ? `${roleLabel} · ${farmerData.village || farmerData.district || 'Tundla'}, ${farmerData.state || 'UP'}`
-      : `${roleLabel} · Tundla, Firozabad`;
-    const currentRole = farmerData
+  const profileName = farmerData?.name || 'SN Sharma Trading';
+  const roleLabel = farmerData ? t('register.roles.farmer.label') : t('register.roles.vendor.label');
+
+  const isColdStorage = userRole === 'ColdStorage' || userRole === 'ColdStorageFacility';
+  const currentRole = isColdStorage
+    ? 'Cold Storage / कोल्ड स्टोरेज'
+    : farmerData
       ? t('profile.farmer_role_display')
       : t('profile.vendor_role_display');
 
-    const isColdStorage = userRole === 'ColdStorage' || userRole === 'ColdStorageFacility';
-    const currentRole = isColdStorage
-      ? 'Cold Storage / कोल्ड स्टोरेज'
-      : farmerData
-        ? 'Farmer / किसान'
-        : 'Vendor / व्यापारी';
-
-    const profileSubtitle = isColdStorage
-      ? `Cold Storage · ${farmerData?.village || farmerData?.district || 'Tundla'}, ${farmerData?.state || 'UP'}`
-      : farmerData
-        ? `Farmer · ${farmerData.village || farmerData.district || 'Tundla'}, ${farmerData.state || 'UP'}`
-        : 'Vendor · Tundla, Firozabad';
+  const profileSubtitle = isColdStorage
+    ? `Cold Storage · ${farmerData?.village || farmerData?.district || 'Tundla'}, ${farmerData?.state || 'UP'}`
+    : farmerData
+      ? `${roleLabel} · ${farmerData.village || farmerData.district || 'Tundla'}, ${farmerData.state || 'UP'}`
+      : `${roleLabel} · Tundla, Firozabad`;
 
     const avatarChar = profileName ? profileName.charAt(0).toUpperCase() : 'S';
 
@@ -315,41 +306,34 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, onRefre
                 <TouchableOpacity
                   style={s.menuItem}
                   activeOpacity={0.7}
-                  onPress={
-                    item.id === '1' || item.id === '2'
-                      ? handleOpenEditModal
-                      : item.id === '7'
-                        ? () => setSettingsModalVisible(true)
-                        : undefined
-                  }
+                  onPress={() => {
+                    if (item.id === '1') {
+                      handleOpenEditModal();
+                    } else if (item.id === '6') {
+                      setSupportModalVisible(true);
+                    } else if (item.id === '7') {
+                      setSettingsModalVisible(true);
+                    } else {
+                      Alert.alert(
+                        item.title,
+                        `${item.title} section is coming soon!`,
+                        [{ text: 'OK' }]
+                      );
+                    }
+                  }}
                 >
-                  <TouchableOpacity
-                    style={s.menuItem}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      if (item.id === '6') {
-                        setSupportModalVisible(true);
-                      } else {
-                        Alert.alert(
-                          item.title,
-                          `${item.title} section is coming soon!`,
-                          [{ text: 'OK' }]
-                        );
-                      }
-                    }}
-                  >
-                    <View style={s.menuItemLeft}>
-                      <View style={s.menuIconBadge}>
-                        <Feather name={item.icon} size={18} color="#71717A" />
-                      </View>
-                      <View>
-                        <Text style={s.menuItemTitle}>{item.title}</Text>
-                        <Text style={s.menuItemSubtitle}>{item.subtitle}</Text>
-                      </View>
+                  <View style={s.menuItemLeft}>
+                    <View style={s.menuIconBadge}>
+                      <Feather name={item.icon} size={18} color="#71717A" />
                     </View>
-                    <Feather name="chevron-right" size={16} color="#A1A1AA" />
-                  </TouchableOpacity>
-                  {idx < menuItems.length - 1 && <View style={s.menuDivider} />}
+                    <View>
+                      <Text style={s.menuItemTitle}>{item.title}</Text>
+                      <Text style={s.menuItemSubtitle}>{item.subtitle}</Text>
+                    </View>
+                  </View>
+                  <Feather name="chevron-right" size={16} color="#A1A1AA" />
+                </TouchableOpacity>
+                {idx < menuItems.length - 1 && <View style={s.menuDivider} />}
               </View>
             ))}
           </View>

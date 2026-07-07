@@ -7,9 +7,8 @@ import s from '../styles/notificationsTabStyles';
 import { fetchNotifications, markNotificationRead } from '../services/notificationService';
 import { fetchFarmers, BACKEND_URL } from '../../../core/network/api';
 
-export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) {
+export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, onMarkRead }) {
   const { t } = useTranslation();
-  export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, onMarkRead }) {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [paymentDetailVisible, setPaymentDetailVisible] = useState(false);
