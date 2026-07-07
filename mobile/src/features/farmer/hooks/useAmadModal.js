@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { addAmad } from '../../../core/network/api';
+import { addAmad } from '../../mandi/services/amadService';
 
 export function useAmadModal(visible, defaultFarmerId, onClose, onAmadSuccess) {
   const [amadFarmerId, setAmadFarmerId] = useState('');

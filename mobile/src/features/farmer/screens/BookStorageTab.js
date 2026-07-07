@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { addAmad, fetchColdStorages } from '../../../core/network/api';
+import { addAmad } from '../../mandi/services/amadService';
+import { fetchColdStorages } from '../../cold-storage/services/storageService';
 import { COLORS, SHADOWS, FONTS } from '../../../core/theme/theme';
 import s from '../styles/bookStorageStyles';
 

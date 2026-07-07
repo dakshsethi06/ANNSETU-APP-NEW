@@ -9,7 +9,7 @@ import StockTab from '../../inventory/screens/StockTab';
 import MarketTab from '../../mandi/screens/MarketTab';
 import NotificationsTab from '../../notifications/screens/NotificationsTab';
 import ProfileTab from '../../farmer/screens/ProfileTab';
-import { fetchMandiPrices } from '../../../core/network/api';
+import { fetchMandiPrices } from '../../mandi/services/mandiService';
 
 const { width } = Dimensions.get('window');
 

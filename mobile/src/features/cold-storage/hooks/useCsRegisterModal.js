@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
-import { addColdStorage } from '../../../core/network/api';
+import { addColdStorage } from '../services/storageService';
 
 export function useCsRegisterModal(onClose, onRegisterSuccess) {
   const [newCsName, setNewCsName] = useState('');

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { fetchColdStorageSummary, fetchColdStorages, fetchHoldings, fetchWeather } from '../../../core/network/api';
+import { fetchColdStorageSummary, fetchColdStorages } from '../services/storageService';
+import { fetchHoldings } from '../../mandi/services/amadService';
+import { fetchWeather } from '../../weather/services/weatherService';
 
 export function useColdStorageDashboard() {
   const [selectedColdStorageId, setSelectedColdStorageId] = useState('cmmp9txv0000ai3t4wush9trs');

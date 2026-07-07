@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert,
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SHADOWS, FONTS } from '../../../core/theme/theme';
 import s from '../styles/createRequestStyles';
-import { fetchFarmers, BACKEND_URL } from '../../../core/network/api';
+import { fetchFarmers } from '../services/farmerService';
+import { BACKEND_URL } from '../../../core/network/config';
 
 export default function CreateRequestTab({ onBackPress, coldStorageId }) {
   const [step, setStep] = useState(1); // 1: Form, 2: Confirmation

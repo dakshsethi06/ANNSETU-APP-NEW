@@ -2,7 +2,7 @@ const db = require('../../../config/database');
 
 async function updateFarmer(req, res) {
   const { id } = req.params;
-  const { name, phone, email } = req.body;
+  const { name, phone, email, aadhaarNumber, panNumber } = req.body;
 
   try {
     const existing = await db.query('SELECT * FROM "Farmer" WHERE "id" = $1', [id]);
@@ -14,16 +14,20 @@ async function updateFarmer(req, res) {
     const finalName = name !== undefined ? name : current.name;
     const finalPhone = phone !== undefined ? phone : current.phone;
     const finalEmail = email !== undefined ? email : current.email;
+    const finalAadhaar = aadhaarNumber !== undefined ? aadhaarNumber : current.aadhaarNumber;
+    const finalPan = panNumber !== undefined ? panNumber : current.panNumber;
 
     const result = await db.query(
       `UPDATE "Farmer"
      SET "name" = $1,
          "phone" = $2,
          "email" = $3,
+         "aadhaarNumber" = $4,
+         "panNumber" = $5,
          "updatedAt" = NOW()
-     WHERE "id" = $4
-     RETURNING "id" AS "serial_number", "name", "state", "primaryCrop" AS commodity, "fatherName", "phone", "email", "village", "district", "tehsil"`,
-      [finalName, finalPhone, finalEmail, id]
+     WHERE "id" = $6
+     RETURNING "id" AS "serial_number", "name", "state", "primaryCrop" AS commodity, "fatherName", "phone", "email", "village", "district", "tehsil", "aadhaarNumber", "panNumber"`,
+      [finalName, finalPhone, finalEmail, finalAadhaar, finalPan, id]
     );
 
     return res.json({ success: true, farmer: result.rows[0] });

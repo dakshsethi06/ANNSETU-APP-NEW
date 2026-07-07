@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { FONTS } from '../../../core/theme/theme';
 import s from '../styles/notificationsTabStyles';
 import { fetchNotifications, markNotificationRead } from '../services/notificationService';
-import { fetchFarmers, BACKEND_URL } from '../../../core/network/api';
+import { fetchFarmers } from '../../farmer/services/farmerService';
+import { BACKEND_URL } from '../../../core/network/api';
 
 export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, onMarkRead }) {
   const { t } = useTranslation();

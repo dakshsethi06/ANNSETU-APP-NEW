@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchWeather } from '../../../core/network/api';
+import { fetchWeather } from '../services/weatherService';
 
 export function useWeatherDashboard(initialCity = 'Agra') {
   const [city, setCity] = useState(initialCity);

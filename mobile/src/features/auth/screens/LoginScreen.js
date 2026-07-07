@@ -111,7 +111,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
     setLoading(true);
     try {
       if (loginMode === 'coldstorage') {
-        const { fetchUserRole } = require('../../../core/network/api');
+        const { fetchUserRole } = require('../../farmer/services/farmerService');
         const detected = await fetchUserRole('+91' + phone);
         if (detected !== 'ColdStorageFacility') {
           Alert.alert('Access Denied', 'This phone number is not registered as a Cold Storage Partner.');
@@ -173,7 +173,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
           });
           Alert.alert('Success', `Cold Storage "${registrationData.storageName || registrationData.name}" registered successfully!`);
         } else {
-          const { addFarmer } = require('../../../core/network/api');
+          const { addFarmer } = require('../../farmer/services/farmerService');
           // Register the farmer in the real Postgres database
           await addFarmer({
             serial_number: registrationData.phone,

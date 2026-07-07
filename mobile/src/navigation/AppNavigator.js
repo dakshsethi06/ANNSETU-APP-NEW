@@ -1,64 +1,76 @@
 import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { useAuthStore } from '../features/auth/store/useAuthStore';
 
-import LoginScreen from '../features/auth/screens/LoginScreen';
+import AuthNavigator from '../features/auth/AuthNavigator';
+import FarmerNavigator from '../features/farmer/FarmerNavigator';
 import VendorScreen from '../features/vendor/screens/VendorScreen';
-import HomeScreen from '../features/farmer/screens/HomeScreen';
 import ColdStorageScreen from '../features/cold-storage/screens/ColdStorageScreen';
 
-export default function AppNavigator({
-  role,
-  setRole,
-  session,
-  onLoginSuccess,
-  setHidePreviewFromLogin,
-  setShowRoleSwitcher,
-  showRoleSwitcher,
-  isKeyboardVisible,
-  hidePreviewFromLogin,
-  onLogout
-}) {
-  const renderScreen = () => {
-    switch (role) {
-      case 'Farmer':
-        return (
-          <LoginScreen 
-            onLoginSuccess={onLoginSuccess} 
-            onHidePreviewChange={setHidePreviewFromLogin}
-          />
-        );
-      case 'Vendor':
-        return (
-          <VendorScreen 
-            loggedInPhone={session?.user?.phone}
-            onSwitchRole={() => setShowRoleSwitcher(true)}
-            onLogout={onLogout}
-          />
-        );
-      case 'ColdStorage':
-        return (
-          <HomeScreen 
-            loggedInPhone={session?.user?.phone} 
-            onSwitchRole={() => setShowRoleSwitcher(true)}
-            onLogout={onLogout}
-          />
-        );
-      case 'ColdStorageFacility':
-        return (
-          <ColdStorageScreen 
-            loggedInPhone={session?.user?.phone}
-            onSwitchRole={() => setShowRoleSwitcher(true)}
-            onLogout={onLogout}
-          />
-        );
-      default:
-        return <LoginScreen onLoginSuccess={onLoginSuccess} />;
+const Stack = createStackNavigator();
+
+export default function AppNavigator() {
+  const {
+    role,
+    setRole,
+    session,
+    loginSuccess,
+    setHidePreviewFromLogin,
+    setShowRoleSwitcher,
+    showRoleSwitcher,
+    isKeyboardVisible,
+    hidePreviewFromLogin,
+    logout,
+  } = useAuthStore();
+
+  const renderNavigator = () => {
+    if (role === 'Farmer' || role === 'unauthenticated' || !session) {
+      return <AuthNavigator />;
     }
+    
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {role === 'Vendor' ? (
+          <Stack.Screen name="Vendor">
+            {() => (
+              <VendorScreen 
+                loggedInPhone={session?.user?.phone}
+                onSwitchRole={() => setShowRoleSwitcher(true)}
+                onLogout={logout}
+              />
+            )}
+          </Stack.Screen>
+        ) : role === 'ColdStorage' ? (
+          <Stack.Screen name="Farmer">
+            {() => (
+              <FarmerNavigator 
+                loggedInPhone={session?.user?.phone} 
+                onSwitchRole={() => setShowRoleSwitcher(true)}
+                onLogout={logout}
+              />
+            )}
+          </Stack.Screen>
+        ) : role === 'ColdStorageFacility' ? (
+          <Stack.Screen name="ColdStorageFacility">
+            {() => (
+              <ColdStorageScreen 
+                loggedInPhone={session?.user?.phone}
+                onSwitchRole={() => setShowRoleSwitcher(true)}
+                onLogout={logout}
+              />
+            )}
+          </Stack.Screen>
+        ) : (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </Stack.Navigator>
+    );
   };
 
   return (
     <View style={{ flex: 1 }}>
-      {renderScreen()}
+      {renderNavigator()}
 
       {/* Persistent Floating UI Preview Navigation Bar */}
       {((role !== 'Vendor' && role !== 'ColdStorage' && role !== 'ColdStorageFacility') || showRoleSwitcher) && !isKeyboardVisible && !hidePreviewFromLogin && (role !== 'Farmer' || session !== null) && (

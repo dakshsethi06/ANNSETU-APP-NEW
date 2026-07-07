@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SHADOWS, FONTS } from '../../../core/theme/theme';
 import s from '../styles/dispatchTabStyles';
-import { BACKEND_URL } from '../../../core/network/api';
+import { BACKEND_URL } from '../../../core/network/config';
 
 export default function DispatchTab({ farmerId, onBackPress }) {
   const { t } = useTranslation();

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { fetchFarmers, fetchFarmerLedger, fetchWeather } from '../../../core/network/api';
+import { fetchFarmers, fetchFarmerLedger } from '../services/farmerService';
+import { fetchWeather } from '../../weather/services/weatherService';
 import { fetchHoldings } from '../../mandi/services/amadService';
 import { fetchNotifications } from '../../notifications/services/notificationService';
 

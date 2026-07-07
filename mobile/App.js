@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Alert, View, ActivityIndicator, Platform, Keyboard } from 'react-native';
 import * as Updates from 'expo-updates';
 import * as Notifications from 'expo-notifications';
 import { supabase } from './src/core/network/supabase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppNavigator from './src/navigation/AppNavigator';
+import { useAuthStore } from './src/features/auth/store/useAuthStore';
+import { NavigationContainer } from '@react-navigation/native';
 
 
 // Configure push notification alert settings when the app is foregrounded
@@ -42,12 +43,16 @@ if (Platform.OS === 'web') {
 }
 
 export default function App() {
-  const [session, setSession] = useState(null);
-  const [loadingSession, setLoadingSession] = useState(true);
-  const [role, setRole] = useState('Farmer'); // 'Farmer', 'Vendor', 'ColdStorage'
-  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
-  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [hidePreviewFromLogin, setHidePreviewFromLogin] = useState(false);
+  const {
+    session,
+    setSession,
+    role,
+    setRole,
+    loadingSession,
+    setLoadingSession,
+    setKeyboardVisible,
+    determineRole,
+  } = useAuthStore();
 
   // Load custom fonts for native Android / iOS builds (APK/IPA)
   const [fontsLoaded] = useFonts({
@@ -57,23 +62,6 @@ export default function App() {
     'NotoSansDevanagari-Bold': NotoSansDevanagari_700Bold,
     'DMMono-Regular': DMMono_400Regular,
   });
-
-  const determineRole = async (phone) => {
-    if (!phone) return;
-    try {
-      const savedRole = await AsyncStorage.getItem('user_role');
-      if (savedRole) {
-        setRole(savedRole);
-        return;
-      }
-      const { fetchUserRole } = require('./src/core/network/api');
-      const detectedRole = await fetchUserRole(phone);
-      setRole(detectedRole);
-    } catch (e) {
-      console.warn('Error determining role:', e);
-      setRole('ColdStorage');
-    }
-  };
 
   useEffect(() => {
     if (session && session.user && session.user.phone) {
@@ -156,60 +144,9 @@ export default function App() {
     );
   }
 
-  const handleLoginSuccess = async (phone, registrationRole) => {
-    setSession({
-      user: {
-        phone: '+91' + phone,
-      }
-    });
-    
-    let resolvedRole = 'ColdStorage';
-    if (registrationRole === 'coldstorage' || registrationRole === 'ColdStorageFacility') {
-      resolvedRole = 'ColdStorageFacility';
-    } else if (registrationRole === 'vendor' || registrationRole === 'Vendor') {
-      resolvedRole = 'Vendor';
-    } else if (registrationRole === 'farmer' || registrationRole === 'ColdStorage') {
-      resolvedRole = 'ColdStorage';
-    } else {
-      try {
-        const { fetchUserRole } = require('./src/core/network/api');
-        resolvedRole = await fetchUserRole('+91' + phone);
-      } catch (e) {
-        resolvedRole = 'ColdStorage';
-      }
-    }
-    setRole(resolvedRole);
-    try {
-      await AsyncStorage.setItem('user_role', resolvedRole);
-    } catch (err) {
-      console.warn('Failed to save user role to AsyncStorage:', err);
-    }
-  };
-
-  const handleLogout = async () => {
-    supabase.auth.signOut();
-    setSession(null);
-    setRole('Farmer');
-    setShowRoleSwitcher(false);
-    try {
-      await AsyncStorage.removeItem('user_role');
-    } catch (err) {
-      console.warn('Failed to clear user role from AsyncStorage:', err);
-    }
-  };
-
   return (
-    <AppNavigator
-      role={role}
-      setRole={setRole}
-      session={session}
-      onLoginSuccess={handleLoginSuccess}
-      setHidePreviewFromLogin={setHidePreviewFromLogin}
-      setShowRoleSwitcher={setShowRoleSwitcher}
-      showRoleSwitcher={showRoleSwitcher}
-      isKeyboardVisible={isKeyboardVisible}
-      hidePreviewFromLogin={hidePreviewFromLogin}
-      onLogout={handleLogout}
-    />
+    <NavigationContainer>
+      <AppNavigator />
+    </NavigationContainer>
   );
 }

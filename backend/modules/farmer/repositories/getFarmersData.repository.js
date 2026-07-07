@@ -5,6 +5,7 @@ async function getFarmersData(state, serial_number) {
     SELECT 
       f.id AS "serial_number", f.name, f.state, f."primaryCrop" AS commodity, 
       f."fatherName", f.phone, f.village, f.district, f.tehsil,
+      f."aadhaarNumber", f."panNumber",
       (
         COALESCE(f."openingBalance", 0)
         + COALESCE((SELECT SUM("totalBillAmount") FROM "NikasiTransaction" WHERE "farmerId" = f.id), 0)

@@ -4,7 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { FONTS } from '../../../core/theme/theme';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import s from '../styles/marketTabStyles';
-import { fetchMandiPrices } from '../../../core/network/api';
+import { fetchMandiPrices } from '../services/mandiService';
 
 export default function MarketTab() {
   const [selectedSubTab, setSelectedSubTab] = useState('mandi'); // 'mandi' or 'auction'

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
-import { addFarmer } from '../../../core/network/api';
+import { addFarmer } from '../services/farmerService';
 
 export function useRegisterFarmerModal(onClose, onRegisterSuccess) {
   const [newFarmerName, setNewFarmerName] = useState('');

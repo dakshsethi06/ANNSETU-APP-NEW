@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { fetchStates } from '../network/api';
+import { fetchStates } from '../../features/farmer/services/locationService';
 
 export function useStateModal(visible) {
   const [statesList, setStatesList] = useState([]);

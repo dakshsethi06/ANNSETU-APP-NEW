@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchMandiPrices } from '../../../core/network/api';
+import { fetchMandiPrices } from '../services/mandiService';
 import { calculatePrices } from '../../farmer/screens/helpers';
 
 export function useMandiDashboard() {
