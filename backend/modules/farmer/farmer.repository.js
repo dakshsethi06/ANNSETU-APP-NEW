@@ -1,5 +1,9 @@
-const db = require('../../config/database');
+const { getFarmersData } = require('./repositories/getFarmersData.repository');
+const { createFarmerRecord } = require('./repositories/createFarmerRecord.repository');
+const { getFarmerByPhone } = require('./repositories/getFarmerByPhone.repository');
+const { getFarmerLedger } = require('./repositories/getFarmerLedger.repository');
 
+<<<<<<< Updated upstream
 async function getFarmersData(state, serial_number) {
   let sql = `
     SELECT 
@@ -122,3 +126,11 @@ async function getFarmerLedger(farmerId) {
 }
 
 module.exports = { getFarmersData, createFarmerRecord, getFarmerLedger, getFarmerByPhone };
+=======
+module.exports = {
+  getFarmersData,
+  createFarmerRecord,
+  getFarmerByPhone,
+  getFarmerLedger
+};
+>>>>>>> Stashed changes

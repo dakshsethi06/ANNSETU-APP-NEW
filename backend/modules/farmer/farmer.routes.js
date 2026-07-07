@@ -9,7 +9,13 @@ router.post('/farmers', validateRegisterFarmer, farmerController.registerFarmer)
 router.get('/farmers/:id/ledger', farmerController.getLedger);
 router.get('/farmers/:id/statement/download', farmerController.downloadStatement);
 router.get('/farmers/:id/statement/download-pdf', farmerController.downloadStatementPdf);
+<<<<<<< Updated upstream
 router.post('/farmers/login-mpin', validateLoginMpin, farmerController.loginMpin);
 router.post('/farmers/reset-mpin', validateResetMpin, farmerController.resetMpin);
+=======
+router.get('/farmers/:id/statement/download-receipt-pdf', farmerController.downloadReceiptPdf);
+router.post('/farmers/login-mpin', farmerController.loginMpin);
+router.post('/farmers/reset-mpin', farmerController.resetMpin);
+>>>>>>> Stashed changes
 
 module.exports = router;

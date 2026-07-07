@@ -1,3 +1,4 @@
+const db = require('../../config/database');
 const paymentRepository = require('./payment.repository');
 const razorpayService = require('./razorpay.service');
 
@@ -6,6 +7,25 @@ async function createOrder(req, res) {
   const { farmerId, amount } = req.body;
 
   try {
+    let farmerName = 'Farmer Partner';
+    let farmerPhone = '9876543210';
+    try {
+      const farmerRes = await db.query('SELECT name, phone FROM "Farmer" WHERE id = $1', [farmerId]);
+      if (farmerRes.rows.length > 0) {
+        if (farmerRes.rows[0].name) {
+          farmerName = farmerRes.rows[0].name;
+        }
+        if (farmerRes.rows[0].phone) {
+          const rawPhone = farmerRes.rows[0].phone.replace(/\D/g, '');
+          if (rawPhone.length === 10 && !/^(.)\1+$/.test(rawPhone)) {
+            farmerPhone = rawPhone;
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.warn('Failed to fetch farmer profile for payment checkout:', dbErr.message);
+    }
+
     let finalAmount = amount ? parseFloat(amount) : 0;
     console.log('[Create Order API] parsed amount:', amount, '-> finalAmount:', finalAmount);
     if (!finalAmount) {
@@ -28,9 +48,9 @@ async function createOrder(req, res) {
     const amountPaise = Math.round(finalAmount * 100);
     const receipt = `rcpt_${farmerId}_${Date.now().toString().slice(-6)}`;
 
-    let serverIp = req.headers.host || '192.168.200.24:3001';
+    let serverIp = req.headers.host || '192.168.1.24:3001';
     if (serverIp.includes('localhost') || serverIp.includes('127.0.0.1')) {
-      serverIp = '192.168.200.24:3001';
+      serverIp = '192.168.1.24:3001';
     }
 
     const isMock = razorpayService.isMockMode();
@@ -51,9 +71,9 @@ async function createOrder(req, res) {
           amountPaise: amountPaise,
           description: `Rent payment for Farmer account ${farmerId}`,
           customer: {
-            name: 'Farmer Partner',
+            name: farmerName,
             email: `farmer_${farmerId}@annsetu.local`,
-            contact: farmerId.length === 10 ? farmerId : '9999999999'
+            contact: farmerPhone
           },
           callbackUrl: callbackUrl,
           orderId: orderId

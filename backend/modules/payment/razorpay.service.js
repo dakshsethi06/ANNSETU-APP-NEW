@@ -91,11 +91,27 @@ function verifyWebhookSignature(bodyString, signatureHeader) {
   return expectedSignature === signatureHeader;
 }
 
+async function fetchPaymentDetails(paymentId) {
+  if (isMockMode() || (paymentId && paymentId.startsWith('pay_mock_'))) {
+    return {
+      id: paymentId || 'pay_mock_' + Math.random().toString(36).substr(2, 9),
+      method: 'upi',
+      status: 'captured',
+      vpa: 'mock_farmer@okhdfcbank',
+      acquirer_data: {
+        bank_transaction_id: 'HDFC1342U38388'
+      }
+    };
+  }
+  return await razorpayInstance.payments.fetch(paymentId);
+}
+
 module.exports = {
   keyId,
   isMockMode,
   createOrder,
   createPaymentLink,
   verifySignature,
-  verifyWebhookSignature
+  verifyWebhookSignature,
+  fetchPaymentDetails
 };

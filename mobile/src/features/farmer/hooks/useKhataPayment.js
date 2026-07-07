@@ -1,98 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Alert, NativeModules } from 'react-native';
-import * as DocumentPicker from 'expo-document-picker';
-import RazorpayCheckout from 'react-native-razorpay';
-import { BACKEND_URL } from '../../../core/network/config';
+import { useDatePickerState } from './useDatePickerState';
+import { useVerificationState } from './useVerificationState';
+import { useOnlinePayment } from './useOnlinePayment';
 
 export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   const [showSummary, setShowSummary] = useState(false);
-  const [showVerificationForm, setShowVerificationForm] = useState(false);
-  const [verificationStep, setVerificationStep] = useState(1);
-  const [utrNumber, setUtrNumber] = useState('');
-  const [receiptFile, setReceiptFile] = useState('');
-  const [receiptFileName, setReceiptFileName] = useState('');
-  const [paymentDate, setPaymentDate] = useState(new Date());
-  const [datePickerVisible, setDatePickerVisible] = useState(false);
-  const [lang, setLang] = useState('en');
-
-  const [pickerDay, setPickerDay] = useState(new Date().getDate());
-  const [pickerMonth, setPickerMonth] = useState(new Date().getMonth());
-  const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
-
+  const [paymentMode, setPaymentMode] = useState('UPI');
+  const [bankName, setBankName] = useState('');
   const [paymentId, setPaymentId] = useState('');
-  const [verificationSuccessModalVisible, setVerificationSuccessModalVisible] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState(null);
-  const [razorpayOrderData, setRazorpayOrderData] = useState(null);
-  const [isOnlineSuccess, setIsOnlineSuccess] = useState(false);
-
+  const [lang, setLang] = useState('en');
   const [paymentAmount, setPaymentAmount] = useState('');
 
   const pendingRent = parseFloat(farmerData?.pendingRent || 0);
 
   useEffect(() => {
-    if (pendingRent > 0) {
-      setPaymentAmount(pendingRent.toString());
-    } else {
-      setPaymentAmount('0');
-    }
+    setPaymentAmount(pendingRent > 0 ? pendingRent.toString() : '0');
   }, [pendingRent]);
 
-  const adjustDay = (val) => {
-    let nextDay = pickerDay + val;
-    if (nextDay < 1) nextDay = 31;
-    if (nextDay > 31) nextDay = 1;
-    setPickerDay(nextDay);
-  };
-
-  const adjustMonth = (val) => {
-    let nextMonth = pickerMonth + val;
-    if (nextMonth < 0) nextMonth = 11;
-    if (nextMonth > 11) nextMonth = 0;
-    setPickerMonth(nextMonth);
-  };
-
-  const adjustYear = (val) => {
-    setPickerYear(pickerYear + val);
-  };
-
-  const handleConfirmDate = () => {
-    const d = new Date(pickerYear, pickerMonth, pickerDay);
-    setPaymentDate(d);
-    setDatePickerVisible(false);
-  };
-
-  const handleUploadReceipt = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['image/*', 'application/pdf'],
-        copyToCacheDirectory: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const selectedFile = result.assets[0];
-        if (selectedFile.size && selectedFile.size > 5 * 1024 * 1024) {
-          Alert.alert(
-            lang === 'en' ? 'File Too Large' : 'फ़ाइल बहुत बड़ी है',
-            lang === 'en' ? 'The selected file exceeds 5 MB.' : 'चुनी गई फ़ाइल 5 एमबी से अधिक है.'
-          );
-          return;
-        }
-
-        setReceiptFileName(selectedFile.name);
-        const fileResponse = await fetch(selectedFile.uri);
-        const fileBlob = await fileResponse.blob();
-        const reader = new FileReader();
-
-        reader.onloadend = () => {
-          setReceiptFile(reader.result);
-        };
-        reader.readAsDataURL(fileBlob);
-      }
-    } catch (err) {
-      console.warn('Document picker error:', err);
-      Alert.alert(lang === 'en' ? 'Error' : 'त्रुटि', lang === 'en' ? 'Failed to select document.' : 'दस्तावेज़ चुनने में विफल।');
-    }
-  };
+  // Sub-hooks integration
+  const datePicker = useDatePickerState();
+  const verification = useVerificationState(lang, paymentId, datePicker.paymentDate, onPaymentSuccess);
+  const online = useOnlinePayment(farmerData, lang, onPaymentSuccess, setShowSummary, setPaymentId);
 
   const handlePayPress = async (customAmount) => {
     setRazorpayOrderData(null); // Clear old order data before fetch
@@ -102,6 +30,7 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     console.log('[handlePayPress] Current pendingRent:', pendingRent);
 
     let targetAmount = pendingRent;
+<<<<<<< Updated upstream
     let amountToParse = customAmount;
     
     // If customAmount is a gesture responder event object, fall back to state input
@@ -262,48 +191,59 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       setVerificationSuccessModalVisible(true);
     } catch (err) {
       Alert.alert('Error', err.message);
+=======
+    if (customAmount !== undefined && customAmount !== '') {
+      const parsed = parseFloat(customAmount);
+      if (!isNaN(parsed) && parsed > 0) targetAmount = parsed;
+>>>>>>> Stashed changes
     }
+    if (targetAmount <= 0) return;
+    await online.handlePayPress(targetAmount);
   };
 
   const handleResetAll = () => {
-    setUtrNumber('');
-    setReceiptFile('');
-    setReceiptFileName('');
-    setPaymentDate(new Date());
-    setVerificationStep(1);
-    setShowVerificationForm(false);
+    verification.setUtrNumber('');
+    setPaymentMode('UPI');
+    setBankName('');
+    verification.setReceiptFile('');
+    verification.setReceiptFileName('');
+    datePicker.setDatePickerVisible(false);
+    verification.setVerificationStep(1);
+    verification.setShowVerificationForm(false);
     setShowSummary(false);
-    setIsOnlineSuccess(false);
+    online.setIsOnlineSuccess(false);
     if (onPaymentSuccess) onPaymentSuccess();
   };
 
   return {
     state: {
       showSummary, setShowSummary,
-      showVerificationForm, setShowVerificationForm,
-      verificationStep, setVerificationStep,
-      utrNumber, setUtrNumber,
-      receiptFile, setReceiptFile,
-      receiptFileName, setReceiptFileName,
-      paymentDate, setPaymentDate,
-      datePickerVisible, setDatePickerVisible,
+      showVerificationForm: verification.showVerificationForm, setShowVerificationForm: verification.setShowVerificationForm,
+      verificationStep: verification.verificationStep, setVerificationStep: verification.setVerificationStep,
+      utrNumber: verification.utrNumber, setUtrNumber: verification.setUtrNumber,
+      paymentMode, setPaymentMode,
+      bankName, setBankName,
+      receiptFile: verification.receiptFile, setReceiptFile: verification.setReceiptFile,
+      receiptFileName: verification.receiptFileName, setReceiptFileName: verification.setReceiptFileName,
+      paymentDate: datePicker.paymentDate, setPaymentDate: datePicker.setPaymentDate,
+      datePickerVisible: datePicker.datePickerVisible, setDatePickerVisible: datePicker.setDatePickerVisible,
       lang, setLang,
-      pickerDay, setPickerDay,
-      pickerMonth, setPickerMonth,
-      pickerYear, setPickerYear,
+      pickerDay: datePicker.pickerDay, setPickerDay: datePicker.setPickerDay,
+      pickerMonth: datePicker.pickerMonth, setPickerMonth: datePicker.setPickerMonth,
+      pickerYear: datePicker.pickerYear, setPickerYear: datePicker.setPickerYear,
       paymentId, setPaymentId,
-      verificationSuccessModalVisible, setVerificationSuccessModalVisible,
-      paymentUrl, setPaymentUrl,
-      razorpayOrderData, setRazorpayOrderData,
-      isOnlineSuccess, setIsOnlineSuccess,
+      verificationSuccessModalVisible: verification.verificationSuccessModalVisible, setVerificationSuccessModalVisible: verification.setVerificationSuccessModalVisible,
+      paymentUrl: online.paymentUrl, setPaymentUrl: online.setPaymentUrl,
+      razorpayOrderData: online.razorpayOrderData, setRazorpayOrderData: online.setRazorpayOrderData,
+      isOnlineSuccess: online.isOnlineSuccess, setIsOnlineSuccess: online.setIsOnlineSuccess,
       pendingRent,
       paymentAmount, setPaymentAmount
     },
     handlers: {
-      adjustDay, adjustMonth, adjustYear,
-      handleConfirmDate, handleUploadReceipt,
-      handlePayPress, handleOnlineCheckout,
-      handleFormSubmit, handleResetAll
+      adjustDay: datePicker.adjustDay, adjustMonth: datePicker.adjustMonth, adjustYear: datePicker.adjustYear,
+      handleConfirmDate: datePicker.handleConfirmDate, handleUploadReceipt: verification.handleUploadReceipt,
+      handlePayPress, handleOnlineCheckout: online.handleOnlineCheckout,
+      handleFormSubmit: verification.handleFormSubmit, handleResetAll
     }
   };
 }

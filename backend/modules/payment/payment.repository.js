@@ -27,6 +27,47 @@ async function createPendingPayment({ orderId, farmerId, amount, note, createdBy
   );
 }
 
+function extractBankNameAndTransactionId(payDetails) {
+  let bankName = 'UPI Provider';
+  let bankTransactionId = payDetails.id;
+
+  if (payDetails.acquirer_data) {
+    bankTransactionId = payDetails.acquirer_data.bank_transaction_id || payDetails.acquirer_data.rrn || payDetails.id;
+  }
+
+  const method = (payDetails.method || 'upi').toLowerCase();
+
+  if (method === 'netbanking' && payDetails.bank) {
+    const bankCode = payDetails.bank.toUpperCase();
+    const bankMap = {
+      'HDFC': 'HDFC Bank',
+      'ICIC': 'ICICI Bank',
+      'SBIN': 'State Bank of India',
+      'UTIB': 'Axis Bank',
+      'PUNB': 'Punjab National Bank',
+      'BARB': 'Bank of Baroda',
+      'CNRB': 'Canara Bank',
+      'IBKL': 'IDBI Bank',
+      'YESB': 'Yes Bank',
+      'KKBK': 'Kotak Mahindra Bank'
+    };
+    bankName = bankMap[bankCode] || `${bankCode} Netbanking`;
+  } else if (method === 'card' && payDetails.card) {
+    bankName = payDetails.card.issuer || 'Card Issuer Bank';
+  } else if (method === 'upi' && payDetails.vpa) {
+    const vpa = payDetails.vpa.toLowerCase();
+    if (vpa.includes('okaxis') || vpa.includes('axis')) bankName = 'Axis Bank';
+    else if (vpa.includes('okhdfc') || vpa.includes('hdfc')) bankName = 'HDFC Bank';
+    else if (vpa.includes('okicici') || vpa.includes('icici')) bankName = 'ICICI Bank';
+    else if (vpa.includes('oksbi') || vpa.includes('sbi')) bankName = 'State Bank of India';
+    else if (vpa.includes('okpostbaroda') || vpa.includes('baroda')) bankName = 'Bank of Baroda';
+    else if (vpa.includes('paytm')) bankName = 'Paytm Payments Bank';
+    else if (vpa.includes('ybl') || vpa.includes('ibl')) bankName = 'Yes Bank';
+  }
+
+  return { bankName, bankTransactionId };
+}
+
 async function updatePaymentStatus(orderId, status, paymentId = null) {
   const client = await db.connect();
   try {
@@ -41,13 +82,38 @@ async function updatePaymentStatus(orderId, status, paymentId = null) {
     
     const payment = payRes.rows[0];
     const oldStatus = payment.status;
+
+    let bankName = null;
+    let bankTransactionId = null;
+    let paymentMode = null;
+
+    if (status === 'PAID' && paymentId) {
+      try {
+        const razorpayService = require('./razorpay.service');
+        const payDetails = await razorpayService.fetchPaymentDetails(paymentId);
+        if (payDetails) {
+          const parsed = extractBankNameAndTransactionId(payDetails);
+          bankName = parsed.bankName;
+          bankTransactionId = parsed.bankTransactionId;
+          if (payDetails.method) {
+            paymentMode = payDetails.method.toUpperCase();
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch payment details from Razorpay:', err.message);
+      }
+    }
     
     // 2. Update the status and reference in the Payment table
     await client.query(
       `UPDATE "Payment"
-       SET "status" = $1, "reference" = COALESCE($2, "reference")
-       WHERE "id" = $3`,
-      [status, paymentId, orderId]
+       SET "status" = $1, 
+           "reference" = COALESCE($2, "reference"),
+           "bankName" = COALESCE($3, "bankName"),
+           "bankTransactionId" = COALESCE($4, "bankTransactionId"),
+           "paymentMode" = COALESCE($5, "paymentMode")
+       WHERE "id" = $6`,
+      [status, paymentId, bankName, bankTransactionId, paymentMode, orderId]
     );
 
     // 3. If transitioning to PAID from another status, update NikasiTransaction records
