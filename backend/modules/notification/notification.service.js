@@ -5,44 +5,59 @@ const db = require('../../config/database');
  * Compute a human-readable time label from a date.
  */
 function computeTimeLabel(createdAt) {
-  const now = new Date();
-  const diffTime = Math.abs(now - new Date(createdAt));
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) || 0;
+  const diff = Math.abs(new Date() - new Date(createdAt));
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
-  if (diffDays > 0) return `${diffDays}d ago`;
+/**
+ * Resolve processed dispatch transactions list for a user.
+ */
+async function getProcessedTransactions(userId) {
+  const csCheck = await db.query('SELECT id FROM "ColdStorageOnboarding" WHERE id = $1', [userId]);
+  const isCS = csCheck.rows.length > 0;
+  const sql = isCS
+    ? 'SELECT "packetsDispatched", status FROM "NikasiTransaction" WHERE "coldStorageId" = $1 AND "status" = \'DISPATCHED\''
+    : 'SELECT "packetsDispatched", status FROM "NikasiTransaction" WHERE "farmerId" = $1 AND "status" != \'CREATED\'';
+  const res = await db.query(sql, [userId]);
+  return res.rows;
+}
 
-  const diffHours = Math.floor(diffTime / (1000 * 60 * 60)) || 0;
-  if (diffHours > 0) return `${diffHours}h ago`;
+/**
+ * Check if a notification is stale (payment verified or dispatch already processed).
+ */
+async function checkStale(item, processedTxsMap) {
+  if (item.actionUrl?.includes('/payment-verification/')) {
+    const paymentId = item.actionUrl.split('/').pop();
+    const payCheck = await db.query('SELECT id FROM "Payment" WHERE id = $1', [paymentId]);
+    return payCheck.rows.length === 0;
+  }
 
-  const diffMins = Math.floor(diffTime / (1000 * 60)) || 0;
-  return diffMins > 0 ? `${diffMins}m ago` : 'Just now';
+  const match = item.message.match(/dispatch\s+(?:of\s+)?(\d+)\s+bags/i);
+  const isDispatch = ['dispatch', 'approval', 'approved'].some(t => item.title.toLowerCase().includes(t));
+  if (match && isDispatch) {
+    const bagsCount = parseInt(match[1], 10);
+    let processedTxs = processedTxsMap.get(item.userId);
+    if (!processedTxs) {
+      processedTxs = await getProcessedTransactions(item.userId);
+      processedTxsMap.set(item.userId, processedTxs);
+    }
+    return processedTxs.some(tx => tx.packetsDispatched === bagsCount);
+  }
+  return false;
 }
 
 /**
  * Fetch notifications for a user (farmer or cold storage).
- * Handles stale notification cleanup, bill injection, and sorting.
+ * Read-only method. Filters stale items dynamically.
  */
 async function fetchNotifications(farmerId) {
   const notifications = [];
-
-  // Identify if the logged-in user is a cold storage or a farmer
-  let processedTxs = [];
-  const csCheck = await db.query('SELECT id FROM "ColdStorageOnboarding" WHERE id = $1', [farmerId]);
-
-  if (csCheck.rows.length > 0) {
-    const txsRes = await db.query(
-      'SELECT "packetsDispatched", status FROM "NikasiTransaction" WHERE "coldStorageId" = $1 AND "status" = \'DISPATCHED\'',
-      [farmerId]
-    );
-    processedTxs = txsRes.rows;
-  } else {
-    const txsRes = await db.query(
-      'SELECT "packetsDispatched", status FROM "NikasiTransaction" WHERE "farmerId" = $1 AND "status" != \'CREATED\'',
-      [farmerId]
-    );
-    processedTxs = txsRes.rows;
-  }
-
+  const processedTxsMap = new Map();
   const dbNotifs = await notificationRepository.getAppNotifications(farmerId);
   const readNotifIds = new Set();
 
@@ -52,29 +67,8 @@ async function fetchNotifications(farmerId) {
       continue;
     }
 
-    // Check if this is a payment verification notification and if the payment record exists
-    if (item.actionUrl && item.actionUrl.includes('/payment-verification/')) {
-      const paymentId = item.actionUrl.split('/').pop();
-      const payCheck = await db.query('SELECT id FROM "Payment" WHERE id = $1', [paymentId]);
-      if (payCheck.rows.length === 0) {
-        await db.query('DELETE FROM "AppNotification" WHERE id = $1', [item.id]);
-        continue;
-      }
-    }
-
-    // Check if it is a stale dispatch/approval notification
-    const match = item.message.match(/dispatch\s+(?:of\s+)?(\d+)\s+bags/i);
-    if (match && (
-      item.title.toLowerCase().includes('dispatch') ||
-      item.title.toLowerCase().includes('approval') ||
-      item.title.toLowerCase().includes('approved')
-    )) {
-      const bagsCount = parseInt(match[1], 10);
-      const isProcessed = processedTxs.some(tx => tx.packetsDispatched === bagsCount);
-      if (isProcessed) {
-        await db.query('DELETE FROM "AppNotification" WHERE id = $1', [item.id]);
-        continue;
-      }
+    if (await checkStale(item, processedTxsMap)) {
+      continue;
     }
 
     notifications.push({
@@ -97,12 +91,8 @@ async function fetchNotifications(farmerId) {
     const billNotifId = `bill-${bill.id}`;
     if (readNotifIds.has(billNotifId)) continue;
 
-    const dueDate = bill.dueDate
-      ? new Date(bill.dueDate)
-      : new Date(new Date(bill.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000);
-    const diffDays = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
-
-    if (diffDays <= 15) {
+    const dueDate = bill.dueDate ? new Date(bill.dueDate) : new Date(new Date(bill.createdAt).getTime() + 30 * 24 * 60 * 60 * 1000);
+    if (Math.ceil((dueDate - now) / 86400000) <= 15) {
       notifications.push({
         id: billNotifId,
         title: 'Payment Due',
@@ -115,8 +105,25 @@ async function fetchNotifications(farmerId) {
     }
   }
 
-  notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  return notifications;
+  return notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+/**
+ * Clean up stale notifications from the database.
+ */
+async function cleanupStaleNotifications() {
+  const result = await db.query('SELECT * FROM "AppNotification" WHERE "isRead" = false');
+  const processedTxsMap = new Map();
+  let deletedCount = 0;
+
+  for (const item of result.rows) {
+    if (await checkStale(item, processedTxsMap)) {
+      await db.query('DELETE FROM "AppNotification" WHERE id = $1', [item.id]);
+      deletedCount++;
+    }
+  }
+
+  return { deletedCount };
 }
 
 /**
@@ -124,54 +131,38 @@ async function fetchNotifications(farmerId) {
  * Handles bill notifications, cold storage account deletions, and standard mark-as-read.
  */
 async function markNotificationRead(id) {
-  // Bill notification handling
   if (id.startsWith('bill-')) {
     const billIdStr = id.replace('bill-', '');
     const billRes = await db.query('SELECT "farmerId", amount, "periodLabel" FROM "BillingEntry" WHERE id = $1', [billIdStr]);
 
     if (billRes.rows.length > 0) {
-      const bill = billRes.rows[0];
-      const farmerId = bill.farmerId;
-      const farmerDetailsRes = await db.query('SELECT "coldStorageId" FROM "Farmer" WHERE id = $1', [farmerId]);
-      const coldStorageId = farmerDetailsRes.rows.length > 0 ? farmerDetailsRes.rows[0].coldStorageId : 'cmmp9txv0000ai3t4wush9trs';
-      const now = new Date();
-      const title = 'Payment Due';
-      const message = `Storage rent of ₹${parseFloat(bill.amount).toLocaleString('en-IN')} is due for ${bill.periodLabel || 'recent storage period'}.`;
+      const { farmerId, amount, periodLabel } = billRes.rows[0];
+      const fdRes = await db.query('SELECT "coldStorageId" FROM "Farmer" WHERE id = $1', [farmerId]);
+      const coldStorageId = fdRes.rows[0]?.coldStorageId || 'cmmp9txv0000ai3t4wush9trs';
+      const message = `Storage rent of ₹${parseFloat(amount).toLocaleString('en-IN')} is due for ${periodLabel || 'recent storage period'}.`;
 
       await db.query(
-        `INSERT INTO "AppNotification" (
-          "id", "coldStorageId", "userId", "type", "title", "message", "isRead", "createdAt", "updatedAt"
-        ) VALUES ($1, $2, $3, 'billing', $4, $5, true, $6, $6)
-        ON CONFLICT (id) DO UPDATE SET "isRead" = true, "updatedAt" = NOW()`,
-        [id, coldStorageId, farmerId, title, message, now]
+        `INSERT INTO "AppNotification" ("id", "coldStorageId", "userId", "type", "title", "message", "isRead", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, 'billing', 'Payment Due', $4, true, NOW(), NOW())
+         ON CONFLICT (id) DO UPDATE SET "isRead" = true, "updatedAt" = NOW()`,
+        [id, coldStorageId, farmerId, message]
       );
     }
     return { message: 'Bill notification marked as read' };
   }
 
-  // Check who the notification belongs to
   const checkRes = await db.query('SELECT "userId" FROM "AppNotification" WHERE id = $1', [id]);
-  if (checkRes.rows.length === 0) {
-    const err = new Error('Notification not found');
-    err.statusCode = 404;
-    throw err;
-  }
+  if (checkRes.rows.length === 0) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
   const userId = checkRes.rows[0].userId;
 
-  // If cold storage account, delete the notification
   const csCheck = await db.query('SELECT id FROM "ColdStorageOnboarding" WHERE id = $1', [userId]);
   if (csCheck.rows.length > 0) {
     await db.query('DELETE FROM "AppNotification" WHERE id = $1', [id]);
     return { message: 'Notification deleted' };
   }
 
-  // Standard mark-as-read
   const notification = await notificationRepository.markNotificationAsRead(id);
-  if (!notification) {
-    const err = new Error('Notification not found');
-    err.statusCode = 404;
-    throw err;
-  }
+  if (!notification) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
   return { notification };
 }
 
@@ -179,12 +170,13 @@ async function markNotificationRead(id) {
  * Register a push token for a user.
  */
 async function registerUserPushToken(userId, pushToken) {
-  const cleanUserId = userId.replace('+91', '').trim();
-  const resolvedUserId = await notificationRepository.resolveFarmerId(cleanUserId);
-  const email = `farmer_${resolvedUserId}@annsetu.local`;
-
-  await notificationRepository.upsertUserPushToken(resolvedUserId, email, pushToken);
-  console.log(`[Backend] Registered push token for userId ${resolvedUserId}: ${pushToken}`);
+  const resolvedUserId = await notificationRepository.resolveFarmerId(userId.replace('+91', '').trim());
+  await notificationRepository.upsertUserPushToken(resolvedUserId, `farmer_${resolvedUserId}@annsetu.local`, pushToken);
 }
 
-module.exports = { fetchNotifications, markNotificationRead, registerUserPushToken };
+module.exports = {
+  fetchNotifications,
+  cleanupStaleNotifications,
+  markNotificationRead,
+  registerUserPushToken
+};

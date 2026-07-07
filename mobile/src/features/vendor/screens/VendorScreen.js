@@ -88,19 +88,53 @@ export default function VendorScreen({ loggedInPhone, onSwitchRole, onLogout }) 
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const { fetchNotifications } = require('../../notifications/services/notificationService');
-        const list = await fetchNotifications('default_vendor');
-        const hasUnread = list && list.some(n => !n.isRead);
-        setHasUnreadNotifications(!!hasUnread);
-      } catch (err) {
-        console.warn('VendorScreen background notification poll failed:', err.message);
-      }
-    }, 5000);
+    const { fetchNotifications, subscribeToNotifications } = require('../../notifications/services/notificationService');
 
-    return () => clearInterval(interval);
+    let isMounted = true;
+    fetchNotifications('default_vendor')
+      .then(list => {
+        if (isMounted) {
+          const hasUnread = list && list.some(n => !n.isRead);
+          setHasUnreadNotifications(!!hasUnread);
+        }
+      })
+      .catch(err => {
+        console.warn('VendorScreen initial notification fetch failed:', err.message);
+      });
+
+    const unsubscribe = subscribeToNotifications(
+      'default_vendor',
+      (newNotif) => {
+        if (!newNotif.isRead) {
+          setHasUnreadNotifications(true);
+        }
+      },
+      () => {
+        fetchNotifications('default_vendor')
+          .then(list => {
+            if (isMounted) {
+              const hasUnread = list && list.some(n => !n.isRead);
+              setHasUnreadNotifications(!!hasUnread);
+            }
+          });
+      },
+      () => {
+        fetchNotifications('default_vendor')
+          .then(list => {
+            if (isMounted) {
+              const hasUnread = list && list.some(n => !n.isRead);
+              setHasUnreadNotifications(!!hasUnread);
+            }
+          });
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
+
 
   const renderTabIcon = (name, tabName) => {
     const isActive = activeTab === tabName;

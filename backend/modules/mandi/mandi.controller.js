@@ -6,6 +6,10 @@ async function getMandiPrices(req, res) {
     const state = req.query.state || 'Uttar Pradesh';
     const commodity = req.query.commodity || 'All';
     const market = req.query.market || '';
+    
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
 
     if (!apiKey) return res.status(500).json({ success: false, error: 'API key not configured. Please set MANDI_API_KEY in .env file.' });
 
@@ -22,11 +26,20 @@ async function getMandiPrices(req, res) {
     const overallMin = Math.min(...prices.map((p) => p.minPrice).filter((v) => v > 0));
     const overallMax = Math.max(...prices.map((p) => p.maxPrice).filter((v) => v > 0));
 
+    const paginatedRecords = prices.slice(offset, offset + limit);
+
     return res.json({
       success: true,
       summary: { minPrice: overallMin, maxPrice: overallMax, totalRecords: prices.length },
-      records: prices,
+      pagination: {
+        page,
+        limit,
+        totalPages: Math.ceil(prices.length / limit),
+        totalRecords: prices.length
+      },
+      records: paginatedRecords,
     });
+
   } catch (error) {
     console.error('Mandi API error:', error.message);
     if (error.code === 'ECONNABORTED') return res.status(504).json({ success: false, error: 'Request timed out. Please try again.' });
