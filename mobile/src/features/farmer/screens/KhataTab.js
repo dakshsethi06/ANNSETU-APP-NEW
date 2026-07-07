@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, TextInput, Linking, ActivityIndicator, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as IntentLauncher from 'expo-intent-launcher';
@@ -19,6 +20,7 @@ import DatePickerModal from '../modals/DatePickerModal';
 import SuccessModal from '../modals/SuccessModal';
 
 export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [], userRole = 'farmer', onPaymentSuccess }) {
+  const { t, i18n } = useTranslation();
   const { state, handlers } = useKhataPayment(farmerData, holdingsList, onPaymentSuccess);
   const [pdfDownloading, setPdfDownloading] = React.useState(false);
 
@@ -128,7 +130,7 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
         <PaymentWebViewModal
           visible={!!state.paymentUrl}
           paymentUrl={state.paymentUrl}
-          lang={state.lang}
+          lang={i18n.language}
           onClose={() => state.setPaymentUrl(null)}
           onPaymentSuccess={() => {
             state.setPaymentUrl(null);
@@ -138,12 +140,9 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
         />
         <SuccessModal
           visible={state.verificationSuccessModalVisible}
-          lang={state.lang}
-          title={state.isOnlineSuccess ? (state.lang === 'en' ? 'Payment Successful' : 'भुगतान सफल') : undefined}
-          message={state.isOnlineSuccess
-            ? (state.lang === 'en' ? 'Your payment has been successfully processed. Dues are cleared.' : 'आपका भुगतान सफलतापूर्वक पूरा हो गया है।')
-            : undefined
-          }
+          lang={i18n.language}
+          title={state.isOnlineSuccess ? t('khata.payment_successful_title') : undefined}
+          message={state.isOnlineSuccess ? t('khata.payment_successful_msg') : undefined}
           onClose={() => {
             state.setVerificationSuccessModalVisible(false);
             state.setIsOnlineSuccess(false);
@@ -188,7 +187,7 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
 
         <DatePickerModal
           visible={state.datePickerVisible}
-          lang={state.lang}
+          lang={i18n.language}
           pickerDay={state.pickerDay}
           pickerMonth={state.pickerMonth}
           pickerYear={state.pickerYear}
@@ -201,12 +200,9 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
 
         <SuccessModal
           visible={state.verificationSuccessModalVisible}
-          lang={state.lang}
-          title={state.isOnlineSuccess ? (state.lang === 'en' ? 'Payment Successful' : 'भुगतान सफल') : undefined}
-          message={state.isOnlineSuccess
-            ? (state.lang === 'en' ? 'Your payment has been successfully processed. Dues are cleared.' : 'आपका भुगतान सफलतापूर्वक पूरा हो गया है।')
-            : undefined
-          }
+          lang={i18n.language}
+          title={state.isOnlineSuccess ? t('khata.payment_successful_title') : undefined}
+          message={state.isOnlineSuccess ? t('khata.payment_successful_msg') : undefined}
           onClose={() => {
             state.setVerificationSuccessModalVisible(false);
             state.setIsOnlineSuccess(false);
@@ -226,16 +222,16 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
         </View>
         <View style={styles.headerLangToggle}>
           <TouchableOpacity
-            style={[styles.headerLangButton, state.lang === 'en' && styles.headerLangButtonActive]}
-            onPress={() => state.setLang('en')}
+            style={[styles.headerLangButton, i18n.language === 'en' && styles.headerLangButtonActive]}
+            onPress={() => i18n.changeLanguage('en')}
           >
-            <Text style={[styles.headerLangText, state.lang === 'en' && styles.headerLangTextActive]}>EN</Text>
+            <Text style={[styles.headerLangText, i18n.language === 'en' && styles.headerLangTextActive]}>EN</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.headerLangButton, state.lang === 'hi' && styles.headerLangButtonActive]}
-            onPress={() => state.setLang('hi')}
+            style={[styles.headerLangButton, i18n.language === 'hi' && styles.headerLangButtonActive]}
+            onPress={() => i18n.changeLanguage('hi')}
           >
-            <Text style={[styles.headerLangText, state.lang === 'hi' && styles.headerLangTextActive]}>हि</Text>
+            <Text style={[styles.headerLangText, i18n.language === 'hi' && styles.headerLangTextActive]}>हि</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -247,18 +243,19 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <Text style={styles.balanceLabel}>{state.lang === 'en' ? 'Net Balance' : 'शेष राशि'}</Text>
+          <Text style={styles.balanceLabel}>{t('khata.net_balance')}</Text>
           <Text style={styles.balanceAmount}>₹{state.pendingRent.toLocaleString('en-IN')}</Text>
-          <Text style={styles.balanceSub}>{state.lang === 'en' ? 'Dues Pending' : 'देनदारी बाकी'}</Text>
+          <Text style={styles.balanceSub}>{t('khata.dues_pending')}</Text>
 
           <View style={styles.cardActionsRow}>
             <TouchableOpacity
               style={styles.btnStatement}
               activeOpacity={0.8}
+              onPress={() => Alert.alert(t('khata.download'), t('khata.downloading'))}
               onPress={handleDownloadStatementPdf}
             >
               <Feather name="download" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
-              <Text style={styles.btnStatementText}>{state.lang === 'en' ? 'Statement' : 'विवरण'}</Text>
+              <Text style={styles.btnStatementText}>{t('khata.statement')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -266,7 +263,7 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
               activeOpacity={0.9}
               onPress={handlers.handlePayPress}
             >
-              <Text style={styles.btnPayText}>{state.lang === 'en' ? 'Pay' : 'भुगतान करें'}</Text>
+              <Text style={styles.btnPayText}>{t('khata.pay')}</Text>
             </TouchableOpacity>
           </View>
         </LinearGradient>
@@ -299,8 +296,8 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
             >
               <Feather name="credit-card" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
               <Text style={styles.btnPayPartialText}>
-                {state.lang === 'en' 
-                  ? (parseFloat(state.paymentAmount) === state.pendingRent ? 'Pay All' : 'Pay') 
+                {state.lang === 'en'
+                  ? (parseFloat(state.paymentAmount) === state.pendingRent ? 'Pay All' : 'Pay')
                   : 'भुगतान'}
               </Text>
             </TouchableOpacity>
@@ -309,17 +306,17 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
 
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>{state.lang === 'en' ? 'Total Charged' : 'कुल शुल्क'}</Text>
+            <Text style={styles.summaryLabel}>{t('khata.total_charged')}</Text>
             <Text style={styles.summaryValue}>₹{totalCharged.toLocaleString('en-IN')}</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>{state.lang === 'en' ? 'Total Paid' : 'कुल भुगतान'}</Text>
+            <Text style={styles.summaryLabel}>{t('khata.total_paid')}</Text>
             <Text style={[styles.summaryValue, { color: '#16A34A' }]}>₹{totalPaid.toLocaleString('en-IN')}</Text>
           </View>
         </View>
 
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>{state.lang === 'en' ? 'Ledger Entries' : 'खाता विवरण'}</Text>
+          <Text style={styles.sectionTitle}>{t('khata.ledger_entries')}</Text>
         </View>
 
         <View style={styles.ledgerBlock}>
@@ -327,7 +324,7 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
             <View style={{ paddingVertical: 32, alignItems: 'center', justifyContent: 'center' }}>
               <Feather name="book-open" size={32} color="#A1A1AA" style={{ marginBottom: 12 }} />
               <Text style={{ color: '#71717A', fontSize: 13, fontWeight: '500', textAlign: 'center' }}>
-                {state.lang === 'en' ? 'No transactions.' : 'कोई लेनदेन नहीं मिला।'}
+                {t('khata.no_transactions')}
               </Text>
             </View>
           ) : (
@@ -342,7 +339,7 @@ export default function KhataTab({ farmerData, ledgerList = [], holdingsList = [
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={[styles.rowAmount, { color: isNegative ? '#EF4444' : '#16A34A' }]}>{formatPrice(item.amount)}</Text>
-                    <Text style={{ color: '#71717A', fontSize: 11 }}>{state.lang === 'en' ? 'Bal: ' : 'शेष: '}₹{Math.abs(item.balance).toLocaleString('en-IN')}</Text>
+                    <Text style={{ color: '#71717A', fontSize: 11 }}>{t('khata.bal_prefix')}₹{Math.abs(item.balance).toLocaleString('en-IN')}</Text>
                   </View>
                 </View>
               );

@@ -4,6 +4,8 @@ async function getFarmersData(state, serial_number) {
   let sql = `
     SELECT 
       f.id AS "serial_number", f.name, f.state, f."primaryCrop" AS commodity, 
+      f."fatherName", f.phone, f.email, f.village, f.district, f.tehsil,
+      COALESCE(SUM(nt."balanceDueAmount"), 0) AS "pendingRent"
       f."fatherName", f.phone, f.village, f.district, f.tehsil,
       (
         COALESCE(f."openingBalance", 0)
@@ -16,7 +18,7 @@ async function getFarmersData(state, serial_number) {
   `;
   const params = [];
   let paramIndex = 1;
-  
+
   if (state) {
     sql += ` AND f.state ILIKE $${paramIndex}`;
     params.push(state);
@@ -27,7 +29,9 @@ async function getFarmersData(state, serial_number) {
     params.push(serial_number);
     paramIndex++;
   }
-  
+
+  sql += ` GROUP BY f.id, f.name, f.state, f."primaryCrop", f."fatherName", f.phone, f.email, f.village, f.district, f.tehsil`;
+
   const result = await db.query(sql, params);
   return result.rows;
 }
@@ -110,7 +114,7 @@ async function getFarmerLedger(farmerId) {
   const entriesWithRunning = entries.map(entry => {
     // If it's a charge (negative amount), it increases the dues (balance)
     // If it's a payment (positive amount), it decreases the dues
-    runningBalance += (-entry.amount); 
+    runningBalance += (-entry.amount);
     return {
       ...entry,
       balance: runningBalance

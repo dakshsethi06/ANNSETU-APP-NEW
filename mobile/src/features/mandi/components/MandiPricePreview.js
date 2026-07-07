@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { fetchMandiPrices } from '../services/mandiService';
 import { COLORS, FONTS } from '../../../core/theme/theme';
 
 import s from '../styles/mandiPricePreviewStyles';
 
 export default function MandiPricePreview({ farmerState, onViewAll }) {
+  const { t } = useTranslation();
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +58,7 @@ export default function MandiPricePreview({ farmerState, onViewAll }) {
     <View style={s.wrapper}>
       {/* Header Row - outside card on beige background */}
       <View style={s.headerRow}>
-        <Text style={s.title}>Live Mandi Prices / आज के भाव</Text>
+        <Text style={s.title}>{t('mandi.live_mandi_prices')}</Text>
         <TouchableOpacity onPress={onViewAll} activeOpacity={0.7}>
           <Text style={s.viewAllBtn}>View All &gt;</Text>
         </TouchableOpacity>

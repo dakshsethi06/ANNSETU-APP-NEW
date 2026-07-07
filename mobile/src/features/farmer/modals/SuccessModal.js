@@ -1,13 +1,13 @@
 import React from 'react';
 import { Modal, TouchableOpacity, View, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import styles from '../styles/khataTabStyles';
 
-export default function SuccessModal({ visible, lang, onClose, title, message }) {
-  const defaultTitle = lang === 'en' ? 'Submitted' : 'जमा हो गया';
-  const defaultMsg = lang === 'en'
-    ? 'Thank you! Your payment details have been submitted. Verification is in progress.'
-    : 'धन्यवाद! आपके भुगतान का विवरण जमा कर दिया गया है। सत्यापन प्रगति पर है।';
+export default function SuccessModal({ visible, onClose, title, message }) {
+  const { t } = useTranslation();
+  const defaultTitle = t('khata.submitted');
+  const defaultMsg = t('khata.thank_you_verification');
 
   return (
     <Modal
@@ -40,7 +40,7 @@ export default function SuccessModal({ visible, lang, onClose, title, message })
             activeOpacity={0.8}
             onPress={onClose}
           >
-            <Text style={styles.modalButtonTextPrimary}>{lang === 'en' ? 'OK' : 'ठीक है'}</Text>
+            <Text style={styles.modalButtonTextPrimary}>{t('khata.confirm')}</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>

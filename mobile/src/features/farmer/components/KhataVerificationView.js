@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, Text, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import styles from '../styles/khataTabStyles';
 
@@ -20,6 +21,7 @@ export default function KhataVerificationView({
   onSubmit,
   onBackPress
 }) {
+  const { t } = useTranslation();
   const holding = holdingsList && holdingsList.length > 0 ? holdingsList[0] : null;
   const bookingId = holding?.lot_id || 'BK-99210';
 
@@ -42,12 +44,12 @@ export default function KhataVerificationView({
         >
           <Feather name="arrow-left" size={16} color="#2D6A4F" style={{ marginRight: 6 }} />
           <Text style={styles.backLinkText}>
-            {lang === 'en' ? 'Back to Summary' : 'सारांश पर वापस जाएं'}
+            {t('khata.back_to_summary')}
           </Text>
         </TouchableOpacity>
 
         <Text style={styles.summaryPageTitle}>
-          {lang === 'en' ? 'Payment Verification Details' : 'भुगतान सत्यापन विवरण'}
+          {t('khata.payment_verification_details')}
         </Text>
 
         <View style={[styles.summaryDetailsCard, { marginBottom: 16, paddingVertical: 12 }]}>
@@ -62,11 +64,11 @@ export default function KhataVerificationView({
         {/* UTR Input */}
         <View style={styles.formGroup}>
           <Text style={styles.formLabel}>
-            {lang === 'en' ? 'UTR / Transaction Reference Number *' : 'यूटीआर / लेनदेन संदर्भ संख्या *'}
+            {t('khata.utr_label')}
           </Text>
           <TextInput
             style={styles.formInput}
-            placeholder={lang === 'en' ? 'Enter UTR/Transaction ID' : 'यूटीआर/लेनदेन आईडी दर्ज करें'}
+            placeholder={t('khata.utr_placeholder')}
             placeholderTextColor="#A1A1AA"
             value={utrNumber}
             onChangeText={setUtrNumber}
@@ -78,7 +80,7 @@ export default function KhataVerificationView({
         {/* Receipt Upload */}
         <View style={styles.formGroup}>
           <Text style={styles.formLabel}>
-            {lang === 'en' ? 'Payment Receipt *' : 'भुगतान रसीद *'}
+            {t('khata.payment_receipt_label')}
           </Text>
 
           {receiptFileName || receiptFile ? (
@@ -89,7 +91,7 @@ export default function KhataVerificationView({
                   {receiptFileName || (receiptFile.startsWith('data:') ? 'Receipt Document' : receiptFile)}
                 </Text>
                 <Text style={styles.uploadedFileSub}>
-                  {lang === 'en' ? 'File ready for upload' : 'फ़ाइल अपलोड के लिए तैयार है'}
+                  {t('khata.file_ready')}
                 </Text>
               </View>
               <TouchableOpacity
@@ -110,7 +112,7 @@ export default function KhataVerificationView({
             >
               <Feather name="upload-cloud" size={32} color="#2D6A4F" style={{ marginBottom: 8 }} />
               <Text style={styles.uploadAreaTextMain}>
-                {lang === 'en' ? 'Choose a File or Drag & Drop here' : 'फ़ाइल चुनें या यहाँ खींचें और छोड़ें'}
+                {t('khata.choose_file')}
               </Text>
               <Text style={styles.uploadAreaTextSub}>
                 JPG, PNG, PDF (Max 5 MB)
@@ -122,7 +124,7 @@ export default function KhataVerificationView({
         {/* Date of Payment */}
         <View style={styles.formGroup}>
           <Text style={styles.formLabel}>
-            {lang === 'en' ? 'Date of Payment *' : 'भुगतान की तिथि *'}
+            {t('khata.date_of_payment')}
           </Text>
           <TouchableOpacity
             style={styles.dateSelectorTrigger}
@@ -144,7 +146,7 @@ export default function KhataVerificationView({
           onPress={onSubmit}
         >
           <Text style={styles.doneBtnText}>
-            {lang === 'en' ? 'Submit' : 'जमा करें'}
+            {t('khata.submit_btn')}
           </Text>
         </TouchableOpacity>
       </ScrollView>

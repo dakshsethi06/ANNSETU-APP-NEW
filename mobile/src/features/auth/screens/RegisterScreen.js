@@ -6,6 +6,7 @@ import styles from '../styles/authStyles';
 import localStyles from '../styles/registerStyles';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import { COLORS, SPACING, RADIUS } from '../../../core/theme/theme';
+import { useTranslation } from 'react-i18next';
 
 const ROLES = [
     { key: 'farmer', label: 'Farmer', sub: 'Store & manage my crops', emoji: '🌾' },
@@ -54,7 +55,8 @@ const DISTRICTS_BY_STATE = {
 };
 
 // ── Dropdown Picker Component (matching prototype select styling) ──
-function DropdownPicker({ label, placeholder, value, options, onSelect, lang = 'en' }) {
+function DropdownPicker({ label, placeholder, value, options, onSelect }) {
+    const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
     const [search, setSearch] = useState('');
 
@@ -64,9 +66,9 @@ function DropdownPicker({ label, placeholder, value, options, onSelect, lang = '
 
     const openPicker = () => { setSearch(''); setVisible(true); };
 
-    const searchPlaceholder = lang === 'en' ? 'Search...' : 'खोजें...';
-    const noResultsText = lang === 'en' ? 'No results found' : 'कोई परिणाम नहीं मिला';
-    const noOptionsText = lang === 'en' ? 'No options available' : 'कोई विकल्प उपलब्ध नहीं है';
+    const searchPlaceholder = t('register.search');
+    const noResultsText = t('register.noResults');
+    const noOptionsText = t('register.noOptions');
 
     return (
         <View style={{ marginBottom: 16 }}>
@@ -237,110 +239,8 @@ function DropdownPicker({ label, placeholder, value, options, onSelect, lang = '
     );
 }
 
-const TRANSLATIONS = {
-    en: {
-        createAccount: "Create Account",
-        subtitleHeader: "Join thousands of farmers, vendors & cold storages",
-        roles: {
-            farmer: { label: "Farmer", sub: "Store & manage my crops" },
-            vendor: { label: "Vendor / Trader", sub: "Buy commodities from cold storages" },
-            coldstorage: { label: "Cold Storage", sub: "Manage my cold storage facility" }
-        },
-        iam: "I am a...",
-        iamSub: "Select your role to get the right experience",
-        continue: "Continue",
-        verifyOtp: "Verify with OTP & Continue",
-        personalInfo: "Personal Information",
-        personalSub: "Your basic details for account setup",
-        coldStorageName: "Cold Storage Name",
-        coldStoragePlaceholder: "e.g. SN Sharma Cold Storage",
-        businessName: "Business / Firm Name",
-        businessPlaceholder: "e.g. SN Sharma Trading Co.",
-        fullName: "Full Name",
-        fullNamePlaceholder: "Enter your full name",
-        mobileNumber: "Mobile Number *",
-        mobilePlaceholder: "10-digit mobile number",
-        emailAddress: "Email Address *",
-        emailPlaceholder: "example@email.com",
-        setMpin: "Set 4-Digit MPIN *",
-        mpinPlaceholder: "Enter 4-digit MPIN",
-        addressDetails: "Address Details",
-        addressSub: "Your location helps connect nearby cold storages",
-        state: "State *",
-        statePlaceholder: "Select State",
-        district: "District *",
-        districtPlaceholder: "Select District",
-        village: "Village / Town",
-        villagePlaceholder: "e.g. Tundla",
-        pincode: "Pincode",
-        pincodePlaceholder: "e.g. 283204",
-        kycVerification: "KYC Verification",
-        kycSub: "Required for secure transactions & compliance",
-        kycAlert: "Your KYC documents are encrypted and stored securely. They are only used for identity verification.",
-        aadhaarNumber: "Aadhaar Number *",
-        panNumber: "PAN Number (Optional)",
-        panPlaceholder: "ABCDE1234F",
-        accountSaved: "Account Details Saved!",
-        welcomeAnnsetu: "Welcome to Annsetu,",
-        accountSummary: "Account Summary",
-        nameLabel: "Name",
-        mobileLabel: "Mobile",
-        roleLabel: "Role",
-        steps: ['Role', 'Personal Info', 'Address', 'KYC', 'Done']
-    },
-    hi: {
-        createAccount: "खाता बनाएं",
-        subtitleHeader: "हजारों किसानों, विक्रेताओं और कोल्ड स्टोरेज से जुड़ें",
-        roles: {
-            farmer: { label: "किसान", sub: "अपनी फसलों का भंडारण और प्रबंधन करें" },
-            vendor: { label: "विक्रेता / व्यापारी", sub: "कोल्ड स्टोरेज से वस्तुएं खरीदें" },
-            coldstorage: { label: "कोल्ड स्टोरेज", sub: "अपने कोल्ड स्टोरेज सुविधा का प्रबंधन करें" }
-        },
-        iam: "मैं हूँ एक...",
-        iamSub: "सही अनुभव प्राप्त करने के लिए अपनी भूमिका चुनें",
-        continue: "जारी रखें",
-        verifyOtp: "OTP से सत्यापित करें और जारी रखें",
-        personalInfo: "व्यक्तिगत जानकारी",
-        personalSub: "खाता सेटअप के लिए आपका बुनियादी विवरण",
-        coldStorageName: "कोल्ड स्टोरेज का नाम",
-        coldStoragePlaceholder: "जैसे: एस.एन. शर्मा कोल्ड स्टोरेज",
-        businessName: "व्यवसाय / फर्म का नाम",
-        businessPlaceholder: "जैसे: एस.एन. शर्मा ट्रेडिंग कंपनी",
-        fullName: "पूरा नाम",
-        fullNamePlaceholder: "अपना पूरा नाम दर्ज करें",
-        mobileNumber: "मोबाइल नंबर *",
-        mobilePlaceholder: "10 अंकों का मोबाइल नंबर",
-        emailAddress: "ईमेल पता *",
-        emailPlaceholder: "example@email.com",
-        setMpin: "4-अंकों का MPIN सेट करें *",
-        mpinPlaceholder: "4-अंकों का MPIN दर्ज करें",
-        addressDetails: "पता विवरण",
-        addressSub: "आपका स्थान पास के कोल्ड स्टोरेज को जोड़ने में मदद करता है",
-        state: "राज्य *",
-        statePlaceholder: "राज्य चुनें",
-        district: "जिला *",
-        districtPlaceholder: "जिला चुनें",
-        village: "गांव / शहर",
-        villagePlaceholder: "जैसे: टूंडला",
-        pincode: "पिनकोड",
-        pincodePlaceholder: "जैसे: 283204",
-        kycVerification: "केवाईसी सत्यापन",
-        kycSub: "सुरक्षित लेनदेन और अनुपालन के लिए आवश्यक",
-        kycAlert: "आपके केवाईसी दस्तावेज एन्क्रिप्टेड और सुरक्षित रूप से संग्रहीत हैं। वे केवल पहचान सत्यापन के लिए उपयोग किए जाते हैं।",
-        aadhaarNumber: "आधार संख्या *",
-        panNumber: "पैन संख्या (वैकल्पिक)",
-        panPlaceholder: "ABCDE1234F",
-        accountSaved: "खाता विवरण सहेजा गया!",
-        welcomeAnnsetu: "अन्नसेतु में आपका स्वागत है,",
-        accountSummary: "खाता सारांश",
-        nameLabel: "नाम",
-        mobileLabel: "मोबाइल",
-        roleLabel: "भूमिका",
-        steps: ['भूमिका', 'व्यक्तिगत जानकारी', 'पता', 'केवाईसी', 'पूर्ण']
-    }
-};
-
-export default function RegisterScreen({ onBack, onNext, lang = 'en', setLang }) {
+export default function RegisterScreen({ onBack, onNext }) {
+    const { t, i18n } = useTranslation();
     const [step, setStep] = useState(1);
     const [role, setRole] = useState('');
     const [form, setForm] = useState({
@@ -352,8 +252,8 @@ export default function RegisterScreen({ onBack, onNext, lang = 'en', setLang })
 
     const updateForm = (key, value) => setForm(f => ({ ...f, [key]: value }));
 
-    const currentT = TRANSLATIONS[lang] || TRANSLATIONS.en;
-    const stepLabels = currentT.steps;
+    const currentT = t('register', { returnObjects: true }) || {};
+    const stepLabels = currentT.steps || [];
 
     const canProceed = () => {
         if (step === 1) return role !== '';
@@ -419,16 +319,16 @@ export default function RegisterScreen({ onBack, onNext, lang = 'en', setLang })
                     <View style={{ width: 60, alignItems: 'flex-end' }}>
                         <View style={localStyles.headerLangToggle}>
                             <TouchableOpacity
-                                style={[localStyles.headerLangButton, lang === 'en' && localStyles.headerLangButtonActive]}
-                                onPress={() => setLang && setLang('en')}
+                                style={[localStyles.headerLangButton, i18n.language === 'en' && localStyles.headerLangButtonActive]}
+                                onPress={() => i18n.changeLanguage('en')}
                             >
-                                <Text style={[localStyles.headerLangText, lang === 'en' && localStyles.headerLangTextActive]}>EN</Text>
+                                <Text style={[localStyles.headerLangText, i18n.language === 'en' && localStyles.headerLangTextActive]}>EN</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[localStyles.headerLangButton, lang === 'hi' && localStyles.headerLangButtonActive]}
-                                onPress={() => setLang && setLang('hi')}
+                                style={[localStyles.headerLangButton, i18n.language === 'hi' && localStyles.headerLangButtonActive]}
+                                onPress={() => i18n.changeLanguage('hi')}
                             >
-                                <Text style={[localStyles.headerLangText, lang === 'hi' && localStyles.headerLangTextActive]}>हि</Text>
+                                <Text style={[localStyles.headerLangText, i18n.language === 'hi' && localStyles.headerLangTextActive]}>हि</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -537,7 +437,6 @@ export default function RegisterScreen({ onBack, onNext, lang = 'en', setLang })
                                         updateForm('state', val);
                                         updateForm('district', ''); // reset district when state changes
                                     }}
-                                    lang={lang}
                                 />
 
                                 <DropdownPicker
@@ -546,7 +445,6 @@ export default function RegisterScreen({ onBack, onNext, lang = 'en', setLang })
                                     value={form.district}
                                     options={DISTRICTS_BY_STATE[form.state] || []}
                                     onSelect={(val) => updateForm('district', val)}
-                                    lang={lang}
                                 />
 
                                 <View style={{ marginBottom: 16 }}>

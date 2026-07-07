@@ -1,14 +1,11 @@
 import React from 'react';
 import { Modal, TouchableOpacity, View, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import styles from '../styles/khataTabStyles';
-
-const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const monthsHindi = ['जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर'];
 
 export default function DatePickerModal({
   visible,
-  lang,
   pickerDay,
   pickerMonth,
   pickerYear,
@@ -18,6 +15,23 @@ export default function DatePickerModal({
   onCancel,
   onConfirm
 }) {
+  const { t } = useTranslation();
+
+  const months = [
+    t('months.jan'),
+    t('months.feb'),
+    t('months.mar'),
+    t('months.apr'),
+    t('months.may'),
+    t('months.jun'),
+    t('months.jul'),
+    t('months.aug'),
+    t('months.sep'),
+    t('months.oct'),
+    t('months.nov'),
+    t('months.dec')
+  ];
+
   return (
     <Modal
       visible={visible}
@@ -32,7 +46,7 @@ export default function DatePickerModal({
       >
         <View style={styles.datePickerContainer} onStartShouldSetResponder={() => true}>
           <Text style={styles.datePickerTitle}>
-            {lang === 'en' ? 'Select Payment Date' : 'भुगतान तिथि चुनें'}
+            {t('khata.select_payment_date')}
           </Text>
 
           <View style={styles.datePickerSelectorsRow}>
@@ -42,7 +56,7 @@ export default function DatePickerModal({
                 <Feather name="chevron-up" size={20} color="#1E4032" />
               </TouchableOpacity>
               <Text style={styles.datePickerVal}>{pickerDay.toString().padStart(2, '0')}</Text>
-              <Text style={styles.datePickerColLabel}>{lang === 'en' ? 'Day' : 'दिन'}</Text>
+              <Text style={styles.datePickerColLabel}>{t('khata.day')}</Text>
               <TouchableOpacity onPress={() => adjustDay(-1)} style={styles.datePickerArrow}>
                 <Feather name="chevron-down" size={20} color="#1E4032" />
               </TouchableOpacity>
@@ -54,9 +68,9 @@ export default function DatePickerModal({
                 <Feather name="chevron-up" size={20} color="#1E4032" />
               </TouchableOpacity>
               <Text style={styles.datePickerVal}>
-                {lang === 'en' ? months[pickerMonth] : monthsHindi[pickerMonth]}
+                {months[pickerMonth]}
               </Text>
-              <Text style={styles.datePickerColLabel}>{lang === 'en' ? 'Month' : 'महीना'}</Text>
+              <Text style={styles.datePickerColLabel}>{t('khata.month')}</Text>
               <TouchableOpacity onPress={() => adjustMonth(-1)} style={styles.datePickerArrow}>
                 <Feather name="chevron-down" size={20} color="#1E4032" />
               </TouchableOpacity>
@@ -68,7 +82,7 @@ export default function DatePickerModal({
                 <Feather name="chevron-up" size={20} color="#1E4032" />
               </TouchableOpacity>
               <Text style={styles.datePickerVal}>{pickerYear}</Text>
-              <Text style={styles.datePickerColLabel}>{lang === 'en' ? 'Year' : 'वर्ष'}</Text>
+              <Text style={styles.datePickerColLabel}>{t('khata.year')}</Text>
               <TouchableOpacity onPress={() => adjustYear(-1)} style={styles.datePickerArrow}>
                 <Feather name="chevron-down" size={20} color="#1E4032" />
               </TouchableOpacity>
@@ -80,14 +94,14 @@ export default function DatePickerModal({
               style={styles.datePickerCancelBtn}
               onPress={onCancel}
             >
-              <Text style={styles.datePickerCancelText}>{lang === 'en' ? 'Cancel' : 'रद्द करें'}</Text>
+              <Text style={styles.datePickerCancelText}>{t('khata.cancel')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.datePickerConfirmBtn}
               onPress={onConfirm}
             >
-              <Text style={styles.datePickerConfirmText}>{lang === 'en' ? 'Confirm' : 'पुष्टि करें'}</Text>
+              <Text style={styles.datePickerConfirmText}>{t('khata.confirm')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -63,3 +63,51 @@ export async function fetchUserRole(phone) {
     return 'ColdStorage'; // fallback
   }
 }
+
+export async function updateFarmerProfile(farmerId, updateData) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/farmers/${encodeURIComponent(farmerId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updateData),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'Failed to update farmer profile');
+    return data.farmer;
+  } catch (err) {
+    if (err.message.includes('Network request failed')) throw new Error('Could not connect to backend server.');
+    throw err;
+  }
+}
+
+export async function sendProfileVerificationOtp(farmerId, targetType, targetValue) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/otp/send-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: farmerId, targetType, targetValue }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'Failed to send verification OTP');
+    return data;
+  } catch (err) {
+    if (err.message.includes('Network request failed')) throw new Error('Could not connect to backend server.');
+    throw err;
+  }
+}
+
+export async function verifyAndUpdateFarmerProfile(farmerId, targetType, targetValue, otpCode, updateData) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/otp/verify-and-update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: farmerId, targetType, targetValue, otpCode, name: updateData.name }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || 'Failed to verify OTP and update profile');
+    return data.farmer;
+  } catch (err) {
+    if (err.message.includes('Network request failed')) throw new Error('Could not connect to backend server.');
+    throw err;
+  }
+}

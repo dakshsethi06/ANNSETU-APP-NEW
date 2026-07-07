@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Alert, NativeModules } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import { useTranslation } from 'react-i18next';
 import RazorpayCheckout from 'react-native-razorpay';
 import { BACKEND_URL } from '../../../core/network/config';
 
 export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
+  const { t, i18n } = useTranslation();
+
   const [showSummary, setShowSummary] = useState(false);
   const [showVerificationForm, setShowVerificationForm] = useState(false);
   const [verificationStep, setVerificationStep] = useState(1);
@@ -13,7 +16,6 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   const [receiptFileName, setReceiptFileName] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date());
   const [datePickerVisible, setDatePickerVisible] = useState(false);
-  const [lang, setLang] = useState('en');
 
   const [pickerDay, setPickerDay] = useState(new Date().getDate());
   const [pickerMonth, setPickerMonth] = useState(new Date().getMonth());
@@ -72,8 +74,8 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
         const selectedFile = result.assets[0];
         if (selectedFile.size && selectedFile.size > 5 * 1024 * 1024) {
           Alert.alert(
-            lang === 'en' ? 'File Too Large' : 'फ़ाइल बहुत बड़ी है',
-            lang === 'en' ? 'The selected file exceeds 5 MB.' : 'चुनी गई फ़ाइल 5 एमबी से अधिक है.'
+            t('khata.file_too_large_title'),
+            t('khata.file_too_large_msg')
           );
           return;
         }
@@ -90,7 +92,7 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       }
     } catch (err) {
       console.warn('Document picker error:', err);
-      Alert.alert(lang === 'en' ? 'Error' : 'त्रुटि', lang === 'en' ? 'Failed to select document.' : 'दस्तावेज़ चुनने में विफल।');
+      Alert.alert(t('khata.error_title'), t('khata.failed_select_doc'));
     }
   };
 
@@ -120,8 +122,8 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
 
     if (targetAmount <= 0) {
       Alert.alert(
-        lang === 'en' ? 'No Payment Required' : 'कोई भुगतान आवश्यक नहीं है',
-        lang === 'en' ? 'Your net payable amount is ₹0.' : 'आपकी शुद्ध देय राशि ₹0 है।'
+        t('khata.no_payment_required_title'),
+        t('khata.no_payment_required_msg')
       );
       return;
     }
@@ -148,13 +150,14 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       setRazorpayOrderData(orderData);
       setShowSummary(true);
     } catch (err) {
-      Alert.alert('Error', err.message || 'Failed to initiate payment.');
+      Alert.alert(t('khata.error_title'), err.message || t('khata.initiate_failed_error'));
     }
   };
 
   const handleOnlineCheckout = async () => {
     console.log('[handleOnlineCheckout] Method started.');
     if (!razorpayOrderData) {
+      Alert.alert(t('khata.error_title'), t('khata.payment_details_error'));
       console.log('[handleOnlineCheckout] Error: razorpayOrderData is null');
       Alert.alert('Error', 'Payment details are not loaded.');
       return;
@@ -172,6 +175,7 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
         setPaymentUrl(razorpayOrderData.payment_link_url);
         return;
       } else {
+        Alert.alert(t('khata.error_title'), t('khata.payment_link_error'));
         console.log('[handleOnlineCheckout] Error: payment_link_url is missing.');
         Alert.alert('Error', 'Payment link URL not generated.');
         return;
@@ -212,21 +216,21 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
           const verifyData = await verifyRes.json();
           if (verifyData.success) {
             Alert.alert(
-              lang === 'en' ? 'Payment Successful' : 'भुगतान सफल',
-              lang === 'en' ? 'Your dues have been cleared.' : 'आपका भुगतान सफलतापूर्वक पूरा हो गया है।',
-              [{ text: 'OK', onPress: () => { setShowSummary(false); if (onPaymentSuccess) onPaymentSuccess(); } }]
+              t('khata.payment_successful_title'),
+              t('khata.payment_successful_msg'),
+              [{ text: t('khata.confirm'), onPress: () => { setShowSummary(false); if (onPaymentSuccess) onPaymentSuccess(); } }]
             );
           } else {
             throw new Error(verifyData.message || 'Signature rejected.');
           }
         } catch (verifyErr) {
-          Alert.alert('Verification Error', verifyErr.message);
+          Alert.alert(t('khata.error_title'), verifyErr.message);
         }
       }).catch((error) => {
         if (razorpayOrderData.payment_link_url) {
           setPaymentUrl(razorpayOrderData.payment_link_url);
         } else {
-          Alert.alert('Payment Failed', (error && (error.description || error.message)) || 'Payment failed.');
+          Alert.alert(t('khata.error_title'), (error && (error.description || error.message)) || 'Payment failed.');
         }
       });
     } catch (sdkErr) {
@@ -236,11 +240,11 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
 
   const handleFormSubmit = async () => {
     if (!utrNumber.trim()) {
-      Alert.alert(lang === 'en' ? 'Required Field' : 'आवश्यक फ़ील्ड', lang === 'en' ? 'Enter UTR ID.' : 'कृपया यूटीआर आईडी दर्ज करें।');
+      Alert.alert(t('khata.required_field_title'), t('khata.enter_utr_msg'));
       return;
     }
     if (!receiptFile) {
-      Alert.alert(lang === 'en' ? 'Required Field' : 'आवश्यक फ़ील्ड', lang === 'en' ? 'Upload receipt.' : 'कृपया भुगतान रसीद अपलोड करें।');
+      Alert.alert(t('khata.required_field_title'), t('khata.upload_receipt_msg'));
       return;
     }
 
@@ -261,7 +265,7 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       setVerificationStep(2);
       setVerificationSuccessModalVisible(true);
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('khata.error_title'), err.message);
     }
   };
 
@@ -287,7 +291,8 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       receiptFileName, setReceiptFileName,
       paymentDate, setPaymentDate,
       datePickerVisible, setDatePickerVisible,
-      lang, setLang,
+      lang: i18n.language,
+      setLang: (l) => i18n.changeLanguage(l),
       pickerDay, setPickerDay,
       pickerMonth, setPickerMonth,
       pickerYear, setPickerYear,
