@@ -1,9 +1,11 @@
-const express = require('express');
-const router = express.Router();
-const supportController = require('./support.controller');
+const router = require('express').Router();
+const { createSupportTicket, getTickets, getConversations } = require('./support.controller');
+const { validateCreateSupportTicket, validateGetTickets } = require('./support.validator');
 
-router.post('/support/ticket', supportController.createSupportTicket);
-router.get('/support/tickets', supportController.getTickets);
-router.get('/support/tickets/:id/conversations', supportController.getConversations);
+router.post('/support/ticket', validateCreateSupportTicket, createSupportTicket);
+router.get('/support/tickets', validateGetTickets, getTickets);
+router.get('/support/tickets/:id/conversations', getConversations);
 
 module.exports = router;
+
+
