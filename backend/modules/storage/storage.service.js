@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const storageRepository = require('./storage.repository');
+const { DEFAULT_COLD_STORAGE_ID } = require('../../config/constants');
 
 /**
  * Fetch all cold storages.
@@ -44,7 +45,7 @@ async function registerNewColdStorage(data) {
  * Fetch cold storage summary with formatted response.
  */
 async function fetchStorageSummary(coldStorageId) {
-  const resolvedId = coldStorageId || 'cmmp9txv0000ai3t4wush9trs';
+  const resolvedId = coldStorageId || DEFAULT_COLD_STORAGE_ID;
   const data = await storageRepository.getStorageSummaryData(resolvedId);
 
   if (!data) return null;

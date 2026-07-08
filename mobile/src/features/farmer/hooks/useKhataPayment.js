@@ -30,8 +30,11 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
 
   const handlePayPress = async (customAmount) => {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< HEAD
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     online.setRazorpayOrderData(null); // Clear old order data before fetch
@@ -39,7 +42,6 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     console.log('[handlePayPress] Received customAmount:', customAmount);
     console.log('[handlePayPress] Current state paymentAmount:', paymentAmount);
     console.log('[handlePayPress] Current pendingRent:', pendingRent);
->>>>>>> eeff13c3b06c9e49551835593016da673983823f
     let targetAmount = pendingRent;
     if (customAmount !== undefined && customAmount !== '') {
       const parsed = parseFloat(customAmount);

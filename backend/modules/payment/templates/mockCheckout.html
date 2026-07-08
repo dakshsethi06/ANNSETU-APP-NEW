@@ -35,7 +35,7 @@
           });
           const data = await res.json();
           if (data.success) {
-            window.location.href = '/api/payments/success?order_id={{orderId}}&payment_id=' + form.razorpay_payment_id.value;
+            window.location.href = '/api/payments/success?order_id=' + encodeURIComponent(form.razorpay_order_id.value) + '&payment_id=' + encodeURIComponent(form.razorpay_payment_id.value);
           } else {
             alert('Payment verification failed: ' + data.error);
           }

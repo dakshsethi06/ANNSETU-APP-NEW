@@ -3,6 +3,20 @@ const path = require('path');
 const db = require('../../config/database');
 const paymentRepository = require('./payment.repository');
 
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, (match) => {
+    switch (match) {
+      case '&': return '&amp;';
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '"': return '&quot;';
+      case "'": return '&#39;';
+      default: return match;
+    }
+  });
+}
+
 async function renderMockCheckout(req, res) {
   const { orderId } = req.params;
   
@@ -24,9 +38,9 @@ async function renderMockCheckout(req, res) {
     const css = fs.readFileSync(cssPath, 'utf8');
     
     html = html.replace('/* CSS_PLACEHOLDER */', css);
-    html = html.replace(/{{amount}}/g, amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }));
-    html = html.replace(/{{orderId}}/g, orderId);
-    html = html.replace(/{{mockPaymentId}}/g, `pay_mock_${Math.random().toString(36).substr(2, 9)}`);
+    html = html.replace(/{{amount}}/g, escapeHTML(amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })));
+    html = html.replace(/{{orderId}}/g, escapeHTML(orderId));
+    html = html.replace(/{{mockPaymentId}}/g, escapeHTML(`pay_mock_${Math.random().toString(36).substr(2, 9)}`));
     
     res.send(html);
   } catch (err) {
@@ -66,8 +80,8 @@ async function renderSuccessPage(req, res) {
     const css = fs.readFileSync(cssPath, 'utf8');
     
     html = html.replace('/* CSS_PLACEHOLDER */', css);
-    html = html.replace(/{{orderId}}/g, finalOrderId || '');
-    html = html.replace(/{{paymentId}}/g, finalPaymentId || '');
+    html = html.replace(/{{orderId}}/g, escapeHTML(finalOrderId || ''));
+    html = html.replace(/{{paymentId}}/g, escapeHTML(finalPaymentId || ''));
     
     res.send(html);
   } catch (err) {

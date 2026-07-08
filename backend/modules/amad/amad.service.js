@@ -6,11 +6,15 @@ const { logOutboundNotification, createAppNotification } = require('../../shared
  * Generates ID, sets defaults, inserts via repo, triggers notifications.
  */
 async function createNewAmadLot(data) {
-  const { farmerId, commodity, kism, roomId, rackId, packets, weightQtl, goodsCondition } = data;
+  const { farmerId, commodity, kism, roomId, rackId, packets, weightQtl, goodsCondition, coldStorageId } = data;
+  if (!coldStorageId) {
+    const err = new Error('coldStorageId is required.');
+    err.statusCode = 400;
+    throw err;
+  }
 
   const id = 'AM-' + Date.now();
   const now = new Date();
-  const coldStorageId = 'cmmp9txv0000ai3t4wush9trs';
 
   const params = [
     id, farmerId, coldStorageId, commodity, kism || null,

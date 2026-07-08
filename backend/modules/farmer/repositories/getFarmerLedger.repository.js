@@ -43,7 +43,7 @@ async function getFarmerLedger(id) {
         p.reference,
         p."bankName",
         p."bankTransactionId",
-        p.note,
+        COALESCE(p."receiptUrl", p.note) AS note,
         NULL AS "billNumber"
       FROM "Payment" p
       JOIN "Farmer" f ON f.id = p."farmerId"
@@ -60,8 +60,11 @@ async function getFarmerLedger(id) {
 
     let runningBalance = 0;
     const entriesWithRunning = entries.map(entry => {
-      // For cold storage, positive payment increases balance (revenue), charge decreases it
-      runningBalance += entry.amount; 
+      // Standardized Running Balance Direction:
+      // Positive values represent Outstanding Farmer Dues (asset/receivable for Cold Storage).
+      // Charges/Bills (negative in entry.amount) increase outstanding dues.
+      // Payments (positive in entry.amount) decrease outstanding dues.
+      runningBalance += (-entry.amount); 
       return {
         ...entry,
         balance: runningBalance
@@ -111,7 +114,7 @@ async function getFarmerLedger(id) {
       reference,
       "bankName",
       "bankTransactionId",
-      "note",
+      COALESCE("receiptUrl", note) AS "note",
       NULL AS "billNumber"
     FROM "Payment"
     WHERE "farmerId" = $1 AND "status" IN ('APPROVED', 'PAID')
@@ -127,6 +130,10 @@ async function getFarmerLedger(id) {
 
   let runningBalance = openingBalance;
   const entriesWithRunning = entries.map(entry => {
+    // Standardized Running Balance Direction:
+    // Positive values represent Outstanding Farmer Dues (liability/payable for Farmer).
+    // Charges/Bills (negative in entry.amount) increase outstanding dues.
+    // Payments (positive in entry.amount) decrease outstanding dues.
     runningBalance += (-entry.amount); 
     return {
       ...entry,

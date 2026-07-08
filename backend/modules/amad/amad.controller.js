@@ -6,7 +6,8 @@ async function createAmad(req, res) {
     return res.status(201).json({ success: true, lot });
   } catch (error) {
     console.error('PostgreSQL Amad POST error:', error.message);
-    return res.status(500).json({ success: false, error: error.message || 'Failed to register Amad lot in database' });
+    const status = error.statusCode || 400;
+    return res.status(status).json({ success: false, error: error.message || 'Failed to register Amad lot in database' });
   }
 }
 

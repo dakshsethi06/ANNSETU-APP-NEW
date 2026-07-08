@@ -176,10 +176,15 @@ gantt
 
 * **Task 4.1: Enforce SQL transactions on database updates**
   * Modify `approvePayment` and similar batch database routines to run inside `BEGIN`, `COMMIT`, and `ROLLBACK` transaction blocks.
-* **Task 4.2: Extract duplicate hashing utilities**
-  * DRY out the `hashMpin` and `verifyMpin` copy-paste duplicates by creating a single shared auth utility module.
-* **Task 4.3: Implement active lot checks for dispatches**
-  * Remove the arbitrary fallback row selector in `createDispatch`. Reject requests if the farmer does not have a matching lot.
+
+* **Task 4.2 Centralize MPIN Hashing and Verification
+* Target:** [farmer.service.js](file:///d:/DAKSH/neww-app/backend/modules/farmer/farmer.service.js#L9-L21) & [dispatch.service.js](file:///d:/DAKSH/neww-app/backend/modules/dispatch/dispatch.service.js#L7-L20)
+* **Description:** Extract duplicate hashing and validation codes into a single utility helper under `backend/shared/utils/mpinUtils.js`.
+
+* **Task 4.3 Block Dispatches Lacking Active Stock Lots
+* **Target:** [dispatch.repository.js](file:///d:/DAKSH/neww-app/backend/modules/dispatch/dispatch.repository.js#L113-L115)
+* **Description:** Remove the arbitrary database lot fallback selector. Fail the dispatch request with a 400 Bad Request error if the farmer doesn't have an active stock lot.
+
 * **Task 4.4: Remove hardcoded LAN callback URLs**
   * Eliminate the local developer IP address (`192.168.200.24`) in `payment.controller.js`. Resolve hosting host names dynamically from the request context or configuration environment variables.
 * **Task 4.5: Secure mock checkout template**
@@ -188,9 +193,12 @@ gantt
   * Create a dedicated `receiptUrl` column in the Payment model. Update functions to write to this column rather than using `note`.
 * **Task 4.7: Fix dispatch notification routing**
   * Resolve and notify the correct vendor ID instead of sending alerts to the non-existent `'default_vendor'` profile.
-* **Task 4.8: Clean up notification shadow users**
-  * Eliminate dynamic shadow user insertions. Unify farmer credentials under a consistent schema model.
+* 4.8 Unify Notification User Accounts
+* **Target:** [notification.repository.js](file:///d:/DAKSH/neww-app/backend/modules/notification/notification.repository.js#L90-L97)
+* **Description:** Remove shadow user database inserts with `'dummy_hash'` passwords. Unify credentials under a single consistent authentication schema.
+
 * **Task 4.9: Connect real Vendor API endpoints**
   * Replace the static hardcoded data on the `VendorScreen` with database queries for active saudas, pending dues, and logistics activity.
-* **Task 4.10: Setup testing suite**
-  * Install Jest, setup basic mocks, and write unit assertions for core ledger calculation logic and payment reconciliation.
+* **Task 4.11 Setup Automated QA Testing Suite
+* **Target:** Mobile & Backend Testing
+* **Description:** Install Jest, build standard mocks for payment checkouts and stock calculations, and write unit assertions for ledger calculations.

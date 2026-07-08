@@ -1,23 +1,7 @@
-const crypto = require('crypto');
 const dispatchRepo = require('./dispatch.repository');
 const { createAppNotification } = require('../../shared/notifications/notifications');
-
-// ─── MPIN Utilities ───────────────────────────────────────────────
-
-function hashMpin(mpin) {
-  if (!mpin) return '';
-  return crypto.createHash('sha256').update(mpin.toString()).digest('hex');
-}
-
-function verifyMpin(mpin, storedHash) {
-  if (!storedHash) return false;
-  if (!mpin) return false;
-  // Legacy plain-text MPINs (non-64-char hashes)
-  if (storedHash.length !== 64) {
-    return storedHash.toString() === mpin.toString();
-  }
-  return hashMpin(mpin) === storedHash;
-}
+const { DEFAULT_COLD_STORAGE_ID } = require('../../config/constants');
+const { hashMpin, verifyMpin } = require('../../shared/utils/mpinUtils');
 
 // ─── Service Methods ──────────────────────────────────────────────
 
@@ -127,7 +111,7 @@ async function approveDispatchByMpin(id, mpin) {
   // 5. Create approval notifications (vendor + cold storage)
   try {
     const farmerName = farmer.name || 'Farmer';
-    const csId = dispatchData.coldStorageId || 'cmmp9txv0000ai3t4wush9trs';
+    const csId = dispatchData.coldStorageId || DEFAULT_COLD_STORAGE_ID;
 
     // Notification to vendor
     await createAppNotification({
@@ -188,7 +172,7 @@ async function markDispatchDelivered(id) {
   try {
     const csName = await dispatchRepo.getColdStorageName(updatedDispatch.coldStorageId);
     await createAppNotification({
-      coldStorageId: updatedDispatch.coldStorageId || 'cmmp9txv0000ai3t4wush9trs',
+      coldStorageId: updatedDispatch.coldStorageId || DEFAULT_COLD_STORAGE_ID,
       userId: updatedDispatch.farmerId,
       lotId: null,
       type: 'info',

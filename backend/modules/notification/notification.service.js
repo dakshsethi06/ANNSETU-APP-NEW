@@ -1,5 +1,6 @@
 const notificationRepository = require('./notification.repository');
 const db = require('../../config/database');
+const { DEFAULT_COLD_STORAGE_ID } = require('../../config/constants');
 
 /**
  * Compute a human-readable time label from a date.
@@ -138,7 +139,7 @@ async function markNotificationRead(id) {
     if (billRes.rows.length > 0) {
       const { farmerId, amount, periodLabel } = billRes.rows[0];
       const fdRes = await db.query('SELECT "coldStorageId" FROM "Farmer" WHERE id = $1', [farmerId]);
-      const coldStorageId = fdRes.rows[0]?.coldStorageId || 'cmmp9txv0000ai3t4wush9trs';
+      const coldStorageId = fdRes.rows[0]?.coldStorageId || DEFAULT_COLD_STORAGE_ID;
       const message = `Storage rent of ₹${parseFloat(amount).toLocaleString('en-IN')} is due for ${periodLabel || 'recent storage period'}.`;
 
       await db.query(

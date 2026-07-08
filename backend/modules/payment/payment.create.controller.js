@@ -9,8 +9,9 @@ async function createOrder(req, res) {
   try {
     let farmerName = 'Farmer Partner';
     let farmerPhone = '9876543210';
+    let resolvedColdStorageId = null;
     try {
-      const farmerRes = await db.query('SELECT name, phone FROM "Farmer" WHERE id = $1', [farmerId]);
+      const farmerRes = await db.query('SELECT name, phone, "coldStorageId" FROM "Farmer" WHERE id = $1', [farmerId]);
       if (farmerRes.rows.length > 0) {
         if (farmerRes.rows[0].name) {
           farmerName = farmerRes.rows[0].name;
@@ -21,9 +22,14 @@ async function createOrder(req, res) {
             farmerPhone = rawPhone;
           }
         }
+        resolvedColdStorageId = farmerRes.rows[0].coldStorageId;
       }
     } catch (dbErr) {
       console.warn('Failed to fetch farmer profile for payment checkout:', dbErr.message);
+    }
+
+    if (!resolvedColdStorageId) {
+      return res.status(400).json({ success: false, error: 'coldStorageId is required.' });
     }
 
     let finalAmount = amount ? parseFloat(amount) : 0;
@@ -48,9 +54,9 @@ async function createOrder(req, res) {
     const amountPaise = Math.round(finalAmount * 100);
     const receipt = `rcpt_${farmerId}_${Date.now().toString().slice(-6)}`;
 
-    let serverIp = req.headers.host || '10.36.66.6:3001';
+    let serverIp = req.headers.host || 'localhost:3001';
     if (serverIp.includes('localhost') || serverIp.includes('127.0.0.1')) {
-      serverIp = '10.36.66.6:3001';
+      serverIp = process.env.BACKEND_HOST || serverIp;
     }
 
     const isMock = razorpayService.isMockMode();
@@ -93,7 +99,8 @@ async function createOrder(req, res) {
       orderId: orderId,
       farmerId: farmerId,
       amount: finalAmount,
-      note: `Online Rent Payment via App for account ${farmerId}`
+      note: `Online Rent Payment via App for account ${farmerId}`,
+      coldStorageId: resolvedColdStorageId
     });
 
     return res.json({

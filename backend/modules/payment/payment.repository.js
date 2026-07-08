@@ -11,6 +11,9 @@ async function getFarmerPendingRent(farmerId) {
 }
 
 async function createPendingPayment({ orderId, farmerId, amount, note, createdByUserId, coldStorageId }) {
+  if (!coldStorageId) {
+    throw new Error('coldStorageId is required for creating a pending payment.');
+  }
   await db.query(
     `INSERT INTO "Payment" (
       "id", "farmerId", "vendorId", "direction", "status", "amount", 
@@ -22,7 +25,7 @@ async function createPendingPayment({ orderId, farmerId, amount, note, createdBy
       amount,
       note || 'Online payment via App',
       createdByUserId || 'FARMER_APP',
-      coldStorageId || 'cmmp9txv0000ai3t4wush9trs'
+      coldStorageId
     ]
   );
 }

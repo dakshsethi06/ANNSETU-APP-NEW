@@ -110,10 +110,6 @@ async function getActiveLotForDispatch(farmerId, commodity) {
   );
   if (res.rows.length > 0) return res.rows[0].id;
 
-  // 3. Any lot in the entire database (fallback for NOT NULL constraint)
-  res = await db.query(`SELECT id FROM "AmadLot" LIMIT 1`);
-  if (res.rows.length > 0) return res.rows[0].id;
-
   return null;
 }
 
@@ -124,8 +120,14 @@ async function getActiveLotForDispatch(farmerId, commodity) {
  * @returns {Promise<string>}
  */
 async function verifyColdStorage(coldStorageId) {
+  if (!coldStorageId) {
+    throw new Error('coldStorageId is required.');
+  }
   const res = await db.query('SELECT id FROM "ColdStorageOnboarding" WHERE id = $1', [coldStorageId]);
-  return res.rows.length > 0 ? coldStorageId : 'cmmp9txv0000ai3t4wush9trs';
+  if (res.rows.length === 0) {
+    throw new Error(`Cold Storage record with ID "${coldStorageId}" not found.`);
+  }
+  return coldStorageId;
 }
 
 /**
