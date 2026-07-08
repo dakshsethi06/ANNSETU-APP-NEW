@@ -1,4 +1,4 @@
-const db = require('../../config/database');
+const farmerRepository = require('../farmer/farmer.repository');
 const paymentRepository = require('./payment.repository');
 const razorpayService = require('./razorpay.service');
 
@@ -11,18 +11,18 @@ async function createOrder(req, res) {
     let farmerPhone = '9876543210';
     let resolvedColdStorageId = null;
     try {
-      const farmerRes = await db.query('SELECT name, phone, "coldStorageId" FROM "Farmer" WHERE id = $1', [farmerId]);
-      if (farmerRes.rows.length > 0) {
-        if (farmerRes.rows[0].name) {
-          farmerName = farmerRes.rows[0].name;
+      const farmer = await farmerRepository.getFarmerBasicDetails(farmerId);
+      if (farmer) {
+        if (farmer.name) {
+          farmerName = farmer.name;
         }
-        if (farmerRes.rows[0].phone) {
-          const rawPhone = farmerRes.rows[0].phone.replace(/\D/g, '');
+        if (farmer.phone) {
+          const rawPhone = farmer.phone.replace(/\D/g, '');
           if (rawPhone.length === 10 && !/^(.)\1+$/.test(rawPhone)) {
             farmerPhone = rawPhone;
           }
         }
-        resolvedColdStorageId = farmerRes.rows[0].coldStorageId;
+        resolvedColdStorageId = farmer.coldStorageId;
       }
     } catch (dbErr) {
       console.warn('Failed to fetch farmer profile for payment checkout:', dbErr.message);

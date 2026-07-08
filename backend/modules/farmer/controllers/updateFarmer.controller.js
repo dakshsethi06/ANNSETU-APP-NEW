@@ -1,36 +1,27 @@
-const db = require('../../../config/database');
+const farmerRepository = require('../farmer.repository');
+const farmerConstants = require('../farmer.constants');
 
 async function updateFarmer(req, res) {
   const { id } = req.params;
   const { name, phone, email, aadhaarNumber, panNumber } = req.body;
 
   try {
-    const existing = await db.query('SELECT * FROM "Farmer" WHERE "id" = $1', [id]);
-    if (existing.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Farmer profile not found.' });
+    const current = await farmerRepository.getFarmerBasicDetails(id);
+    if (!current) {
+      return res.status(404).json({ success: false, error: farmerConstants.ERROR_MESSAGES.FARMER_NOT_FOUND });
     }
 
-    const current = existing.rows[0];
     const finalName = name !== undefined ? name : current.name;
     const finalPhone = phone !== undefined ? phone : current.phone;
     const finalEmail = email !== undefined ? email : current.email;
     const finalAadhaar = aadhaarNumber !== undefined ? aadhaarNumber : current.aadhaarNumber;
     const finalPan = panNumber !== undefined ? panNumber : current.panNumber;
 
-    const result = await db.query(
-      `UPDATE "Farmer"
-     SET "name" = $1,
-         "phone" = $2,
-         "email" = $3,
-         "aadhaarNumber" = $4,
-         "panNumber" = $5,
-         "updatedAt" = NOW()
-     WHERE "id" = $6
-     RETURNING "id" AS "serial_number", "name", "state", "primaryCrop" AS commodity, "fatherName", "phone", "email", "village", "district", "tehsil", "aadhaarNumber", "panNumber"`,
-      [finalName, finalPhone, finalEmail, finalAadhaar, finalPan, id]
+    const farmer = await farmerRepository.updateFarmerBasicDetails(
+      id, finalName, finalPhone, finalEmail, finalAadhaar, finalPan
     );
 
-    return res.json({ success: true, farmer: result.rows[0] });
+    return res.json({ success: true, farmer: farmer });
   } catch (error) {
     console.error('PostgreSQL updateFarmer error:', error.message);
     return res.status(500).json({ success: false, error: 'Failed to update farmer profile.' });

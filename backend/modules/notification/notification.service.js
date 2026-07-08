@@ -1,5 +1,4 @@
 const notificationRepository = require('./notification.repository');
-const db = require('../../config/database');
 const { DEFAULT_COLD_STORAGE_ID } = require('../../config/constants');
 
 /**
@@ -19,13 +18,8 @@ function computeTimeLabel(createdAt) {
  * Resolve processed dispatch transactions list for a user.
  */
 async function getProcessedTransactions(userId) {
-  const csCheck = await db.query('SELECT id FROM "ColdStorageOnboarding" WHERE id = $1', [userId]);
-  const isCS = csCheck.rows.length > 0;
-  const sql = isCS
-    ? 'SELECT "packetsDispatched", status FROM "NikasiTransaction" WHERE "coldStorageId" = $1 AND "status" = \'DISPATCHED\''
-    : 'SELECT "packetsDispatched", status FROM "NikasiTransaction" WHERE "farmerId" = $1 AND "status" != \'CREATED\'';
-  const res = await db.query(sql, [userId]);
-  return res.rows;
+  const isCS = await notificationRepository.checkColdStorageExists(userId);
+  return await notificationRepository.getProcessedTransactionsSql(userId, isCS);
 }
 
 /**
@@ -34,8 +28,8 @@ async function getProcessedTransactions(userId) {
 async function checkStale(item, processedTxsMap) {
   if (item.actionUrl?.includes('/payment-verification/')) {
     const paymentId = item.actionUrl.split('/').pop();
-    const payCheck = await db.query('SELECT id FROM "Payment" WHERE id = $1', [paymentId]);
-    return payCheck.rows.length === 0;
+    const exists = await notificationRepository.checkPaymentExists(paymentId);
+    return !exists;
   }
 
   const match = item.message.match(/dispatch\s+(?:of\s+)?(\d+)\s+bags/i);
@@ -113,13 +107,13 @@ async function fetchNotifications(farmerId) {
  * Clean up stale notifications from the database.
  */
 async function cleanupStaleNotifications() {
-  const result = await db.query('SELECT * FROM "AppNotification" WHERE "isRead" = false');
+  const unreadNotifs = await notificationRepository.getUnreadNotifications();
   const processedTxsMap = new Map();
   let deletedCount = 0;
 
-  for (const item of result.rows) {
+  for (const item of unreadNotifs) {
     if (await checkStale(item, processedTxsMap)) {
-      await db.query('DELETE FROM "AppNotification" WHERE id = $1', [item.id]);
+      await notificationRepository.deleteNotification(item.id);
       deletedCount++;
     }
   }
@@ -134,31 +128,24 @@ async function cleanupStaleNotifications() {
 async function markNotificationRead(id) {
   if (id.startsWith('bill-')) {
     const billIdStr = id.replace('bill-', '');
-    const billRes = await db.query('SELECT "farmerId", amount, "periodLabel" FROM "BillingEntry" WHERE id = $1', [billIdStr]);
+    const bill = await notificationRepository.getBillingEntryDetails(billIdStr);
 
-    if (billRes.rows.length > 0) {
-      const { farmerId, amount, periodLabel } = billRes.rows[0];
-      const fdRes = await db.query('SELECT "coldStorageId" FROM "Farmer" WHERE id = $1', [farmerId]);
-      const coldStorageId = fdRes.rows[0]?.coldStorageId || DEFAULT_COLD_STORAGE_ID;
+    if (bill) {
+      const { farmerId, amount, periodLabel } = bill;
+      const coldStorageId = await notificationRepository.getFarmerColdStorageId(farmerId) || DEFAULT_COLD_STORAGE_ID;
       const message = `Storage rent of ₹${parseFloat(amount).toLocaleString('en-IN')} is due for ${periodLabel || 'recent storage period'}.`;
 
-      await db.query(
-        `INSERT INTO "AppNotification" ("id", "coldStorageId", "userId", "type", "title", "message", "isRead", "createdAt", "updatedAt")
-         VALUES ($1, $2, $3, 'billing', 'Payment Due', $4, true, NOW(), NOW())
-         ON CONFLICT (id) DO UPDATE SET "isRead" = true, "updatedAt" = NOW()`,
-        [id, coldStorageId, farmerId, message]
-      );
+      await notificationRepository.upsertBillingNotification(id, coldStorageId, farmerId, message);
     }
     return { message: 'Bill notification marked as read' };
   }
 
-  const checkRes = await db.query('SELECT "userId" FROM "AppNotification" WHERE id = $1', [id]);
-  if (checkRes.rows.length === 0) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
-  const userId = checkRes.rows[0].userId;
+  const userId = await notificationRepository.getNotificationUserId(id);
+  if (!userId) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
 
-  const csCheck = await db.query('SELECT id FROM "ColdStorageOnboarding" WHERE id = $1', [userId]);
-  if (csCheck.rows.length > 0) {
-    await db.query('DELETE FROM "AppNotification" WHERE id = $1', [id]);
+  const isCS = await notificationRepository.checkColdStorageExists(userId);
+  if (isCS) {
+    await notificationRepository.deleteNotification(id);
     return { message: 'Notification deleted' };
   }
 

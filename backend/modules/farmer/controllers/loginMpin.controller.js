@@ -1,4 +1,5 @@
 const farmerRepository = require('../farmer.repository');
+const farmerConstants = require('../farmer.constants');
 const db = require('../../../config/database');
 const { verifyMpin } = require('./mpinHelpers');
 const jwt = require('jsonwebtoken');
@@ -14,24 +15,23 @@ async function loginMpin(req, res) {
     const isFarmerRole = role === 'ColdStorage' || role === 'farmer';
 
     if (!isFarmerRole) {
-      const csRes = await db.query('SELECT id, "displayName", mpin FROM "ColdStorageOnboarding" WHERE phone = $1', [phone]);
-      if (csRes.rows.length > 0) {
-        const cs = csRes.rows[0];
+      const cs = await farmerRepository.getColdStorageByPhone(phone);
+      if (cs) {
         const csMpin = cs.mpin || '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c';
         if (verifyMpin(mpin, csMpin)) {
           const token = jwt.sign(
-            { id: cs.id, phone: phone, role: 'ColdStorageFacility' },
+            { id: cs.id, phone: phone, role: farmerConstants.ROLES.COLD_STORAGE_FACILITY },
             process.env.JWT_SECRET || 'annsetu_jwt_secret_key',
             { expiresIn: '7d' }
           );
           return res.json({
             success: true,
             token,
-            role: 'ColdStorageFacility',
+            role: farmerConstants.ROLES.COLD_STORAGE_FACILITY,
             coldStorage: { id: cs.id, name: cs.displayName, phone: phone }
           });
         } else if (isColdStorageRole) {
-          return res.status(401).json({ success: false, error: 'Invalid MPIN for Cold Storage. Please try again.' });
+          return res.status(401).json({ success: false, error: farmerConstants.ERROR_MESSAGES.INVALID_MPIN_CS });
         }
       }
     }
