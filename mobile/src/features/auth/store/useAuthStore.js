@@ -37,8 +37,11 @@ export const useAuthStore = create(
         }
       },
 
-      loginSuccess: async (phone, registrationRole) => {
-        const sessionObj = { user: { phone: '+91' + phone } };
+      loginSuccess: async (phone, registrationRole, token) => {
+        const sessionObj = { 
+          access_token: token,
+          user: { phone: '+91' + phone } 
+        };
         set({ session: sessionObj });
         
         let resolvedRole = 'ColdStorage';

@@ -7,6 +7,24 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/features/auth/store/useAuthStore';
 import { NavigationContainer } from '@react-navigation/native';
 
+// Global fetch interceptor to automatically attach JWT token
+const originalFetch = global.fetch;
+global.fetch = async (input, init) => {
+  try {
+    const sessionObj = useAuthStore.getState().session;
+    if (sessionObj && sessionObj.access_token) {
+      init = init || {};
+      init.headers = init.headers || {};
+      if (!init.headers['Authorization'] && !init.headers['authorization']) {
+        init.headers['Authorization'] = `Bearer ${sessionObj.access_token}`;
+      }
+    }
+  } catch (err) {
+    console.warn('Fetch interceptor failed to attach auth token:', err.message);
+  }
+  return originalFetch(input, init);
+};
+
 
 // Configure push notification alert settings when the app is foregrounded
 Notifications.setNotificationHandler({

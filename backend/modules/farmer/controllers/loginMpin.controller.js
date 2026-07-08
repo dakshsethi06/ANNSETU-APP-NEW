@@ -1,6 +1,7 @@
 const farmerRepository = require('../farmer.repository');
 const db = require('../../../config/database');
 const { verifyMpin } = require('./mpinHelpers');
+const jwt = require('jsonwebtoken');
 
 async function loginMpin(req, res) {
   const { phone, mpin, role } = req.body;
@@ -18,8 +19,14 @@ async function loginMpin(req, res) {
         const cs = csRes.rows[0];
         const csMpin = cs.mpin || '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c';
         if (verifyMpin(mpin, csMpin)) {
+          const token = jwt.sign(
+            { id: cs.id, phone: phone, role: 'ColdStorageFacility' },
+            process.env.JWT_SECRET || 'annsetu_jwt_secret_key',
+            { expiresIn: '7d' }
+          );
           return res.json({
             success: true,
+            token,
             role: 'ColdStorageFacility',
             coldStorage: { id: cs.id, name: cs.displayName, phone: phone }
           });
@@ -33,8 +40,14 @@ async function loginMpin(req, res) {
     if (farmer) {
       const farmerMpin = farmer.mpin || '1234';
       if (verifyMpin(mpin, farmerMpin)) {
+        const token = jwt.sign(
+          { id: farmer.id, phone: farmer.phone, role: 'ColdStorage' },
+          process.env.JWT_SECRET || 'annsetu_jwt_secret_key',
+          { expiresIn: '7d' }
+        );
         return res.json({
           success: true,
+          token,
           role: 'ColdStorage',
           farmer: { id: farmer.id, name: farmer.name, phone: farmer.phone, state: farmer.state }
         });

@@ -115,8 +115,11 @@ async function loginWithMpin(phone, mpin) {
  * Reset MPIN for a farmer or cold storage.
  */
 async function resetUserMpin(phone, otp, newMpin) {
-  if (otp !== '1234') {
-    const err = new Error('Invalid verification OTP.');
+  const { verifySupabaseOtp } = require('../../shared/utils/otpUtils');
+  try {
+    await verifySupabaseOtp(phone, otp);
+  } catch (otpErr) {
+    const err = new Error(otpErr.message || 'Invalid verification OTP.');
     err.statusCode = 400;
     throw err;
   }

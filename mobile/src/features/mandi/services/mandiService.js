@@ -1,9 +1,8 @@
-import { BACKEND_URL, USE_BACKEND, API_URL, API_KEY } from '../../../core/network/config';
+import { BACKEND_URL, USE_BACKEND } from '../../../core/network/config';
 
 /**
  * Fetches live mandi prices for a specific state, commodity, and market city.
- * Bypasses backend to request Government API directly if the backend is blocked.
- * Queries up to 1000 records to fetch all crops and mandis available.
+ * Requests from backend proxy, and falls back to mock data if the backend is unavailable.
  */
 export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'All', market = '') {
   // Option A: Try to fetch from local backend
@@ -28,56 +27,12 @@ export async function fetchMandiPrices(state = 'Uttar Pradesh', commodity = 'All
         }
       }
     } catch (err) {
-      console.log('Mobile client: Backend fetch failed/timed out, attempting direct query:', err.message);
+      console.log('Mobile client: Backend fetch failed/timed out, returning mock fallback:', err.message);
     }
   }
 
-  // Option B: Fallback to querying the Government API directly from the mobile client
+  // Fallback Mock Mandi Rates when backend is down/unavailable
   try {
-    let url = `${API_URL}?api-key=${API_KEY}&format=json&limit=1000`; // Fetch up to 1000 records to get all data
-    if (state && state !== 'All') {
-      url += `&filters[state]=${encodeURIComponent(state)}`;
-    }
-    if (commodity && commodity !== 'All') {
-      url += `&filters[commodity]=${encodeURIComponent(commodity)}`;
-    }
-    if (market && market !== 'All') {
-      url += `&filters[market]=${encodeURIComponent(market)}`;
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout limit for API response
-
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Government API returned HTTP status ${response.status}`);
-    }
-
-    const data = await response.json();
-    const records = data?.records || [];
-    
-    const parsedRecords = records.map((r) => ({
-      commodity: r.commodity || r.Commodity || 'Unknown',
-      market: r.market || r.Market || 'Unknown',
-      state: r.state || r.State || 'Unknown',
-      minPrice: parseFloat(r.min_price || r.Min_Price || r.min || 0),
-      maxPrice: parseFloat(r.max_price || r.Max_Price || r.max || 0),
-      modalPrice: parseFloat(r.modal_price || r.Modal_Price || r.modal || 0),
-      variety: r.variety || r.Variety || '-',
-      arrivalDate: r.arrival_date || r.Arrival_Date || '-',
-    })).filter((p) => p.minPrice > 0 || p.maxPrice > 0);
-
-    const minPrices = parsedRecords.map(p => p.minPrice);
-    const maxPrices = parsedRecords.map(p => p.maxPrice);
-
-    return {
-      minPrice: minPrices.length > 0 ? Math.min(...minPrices) : 0,
-      maxPrice: maxPrices.length > 0 ? Math.max(...maxPrices) : 0,
-      records: parsedRecords,
-    };
-  } catch (err) {
     console.warn('Direct Government API query failed, returning mock fallback data:', err.message);
     
     // Fallback Mock Mandi Rates

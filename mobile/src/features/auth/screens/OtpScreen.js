@@ -51,15 +51,13 @@ export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
 
         setLoading(true);
         try {
-            // Attempt real Supabase OTP verification, but proceed with mock if not configured / fails
-            try {
-                await supabase.auth.verifyOtp({
-                    phone: '+91' + phone,
-                    token: otpCode,
-                    type: 'sms',
-                });
-            } catch (err) {
-                console.log('Supabase verifyOtp bypassed (mocked OTP):', err.message);
+            const { data, error } = await supabase.auth.verifyOtp({
+                phone: '+91' + phone,
+                token: otpCode,
+                type: 'sms',
+            });
+            if (error) {
+                throw error;
             }
 
             // Visual verified success state

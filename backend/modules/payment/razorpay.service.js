@@ -80,9 +80,11 @@ function verifySignature(orderId, paymentId, signature) {
  * Verifies webhook signature sent by Razorpay servers.
  */
 function verifyWebhookSignature(bodyString, signatureHeader) {
-  const skipVerify = webhookSecret === 'webhook_secret_daksh_sethi';
-  if (skipVerify) {
-    return true;
+  if (!process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_WEBHOOK_SECRET === 'webhook_secret_daksh_sethi') {
+    return false;
+  }
+  if (!signatureHeader) {
+    return false;
   }
   const expectedSignature = crypto
     .createHmac('sha256', webhookSecret)

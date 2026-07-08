@@ -1,17 +1,21 @@
 const farmerRepository = require('../farmer.repository');
 const db = require('../../../config/database');
 const { hashMpin } = require('./mpinHelpers');
+const { verifySupabaseOtp } = require('../../../shared/utils/otpUtils');
 
 async function resetMpin(req, res) {
   const { phone, otp, newMpin } = req.body;
   if (!phone || !otp || !newMpin) {
     return res.status(400).json({ success: false, error: 'Phone, OTP, and new MPIN are required.' });
   }
-  if (otp !== '1234') {
-    return res.status(400).json({ success: false, error: 'Invalid verification OTP.' });
-  }
   if (newMpin.length < 4) {
     return res.status(400).json({ success: false, error: 'New MPIN must be at least 4 digits.' });
+  }
+
+  try {
+    await verifySupabaseOtp(phone, otp);
+  } catch (otpErr) {
+    return res.status(400).json({ success: false, error: otpErr.message || 'Invalid verification OTP.' });
   }
 
   try {
