@@ -1,16 +1,15 @@
 const farmerRepository = require('../farmer.repository');
-const db = require('../../../config/database');
+const farmerConstants = require('../farmer.constants');
 
 async function downloadStatement(req, res) {
   try {
     const { id } = req.params;
     const { fromDate, toDate } = req.query;
     
-    const farmerRes = await db.query('SELECT name, phone, "openingBalance" FROM "Farmer" WHERE id = $1', [id]);
-    if (farmerRes.rows.length === 0) {
-      return res.status(404).send('Farmer profile not found.');
+    const farmer = await farmerRepository.getFarmerBasicDetails(id);
+    if (!farmer) {
+      return res.status(404).send(farmerConstants.ERROR_MESSAGES.FARMER_NOT_FOUND);
     }
-    const farmer = farmerRes.rows[0];
 
     const ledger = await farmerRepository.getFarmerLedger(id);
 

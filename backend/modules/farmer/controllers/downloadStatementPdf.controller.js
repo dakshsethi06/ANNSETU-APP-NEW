@@ -9,18 +9,15 @@ async function downloadStatementPdf(req, res) {
     const { fromDate, toDate } = req.query;
 
 
-    const farmerRes = await db.query('SELECT * FROM "Farmer" WHERE id = $1', [id]);
-    if (farmerRes.rows.length === 0) return res.status(404).send('Farmer profile not found.');
-    const farmer = farmerRes.rows[0];
+    const farmer = await farmerRepository.getFarmerBasicDetails(id);
+    if (!farmer) return res.status(404).send('Farmer profile not found.');
 
 
-    const csRes = await db.query('SELECT "displayName", address, phone FROM "ColdStorageOnboarding" WHERE id = $1', [farmer.coldStorageId]);
-    const coldStorage = csRes.rows.length > 0 ? csRes.rows[0] : { displayName: 'Annsetu Cold Storage', address: 'Tundla', phone: '9999999999' };
+    const coldStorage = await farmerRepository.getColdStorageDetailsForFarmer(farmer.coldStorageId) || { displayName: 'Annsetu Cold Storage', address: 'Tundla', phone: '9999999999' };
     const coldStorageDetails = { name: coldStorage.displayName, address: coldStorage.address, phone: coldStorage.phone };
 
     const ledger = await farmerRepository.getFarmerLedger(id);
-    const paymentsRes = await db.query('SELECT * FROM "Payment" WHERE "farmerId" = $1 ORDER BY "createdAt" DESC', [id]);
-    const payments = paymentsRes.rows;
+    const payments = await farmerRepository.getPaymentsForFarmer(id);
 
     const normalizedFrom = parseToISODate(fromDate);
     const normalizedTo = parseToISODate(toDate);

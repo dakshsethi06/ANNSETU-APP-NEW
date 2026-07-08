@@ -1,6 +1,8 @@
 const path = require('path');
 const fs = require('fs');
-const db = require('../../config/database');
+const paymentRepository = require('./payment.repository');
+const paymentConstants = require('./payment.constants');
+const farmerRepository = require('../farmer/farmer.repository');
 const { createAppNotification } = require('../../shared/notifications/notifications');
 
 async function initiatePayment(req, res) {
@@ -8,30 +10,21 @@ async function initiatePayment(req, res) {
   const { farmerId, amount, paymentMode, coldStorageId: bodyColdStorageId } = req.body;
 
   try {
-    const farmerRes = await db.query('SELECT name, "coldStorageId" FROM "Farmer" WHERE id = $1', [farmerId]);
-    if (farmerRes.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Farmer profile not found' });
+    const farmer = await farmerRepository.getFarmerBasicDetails(farmerId);
+    if (!farmer) {
+      return res.status(404).json({ success: false, error: paymentConstants.ERROR_MESSAGES.FARMER_NOT_FOUND });
     }
 
-    const { name: farmerName, coldStorageId: dbColdStorageId } = farmerRes.rows[0];
+    const { name: farmerName, coldStorageId: dbColdStorageId } = farmer;
     const resolvedColdStorageId = bodyColdStorageId || dbColdStorageId;
     if (!resolvedColdStorageId) {
       return res.status(400).json({ success: false, error: 'coldStorageId is required.' });
     }
     const paymentId = 'PAY-' + Date.now() + '-' + Math.floor(1000 + Math.random() * 9000);
 
-    const sql = `
-      INSERT INTO "Payment" (
-        "id", "farmerId", "coldStorageId", "amount", "paymentMode", "direction", "status", "createdAt"
-      ) VALUES ($1, $2, $3, $4, $5, 'INBOUND', 'INITIATED', NOW())
-      RETURNING *
-    `;
-    const params = [
-      paymentId, farmerId, resolvedColdStorageId, parseFloat(amount), paymentMode || 'online'
-    ];
-    const result = await db.query(sql, params);
+    const payment = await paymentRepository.initiateManualPayment(paymentId, farmerId, resolvedColdStorageId, parseFloat(amount), paymentMode || 'online');
 
-    return res.status(201).json({ success: true, payment: result.rows[0] });
+    return res.status(201).json({ success: true, payment });
   } catch (error) {
     console.error('initiatePayment error:', error.message);
     return res.status(500).json({ success: false, error: error.message || 'Failed to initiate payment' });
@@ -42,7 +35,6 @@ async function verifyManualPayment(req, res) {
   const { paymentId, utrNumber, receiptFile, paymentDate, paymentMode, bankName } = req.body;
   console.log('[Payment Controller] verifyPayment (manual) called for ID:', paymentId, 'UTR:', utrNumber);
 
-  const client = await db.connect();
   try {
     let finalReceiptPath = receiptFile;
     if (receiptFile && receiptFile.startsWith('data:')) {
@@ -66,69 +58,54 @@ async function verifyManualPayment(req, res) {
       }
     }
 
-    await client.query('BEGIN');
-
-    const paymentRes = await client.query('SELECT * FROM "Payment" WHERE id = $1 FOR UPDATE', [paymentId]);
-    if (paymentRes.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, error: 'Payment record not found' });
-    }
-    const payment = paymentRes.rows[0];
-    const { farmerId, coldStorageId, amount } = payment;
-
-    const farmerRes = await client.query('SELECT name FROM "Farmer" WHERE id = $1', [farmerId]);
-    const farmerName = farmerRes.rows.length > 0 ? farmerRes.rows[0].name : 'Farmer';
-
     const utrRegex = /^[A-Z0-9]{12,22}$/i;
     if (!utrRegex.test(utrNumber)) {
-      await client.query('ROLLBACK');
-      await createAppNotification({
-        coldStorageId, userId: farmerId, lotId: null, type: 'warning',
-        title: 'Payment Details Incorrect',
-        message: `The UTR/Transaction Reference Number "${utrNumber}" you submitted is invalid. Please verify and resubmit.`,
-        icon: 'alert-triangle', actionUrl: null
-      });
+      const paymentInfo = await paymentRepository.getPaymentById(paymentId);
+      if (paymentInfo) {
+        await createAppNotification({
+          coldStorageId: paymentInfo.coldStorageId, userId: paymentInfo.farmerId, lotId: null, type: 'warning',
+          title: 'Payment Details Incorrect',
+          message: `The UTR/Transaction Reference Number "${utrNumber}" you submitted is invalid. Please verify and resubmit.`,
+          icon: 'alert-triangle', actionUrl: null
+        });
+      }
       return res.json({ success: false, preCheckFailed: true, error: 'Invalid UTR format. It must be between 12 and 22 alphanumeric characters.' });
     }
 
-    const duplicateRes = await client.query(
-      `SELECT id FROM "Payment" WHERE "reference" = $1 AND "status" NOT IN ('REJECTED', 'CANCELLED') AND id != $2 LIMIT 1`,
-      [utrNumber, paymentId]
+    const parsedDate = paymentDate ? new Date(paymentDate) : new Date();
+    
+    const txResult = await paymentRepository.verifyManualPaymentTx(
+      paymentId, utrNumber, finalReceiptPath, parsedDate, paymentMode, bankName
     );
-    if (duplicateRes.rows.length > 0) {
-      await client.query('ROLLBACK');
-      await createAppNotification({
-        coldStorageId, userId: farmerId, lotId: null, type: 'warning',
-        title: 'Payment Details Incorrect',
-        message: `The UTR "${utrNumber}" has already been submitted for verification. Please verify and resubmit if needed.`,
-        icon: 'alert-triangle', actionUrl: null
-      });
-      return res.json({ success: false, preCheckFailed: true, error: 'Duplicate UTR. This transaction reference has already been used.' });
+
+    if (!txResult.success) {
+      if (txResult.duplicate) {
+        await createAppNotification({
+          coldStorageId: txResult.payment.coldStorageId, userId: txResult.payment.farmerId, lotId: null, type: 'warning',
+          title: 'Payment Details Incorrect',
+          message: `The UTR "${utrNumber}" has already been submitted for verification. Please verify and resubmit if needed.`,
+          icon: 'alert-triangle', actionUrl: null
+        });
+        return res.json({ success: false, preCheckFailed: true, error: 'Duplicate UTR. This transaction reference has already been used.' });
+      }
+      return res.status(txResult.status || 500).json({ success: false, error: txResult.error });
     }
 
-    const parsedDate = paymentDate ? new Date(paymentDate) : new Date();
-    await client.query(
-      `UPDATE "Payment" SET "status" = 'PENDING', "reference" = $1, "receiptUrl" = $2, "createdAt" = $3,
-       "paymentMode" = COALESCE($5, "paymentMode"), "bankName" = COALESCE($6, "bankName") WHERE id = $4`,
-      [utrNumber, finalReceiptPath, parsedDate, paymentId, paymentMode, bankName]
-    );
-
-    await client.query('COMMIT');
+    const payment = txResult.payment;
+    const farmer = await farmerRepository.getFarmerBasicDetails(payment.farmerId);
+    const farmerName = farmer ? farmer.name : 'Farmer';
 
     await createAppNotification({
-      coldStorageId, userId: coldStorageId, lotId: null, type: 'warning',
+      coldStorageId: payment.coldStorageId, userId: payment.coldStorageId, lotId: null, type: 'warning',
       title: 'Payment Verification Required',
-      message: `Farmer ${farmerName} submitted payment details of ₹${amount.toLocaleString('en-IN')} (UTR: ${utrNumber}) for verification.`,
+      message: `Farmer ${farmerName} submitted payment details of ₹${parseFloat(payment.amount).toLocaleString('en-IN')} (UTR: ${utrNumber}) for verification.`,
       icon: 'lock', actionUrl: `/payment-verification/${paymentId}`
     });
 
     return res.json({ success: true, message: 'Payment verification submitted successfully' });
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('verifyPayment (manual) error:', error.message);
     return res.status(500).json({ success: false, error: error.message || 'Failed to verify payment' });
-  } finally {
-    client.release();
   }
 }
 

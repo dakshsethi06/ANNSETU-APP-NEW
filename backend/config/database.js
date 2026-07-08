@@ -11,9 +11,9 @@ if (hasValidUrl) {
   try {
     pool = new Pool({
       connectionString: config.databaseUrl,
-      ssl: {
-        rejectUnauthorized: false
-      },
+      ssl: config.nodeEnv === 'production'
+        ? { rejectUnauthorized: true }
+        : { rejectUnauthorized: false },
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000

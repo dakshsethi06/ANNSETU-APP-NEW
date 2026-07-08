@@ -93,7 +93,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
       }
 
       if (onLoginSuccess) {
-        onLoginSuccess(phone, data.role);
+        onLoginSuccess(phone, data.role, data.token);
       }
     } catch (error) {
       Alert.alert('Login Failed', error.message);

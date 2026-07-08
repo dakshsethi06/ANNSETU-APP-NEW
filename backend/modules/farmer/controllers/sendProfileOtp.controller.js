@@ -1,4 +1,6 @@
 const db = require('../../../config/database');
+const farmerRepository = require('../farmer.repository');
+const farmerConstants = require('../farmer.constants');
 const crypto = require('crypto');
 const { sendSMS, sendEmail } = require('../../../shared/notifications');
 
@@ -21,20 +23,13 @@ async function sendProfileOtp(req, res) {
       : targetValue.trim().toLowerCase();
 
     // Delete existing OTPs for this farmer and target type
-    await db.query(
-      'DELETE FROM "OtpVerification" WHERE "farmerId" = $1 AND "targetType" = $2',
-      [id, targetType]
-    );
+    await farmerRepository.deleteOtpVerification(id, targetType);
 
     // Generate unique verification ID
     const verificationId = 'otp_' + crypto.randomBytes(8).toString('hex');
 
     // Insert new OTP with 5-minute expiry
-    await db.query(
-      `INSERT INTO "OtpVerification" ("id", "farmerId", "targetType", "targetValue", "code", "expiresAt")
-     VALUES ($1, $2, $3, $4, $5, NOW() + INTERVAL '5 minutes')`,
-      [verificationId, id, targetType, cleanTargetValue, otpCode]
-    );
+    await farmerRepository.insertOtpVerification(verificationId, id, targetType, cleanTargetValue, otpCode);
 
     // Send the code
     if (targetType === 'phone') {

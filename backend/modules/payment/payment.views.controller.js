@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const db = require('../../config/database');
 const paymentRepository = require('./payment.repository');
 
 function escapeHTML(str) {
@@ -22,9 +21,9 @@ async function renderMockCheckout(req, res) {
   
   let amount = 0.00;
   try {
-    const paymentRes = await db.query('SELECT amount FROM "Payment" WHERE id = $1', [orderId]);
-    if (paymentRes.rows.length > 0) {
-      amount = paymentRes.rows[0].amount;
+    const payment = await paymentRepository.getPaymentById(orderId);
+    if (payment) {
+      amount = payment.amount;
     }
   } catch (err) {
     console.warn('Failed to retrieve order amount for mock checkout:', err.message);

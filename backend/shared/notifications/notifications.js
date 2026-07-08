@@ -1,10 +1,7 @@
 const appNotificationRepository = require('../../modules/notification/notification.repository');
-<<<<<<< Updated upstream
 const { sendEmail } = require('./emailService');
 const { sendSMS } = require('./smsService');
-=======
 const { DEFAULT_COLD_STORAGE_ID } = require('../../config/constants');
->>>>>>> Stashed changes
 
 async function logOutboundNotification({
   coldStorageId = null, channel, eventType, recipientPhone = null, recipientEmail = null, recipientName = null,
@@ -34,7 +31,7 @@ async function ensureUserForFarmer(farmerId) {
   } catch (err) { console.error(`Error in ensureUserForFarmer for ${farmerId}:`, err.message); }
 }
 
-<<<<<<< Updated upstream
+
 async function sendEmailWithLog({
   to,
   subject,
@@ -136,10 +133,7 @@ async function sendSMSWithLog({
   }
 }
 
-async function createAppNotification({ coldStorageId = 'cmmp9txv0000ai3t4wush9trs', userId, lotId = null, type = 'info', title, message, icon = 'info', actionUrl = null, alertDate = null }) {
-=======
 async function createAppNotification({ coldStorageId = DEFAULT_COLD_STORAGE_ID, userId, lotId = null, type = 'info', title, message, icon = 'info', actionUrl = null, alertDate = null }) {
->>>>>>> Stashed changes
   try {
     if (userId) await ensureUserForFarmer(userId);
     const id = 'notif-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
