@@ -145,6 +145,11 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, on
           return;
         }
 
+        if (item.type === 'GLOBAL_BROADCAST' && item.actionUrl) {
+          setFullImageUrl(item.actionUrl);
+          setImageModalVisible(true);
+        }
+
         setNotifications(prev => prev.filter(n => n.id !== item.id));
         await markNotificationRead(item.id);
         if (onMarkRead) {
