@@ -376,130 +376,78 @@ In the dispatch creation flow, if a farmer requested a dispatch for a commodity,
 
 ---
 
-## Task 4.11: Centralize Hardcoded Cold Storage CUID Fallbacks
+
+## Task 4.4: Delete Legacy payment.controller.js File
 
 ### Summary of the Issue
 
-Previously, the codebase contained a hardcoded cold storage fallback CUID (`'cmmp9txv0000ai3t4wush9trs'`) spread across multiple controllers, repositories, and service modules. In addition, write requests (like creating/registering a farmer, initiating a payment, or adding an inward stock lot) would silently fall back to this hardcoded value when no `coldStorageId` was provided in the parameters or request. This bypassed validation, allowed write actions to happen without specifying which cold storage they belonged to, and violated strict data validation principles.
+The payment module contained a legacy, monolithic 780-line controller file (`payment.controller.js`) that duplicated code and functionalities that had since been split and modularized into dedicated controllers (such as `payment.create.controller.js`, `payment.manual.controller.js`, `payment.views.controller.js`, etc.). This obsolete file was cluttering the repository, causing confusion during edits and refactorings, and bloating the backend module directory.
 
 ### Reason for the Change
 
-- **Data Validation & Integrity**: Enforces that all write requests must provide a valid `coldStorageId`. Writing records without it now returns a `400 Bad Request` or validation error rather than silently defaulting.
-- **Centralized Fallback System**: Extracts the fallback CUID string to a central constants configuration (`DEFAULT_COLD_STORAGE_ID` in `config/constants.js`) for use in read-only fallbacks (e.g. notifications).
+- **Codebase Cleanliness & Maintainability**: Permanently removes unused dead code to prevent future confusion.
+- **Modularity**: Aligns the codebase with the modularized payment design where each controller has a single responsibility.
+
+### Files Deleted
+
+| # | File Path | Action |
+|---|-----------|--------|
+| 1 | `backend/modules/payment/payment.controller.js` | **DELETE** — Safely deleted the duplicate legacy controller file |
+
+---
+
+### Impact/Benefits
+
+- **Zero Functional Impact**: The backend router and operations continue to work without disruption.
+- **Repository Size reduction**: Removed 31 KB / 780 lines of duplicate/unused JavaScript logic.
+
+---
+
+## Task 4.5 (LAN IP): Remove Hardcoded LAN IP Fallbacks
+
+### Summary of the Issue
+
+The backend order creation controller and mobile client network configuration contained a hardcoded local area network (LAN) IP fallback address (`10.36.66.6`). This hardcoding meant that when the application was deployed, tested, or accessed outside of that specific network configuration, connection failures and redirect issues would occur unless the source files were manually edited and recompiled.
+
+### Reason for the Change
+
+- **Configuration Decoupling**: Dynamically resolves the server domain/IP to match the environment or incoming request details, preventing hardcoded environmental dependencies.
+- **Improved Portability**: Allows running and pairing mobile and backend components across any LAN/WiFi network without source code edits.
 
 ### Files Modified
 
 | # | File Path | Action |
 |---|-----------|--------|
-| 1 | `backend/modules/payment/payment.manual.controller.js` | **MODIFIED** — Enforced `coldStorageId` in `initiatePayment` |
-| 2 | `backend/modules/payment/payment.repository.js` | **MODIFIED** — Enforced `coldStorageId` in `createPendingPayment` |
-| 3 | `backend/modules/payment/payment.create.controller.js` | **MODIFIED** — Retrieved and validated `coldStorageId` from farmer record in `createOrder` |
-| 4 | `backend/modules/payment/payment.controller.js` | **MODIFIED** — Enforced `coldStorageId` validation in `createOrder` and `initiatePayment` |
-| 5 | `backend/modules/notification/repositories/userSync.repository.js` | **MODIFIED** — Enforced `coldStorageId` resolution in `upsertUserPushToken` |
-| 6 | `backend/modules/farmer/farmer.service.js` | **MODIFIED** — Destructured and enforced `coldStorageId` in `registerNewFarmer` |
-| 7 | `backend/modules/farmer/controllers/registerFarmer.controller.js` | **MODIFIED** — Enforced `coldStorageId` destructuring and validation in `registerFarmer` |
-| 8 | `backend/modules/dispatch/dispatch.repository.js` | **MODIFIED** — Enforced `coldStorageId` in `verifyColdStorage` |
-| 9 | `backend/modules/amad/amad.service.js` | **MODIFIED** — Enforced `coldStorageId` presence in `createNewAmadLot` |
-| 10 | `backend/modules/amad/amad.controller.js` | **MODIFIED** — Propagated validation errors from service in `createAmad` |
-| 11 | `backend/shared/notifications/notifications.js` | **MODIFIED** — Imported and used `DEFAULT_COLD_STORAGE_ID` fallback |
-| 12 | `backend/modules/storage/storage.service.js` | **MODIFIED** — Imported and used `DEFAULT_COLD_STORAGE_ID` fallback |
-| 13 | `backend/modules/notification/notification.service.js` | **MODIFIED** — Imported and used `DEFAULT_COLD_STORAGE_ID` fallback |
-| 14 | `backend/modules/dispatch/dispatch.service.js` | **MODIFIED** — Imported and used `DEFAULT_COLD_STORAGE_ID` fallback |
+| 1 | `backend/modules/payment/payment.create.controller.js` | **MODIFIED** — Replaced hardcoded IP fallbacks with dynamic host headers and environment variables |
+| 2 | `mobile/src/core/network/config.js` | **MODIFIED** — Replaced hardcoded IP fallback with a standard `http://localhost:3001` fallback |
 
 ---
 
 ### Key Code Changes
 
-#### 1. Enforcing Parameters on Write Operations
-- In **Payment initiation**:
+- In [payment.create.controller.js](file:///c:/Annsetu/ANNSETU-APP-NEW/backend/modules/payment/payment.create.controller.js):
   ```javascript
-  const resolvedColdStorageId = bodyColdStorageId || dbColdStorageId;
-  if (!resolvedColdStorageId) {
-    return res.status(400).json({ success: false, error: 'coldStorageId is required.' });
+  let serverIp = req.headers.host || 'localhost:3001';
+  if (serverIp.includes('localhost') || serverIp.includes('127.0.0.1')) {
+    serverIp = process.env.BACKEND_HOST || serverIp;
   }
   ```
-- In **Farmer registration**:
+- In [config.js](file:///c:/Annsetu/ANNSETU-APP-NEW/mobile/src/core/network/config.js):
   ```javascript
-  const { ..., coldStorageId } = data;
-  if (!coldStorageId) {
-    throw new Error('coldStorageId is required for registering a new farmer.');
-  }
-  ```
-- In **Amad lot creation**:
-  ```javascript
-  const { ..., coldStorageId } = data;
-  if (!coldStorageId) {
-    const err = new Error('coldStorageId is required.');
-    err.statusCode = 400;
-    throw err;
-  }
-  ```
-
-#### 2. Centralized Read Fallbacks
-- Imported and used `DEFAULT_COLD_STORAGE_ID` from `backend/config/constants.js`:
-  ```javascript
-  const { DEFAULT_COLD_STORAGE_ID } = require('../../config/constants');
-  ...
-  const coldStorageId = farmer ? farmer.coldStorageId : DEFAULT_COLD_STORAGE_ID;
+  export const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3001';
   ```
 
 ---
 
 ### Impact/Benefits
 
-- **Prevention of Orphaned Data**: Completely stops the creation of records (farmers, payments, holdings) that are not linked to a specific cold storage facility.
-- **Improved API Error Handling**: Replaces silent defaults with explicit `400 Bad Request` messages.
-- **Maintainability**: Centralizes the fallback CUID string to a single location, facilitating easy configuration changes.
+- **Zero Hardcoded IPs**: Eliminates local environment assumptions from codebase repository.
+- **Dynamic Deployment**: Simplifies deployment across multiple stages (development, staging, production) using environment variables.
 
----
+---------
 
-## Task 4.12: Normalize Ledger Running Balance Direction
 
-### Summary of the Issue
-
-Previously, there was a discrepancy in running balance directions between the Farmer ledger and the Cold Storage ledger inside `getFarmerLedger.repository.js`. 
-- In the **Farmer ledger**, positive values represented outstanding dues/liabilities (meaning the farmer owed money). Charges/bills increased the balance, and payments decreased the balance.
-- In the **Cold Storage ledger**, positive values represented cash received/revenue (asset). Charges/bills decreased the balance, and payments increased the balance.
-This made the balance directions incompatible, confusing to developers, and inconsistent across different dashboard interfaces.
-
-### Reason for the Change
-
-- **Standardization & Consistency**: Unifies the financial meaning of the running balance across both ledger endpoints so that they share the same direction.
-- **Improved Readability**: Clarifies reporting and ensures positive values consistently represent outstanding dues (asset/receivable for cold storage, liability/payable for farmers).
-
-### Files Modified
-
-| # | File Path | Action |
-|---|-----------|--------|
-| 1 | `backend/modules/farmer/repositories/getFarmerLedger.repository.js` | **MODIFIED** — Standardized Cold Storage view running balance calculation to align with Farmer ledger direction |
-
----
-
-### Key Code Changes
-
-- In [getFarmerLedger.repository.js](file:///c:/Annsetu/ANNSETU-APP-NEW/backend/modules/farmer/repositories/getFarmerLedger.repository.js):
-  - In Cold Storage view block:
-    ```javascript
-    runningBalance += (-entry.amount);
-    ```
-  - Added explicit documentation comments on the balance representation in both Cold Storage and Farmer code paths:
-    ```javascript
-    // Standardized Running Balance Direction:
-    // Positive values represent Outstanding Farmer Dues (asset/receivable for Cold Storage).
-    // Charges/Bills (negative in entry.amount) increase outstanding dues.
-    // Payments (positive in entry.amount) decrease outstanding dues.
-    ```
-
----
-
-### Impact/Benefits
-
-- **Unified Logic**: Both ledgers represent unpaid/outstanding amounts as positive numbers and advance payments/credit as negative numbers.
-- **Maintainability**: Financial definitions are clearly documented directly in the codebase for ease of future updates.
-
----
-
-## Task 4.5: Secure Mock Checkout Template
+## Task 4.6: Secure Mock Checkout Template
 
 ### Summary of the Issue
 
@@ -586,9 +534,10 @@ function escapeHTML(str) {
 - **Robust Security**: Completely neutralizes Cross-Site Scripting (XSS) vectors in both active and legacy payment mock pages.
 - **Clean Architecture**: Separation of HTML and JS contexts prevents standard template injection breakouts.
 
----
+---------
 
-## Task 4.6: Database Schema Adjustments
+
+## Task 4.7: Database Schema Adjustments
 
 ### Summary of the Issue
 
@@ -661,7 +610,8 @@ The database `Payment` table previously did not have a dedicated field for trans
 - **Normalized Database Design**: The receipt URL is saved in a dedicated column, preserving the `note` column for text/remarks.
 - **Robust API & Mobile compatibility**: Old payments displaying receipts via `note` and new payments utilizing `receiptUrl` are handled seamlessly with zero changes needed on the frontend.
 
----
+------
+
 
 ## Task 4.8: Unify Notification User Accounts
 
@@ -744,9 +694,10 @@ A one-time database migration query was executed against the database to upgrade
 - **Consistent Schema**: Unifies authentication credentials under a consistent schema (user password hash matches the farmer's registered MPIN).
 - **Zero Disruption**: Keeps push token and in-app notification features fully functional.
 
----
+---------
 
-## Task 4.11: Setup Automated QA Testing Suite
+
+## Task 4.9: Setup Automated QA Testing Suite
 
 ### Summary of the Issue
 
@@ -843,3 +794,127 @@ The backend did not have any automated testing suite or framework. Calculations 
 - **Code Coverage**: Covers core ledger, payment reconciliation, and storage dispatch calculations.
 - **Robustness**: Verifies the math in financial computations is correct and consistent.
 - **Fast Local Execution**: All 4 tests run and pass in under 1 second.
+
+--------
+
+
+## Task 4.10: Centralize Hardcoded Cold Storage CUID Fallbacks
+
+### Summary of the Issue
+
+Previously, the codebase contained a hardcoded cold storage fallback CUID (`'cmmp9txv0000ai3t4wush9trs'`) spread across multiple controllers, repositories, and service modules. In addition, write requests (like creating/registering a farmer, initiating a payment, or adding an inward stock lot) would silently fall back to this hardcoded value when no `coldStorageId` was provided in the parameters or request. This bypassed validation, allowed write actions to happen without specifying which cold storage they belonged to, and violated strict data validation principles.
+
+### Reason for the Change
+
+- **Data Validation & Integrity**: Enforces that all write requests must provide a valid `coldStorageId`. Writing records without it now returns a `400 Bad Request` or validation error rather than silently defaulting.
+- **Centralized Fallback System**: Extracts the fallback CUID string to a central constants configuration (`DEFAULT_COLD_STORAGE_ID` in `config/constants.js`) for use in read-only fallbacks (e.g. notifications).
+
+### Files Modified
+
+| # | File Path | Action |
+|---|-----------|--------|
+| 1 | `backend/modules/payment/payment.manual.controller.js` | **MODIFIED** — Enforced `coldStorageId` in `initiatePayment` |
+| 2 | `backend/modules/payment/payment.repository.js` | **MODIFIED** — Enforced `coldStorageId` in `createPendingPayment` |
+| 3 | `backend/modules/payment/payment.create.controller.js` | **MODIFIED** — Retrieved and validated `coldStorageId` from farmer record in `createOrder` |
+| 4 | `backend/modules/payment/payment.controller.js` | **MODIFIED** — Enforced `coldStorageId` validation in `createOrder` and `initiatePayment` |
+| 5 | `backend/modules/notification/repositories/userSync.repository.js` | **MODIFIED** — Enforced `coldStorageId` resolution in `upsertUserPushToken` |
+| 6 | `backend/modules/farmer/farmer.service.js` | **MODIFIED** — Destructured and enforced `coldStorageId` in `registerNewFarmer` |
+| 7 | `backend/modules/farmer/controllers/registerFarmer.controller.js` | **MODIFIED** — Enforced `coldStorageId` destructuring and validation in `registerFarmer` |
+| 8 | `backend/modules/dispatch/dispatch.repository.js` | **MODIFIED** — Enforced `coldStorageId` in `verifyColdStorage` |
+| 9 | `backend/modules/amad/amad.service.js` | **MODIFIED** — Enforced `coldStorageId` presence in `createNewAmadLot` |
+| 10 | `backend/modules/amad/amad.controller.js` | **MODIFIED** — Propagated validation errors from service in `createAmad` |
+| 11 | `backend/shared/notifications/notifications.js` | **MODIFIED** — Imported and used `DEFAULT_COLD_STORAGE_ID` fallback |
+| 12 | `backend/modules/storage/storage.service.js` | **MODIFIED** — Imported and used `DEFAULT_COLD_STORAGE_ID` fallback |
+| 13 | `backend/modules/notification/notification.service.js` | **MODIFIED** — Imported and used `DEFAULT_COLD_STORAGE_ID` fallback |
+| 14 | `backend/modules/dispatch/dispatch.service.js` | **MODIFIED** — Imported and used `DEFAULT_COLD_STORAGE_ID` fallback |
+
+---
+
+### Key Code Changes
+
+#### 1. Enforcing Parameters on Write Operations
+- In **Payment initiation**:
+  ```javascript
+  const resolvedColdStorageId = bodyColdStorageId || dbColdStorageId;
+  if (!resolvedColdStorageId) {
+    return res.status(400).json({ success: false, error: 'coldStorageId is required.' });
+  }
+  ```
+- In **Farmer registration**:
+  ```javascript
+  const { ..., coldStorageId } = data;
+  if (!coldStorageId) {
+    throw new Error('coldStorageId is required for registering a new farmer.');
+  }
+  ```
+- In **Amad lot creation**:
+  ```javascript
+  const { ..., coldStorageId } = data;
+  if (!coldStorageId) {
+    const err = new Error('coldStorageId is required.');
+    err.statusCode = 400;
+    throw err;
+  }
+  ```
+
+#### 2. Centralized Read Fallbacks
+- Imported and used `DEFAULT_COLD_STORAGE_ID` from `backend/config/constants.js`:
+  ```javascript
+  const { DEFAULT_COLD_STORAGE_ID } = require('../../config/constants');
+  ...
+  const coldStorageId = farmer ? farmer.coldStorageId : DEFAULT_COLD_STORAGE_ID;
+  ```
+
+---
+
+### Impact/Benefits
+
+- **Prevention of Orphaned Data**: Completely stops the creation of records (farmers, payments, holdings) that are not linked to a specific cold storage facility.
+- **Improved API Error Handling**: Replaces silent defaults with explicit `400 Bad Request` messages.
+- **Maintainability**: Centralizes the fallback CUID string to a single location, facilitating easy configuration changes.
+
+---
+
+## Task 4.11: Normalize Ledger Running Balance Direction
+
+### Summary of the Issue
+
+Previously, there was a discrepancy in running balance directions between the Farmer ledger and the Cold Storage ledger inside `getFarmerLedger.repository.js`. 
+- In the **Farmer ledger**, positive values represented outstanding dues/liabilities (meaning the farmer owed money). Charges/bills increased the balance, and payments decreased the balance.
+- In the **Cold Storage ledger**, positive values represented cash received/revenue (asset). Charges/bills decreased the balance, and payments increased the balance.
+This made the balance directions incompatible, confusing to developers, and inconsistent across different dashboard interfaces.
+
+### Reason for the Change
+
+- **Standardization & Consistency**: Unifies the financial meaning of the running balance across both ledger endpoints so that they share the same direction.
+- **Improved Readability**: Clarifies reporting and ensures positive values consistently represent outstanding dues (asset/receivable for cold storage, liability/payable for farmers).
+
+### Files Modified
+
+| # | File Path | Action |
+|---|-----------|--------|
+| 1 | `backend/modules/farmer/repositories/getFarmerLedger.repository.js` | **MODIFIED** — Standardized Cold Storage view running balance calculation to align with Farmer ledger direction |
+
+---
+
+### Key Code Changes
+
+- In [getFarmerLedger.repository.js](file:///c:/Annsetu/ANNSETU-APP-NEW/backend/modules/farmer/repositories/getFarmerLedger.repository.js):
+  - In Cold Storage view block:
+    ```javascript
+    runningBalance += (-entry.amount);
+    ```
+  - Added explicit documentation comments on the balance representation in both Cold Storage and Farmer code paths:
+    ```javascript
+    // Standardized Running Balance Direction:
+    // Positive values represent Outstanding Farmer Dues (asset/receivable for Cold Storage).
+    // Charges/Bills (negative in entry.amount) increase outstanding dues.
+    // Payments (positive in entry.amount) decrease outstanding dues.
+    ```
+
+---
+
+### Impact/Benefits
+
+- **Unified Logic**: Both ledgers represent unpaid/outstanding amounts as positive numbers and advance payments/credit as negative numbers.
+- **Maintainability**: Financial definitions are clearly documented directly in the codebase for ease of future updates.

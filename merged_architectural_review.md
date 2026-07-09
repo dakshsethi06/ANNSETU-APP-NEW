@@ -25,7 +25,7 @@ This document consolidates findings from `architectural_review.md`, `supplementa
 ### 2. Architectural & Structural Debt
 8. **Conditional Rendering Navigation**: Mobile app uses `switch(role)` for root screens and `activeTab === 'name'` for inner screens. Android back button exits the app; tabs unmount and lose state.
    * **Change**: Replace with React Navigation using Stack, BottomTab, and Nested navigators.
-9. **God-Object Root Component**: `App.js` handles Supabase session, roles, keyboard, font loading, OTA c hecks, push tokens, and passes 9 props.
+9. **God-Object Root Component**: `App.js` handles Supabase session, roles, keyboard, font loading, OTA checks, push tokens, and passes 9 props.
    * **Change**: Manage global state (auth, settings) using Zustand.
 10. **Role Naming Inversion**: The role `'ColdStorage'` is used to designate a Farmer dashboard, while `'ColdStorageFacility'` represents the actual storage facility.
     * **Change**: Establish clear role constants (`FARMER`, `VENDOR`, `COLD_STORAGE_FACILITY`) via an enum or constants file.
@@ -185,20 +185,38 @@ gantt
 * **Target:** [dispatch.repository.js](file:///d:/DAKSH/neww-app/backend/modules/dispatch/dispatch.repository.js#L113-L115)
 * **Description:** Remove the arbitrary database lot fallback selector. Fail the dispatch request with a 400 Bad Request error if the farmer doesn't have an active stock lot.
 
-* **Task 4.4: Remove hardcoded LAN callback URLs**
-  * Eliminate the local developer IP address (`192.168.200.24`) in `payment.controller.js`. Resolve hosting host names dynamically from the request context or configuration environment variables.
-* **Task 4.5: Secure mock checkout template**
+ Task 4.4 Delete Legacy payment.controller.js File
+* **Target:** [payment.controller.js](file:///d:/DAKSH/neww-app/backend/modules/payment/payment.controller.js)
+* **Description:** Safe removal of this unused 780-line file that duplicates active payment controller codes.
+
+* **Task 4.5 Remove Hardcoded LAN IP Fallbacks
+* **Target:** [payment.create.controller.js](file:///d:/DAKSH/neww-app/backend/modules/payment/payment.create.controller.js#L51-L54) & [config.js](file:///d:/DAKSH/neww-app/mobile/src/core/network/config.js#L1)
+* **Description:** Dynamically resolve backend URLs and checkout domains using host headers or environment variables. Remove hardcoded IPs (`10.36.66.6`, `192.168.1.24`)
+
+* **Task 4.6: Secure mock checkout template**
   * Sanitize and contextually escape inputs to the mock checkout view page to prevent HTML/script injection.
-* **Task 4.6: Database schema adjustments**
+
+* **Task 4.7: Database schema adjustments**
   * Create a dedicated `receiptUrl` column in the Payment model. Update functions to write to this column rather than using `note`.
-* **Task 4.7: Fix dispatch notification routing**
-  * Resolve and notify the correct vendor ID instead of sending alerts to the non-existent `'default_vendor'` profile.
+
 * 4.8 Unify Notification User Accounts
 * **Target:** [notification.repository.js](file:///d:/DAKSH/neww-app/backend/modules/notification/notification.repository.js#L90-L97)
 * **Description:** Remove shadow user database inserts with `'dummy_hash'` passwords. Unify credentials under a single consistent authentication schema.
 
-* **Task 4.9: Connect real Vendor API endpoints**
-  * Replace the static hardcoded data on the `VendorScreen` with database queries for active saudas, pending dues, and logistics activity.
-* **Task 4.11 Setup Automated QA Testing Suite
+* **Task 4.9 Setup Automated QA Testing Suite
 * **Target:** Mobile & Backend Testing
 * **Description:** Install Jest, build standard mocks for payment checkouts and stock calculations, and write unit assertions for ledger calculations.
+
+4.10 Centralize Hardcoded Cold Storage CUID Fallbacks
+* **Target:** All backend modules (14 occurrences)
+* **Description:** Extract the fallback string `'cmmp9txv0000ai3t4wush9trs'` to [constants.js](file:///d:/DAKSH/neww-app/backend/config/constants.js). Enforce mandatory parameters on write requests instead of silently defaulting.
+
+4.11 Normalize Ledger Running Balance Direction
+* **Target:** [getFarmerLedger.repository.js](file:///d:/DAKSH/neww-app/backend/modules/farmer/repositories/getFarmerLedger.repository.js#L128-L135)
+* **Description:** Standardize the balance computation direction between farmer and cold storage ledgers. Explicitly document whether positive values represent assets or liabilities.
+
+Task 4.12: Fix dispatch notification routing**
+  * Resolve and notify the correct vendor ID instead of sending alerts to the non-existent `'default_vendor'` profile.
+
+* **Task 4.13: Connect real Vendor API endpoints**
+  * Replace the static hardcoded data on the `VendorScreen` with database queries for active saudas, pending dues, and logistics activity.
