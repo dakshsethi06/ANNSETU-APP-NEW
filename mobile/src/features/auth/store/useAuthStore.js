@@ -40,7 +40,8 @@ export const useAuthStore = create(
       loginSuccess: async (phone, registrationRole, token) => {
         const sessionObj = { 
           access_token: token,
-          user: { phone: '+91' + phone } 
+          user: { phone: '+91' + phone },
+          isMpinLogin: true
         };
         set({ session: sessionObj });
         

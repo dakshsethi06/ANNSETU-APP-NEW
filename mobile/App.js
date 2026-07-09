@@ -104,7 +104,14 @@ export default function App() {
   useEffect(() => {
     // 1. Fetch initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+      if (session) {
+        setSession(session);
+      } else {
+        const current = useAuthStore.getState().session;
+        if (!current || !current.isMpinLogin) {
+          setSession(null);
+        }
+      }
       setLoadingSession(false);
     }).catch(err => {
       console.warn("Failed to get initial session:", err);
@@ -113,7 +120,14 @@ export default function App() {
 
     // 2. Listen for auth changes (login, logout, token refresh)
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      if (session) {
+        setSession(session);
+      } else {
+        const current = useAuthStore.getState().session;
+        if (!current || !current.isMpinLogin) {
+          setSession(null);
+        }
+      }
     });
 
     // 3. OTA Updates check
