@@ -69,59 +69,71 @@ export default function KhataSummaryView({
 
         <Text style={styles.summaryPageTitle}>{t('khata.payment_summary')}</Text>
 
-        <View style={styles.summaryDetailsCard}>
-          <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{t('khata.cold_storage')}</Text>
-            <Text style={styles.detailValue}>{csName}</Text>
-          </View>
+        <View></View> style={styles.summaryDetailsCard}
+        <View style={styles.summaryDetailItem}>
+          <Text style={styles.detailLabel}>{t('khata.cold_storage')}</Text>
+          <Text style={styles.detailValue}>{csName}</Text>
+        </View>
 
-          <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{t('khata.booking_id')}</Text>
-            <Text style={styles.detailValue}>{bookingId}</Text>
-          </View>
+        <View style={styles.summaryDetailItem}>
+          <Text style={styles.detailLabel}>{t('khata.booking_id')}</Text>
+          <Text style={styles.detailValue}>{bookingId}</Text>
+        </View>
 
-          <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{t('khata.commodity')}</Text>
-            <Text style={styles.detailValue}>{commodity}</Text>
-          </View>
+        <View style={styles.summaryDetailItem}>
+          <Text style={styles.detailLabel}>{t('khata.commodity')}</Text>
+          <Text style={styles.detailValue}>{commodity}</Text>
+        </View>
 
-          <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{t('khata.quantity')}</Text>
-            <Text style={styles.detailValue}>{quantity}</Text>
-          </View>
+        <View style={styles.summaryDetailItem}>
+          <Text style={styles.detailLabel}>{t('khata.quantity')}</Text>
+          <Text style={styles.detailValue}>{quantity}</Text>
+        </View>
 
-          <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{t('khata.storage_duration')}</Text>
-            <Text style={styles.detailValue}>{storageDuration}</Text>
-          </View>
+        <View style={styles.summaryDetailItem}>
+          <Text style={styles.detailLabel}>{t('khata.storage_duration')}</Text>
+          <Text style={styles.detailValue}>{storageDuration}</Text>
+        </View>
 
+        <View style={styles.summaryDetailItem}>
+          <Text style={styles.detailLabel}>{t('khata.payment_amount')}</Text>
           <View style={[styles.summaryDetailItem, { borderBottomWidth: 0 }]}>
-            <Text style={styles.detailLabel}>{t('khata.payment_amount')}</Text>
+            <Text style={styles.detailLabel}>{lang === 'en' ? 'Payment Amount' : 'भुगतान राशि'}</Text>
             <Text style={[styles.detailValue, { color: '#DC2626' }]}>
               ₹{Number(pendingRent || 0).toLocaleString('en-IN')}
             </Text>
           </View>
+
+          <View style={[styles.summaryDetailItem, { borderBottomWidth: 0 }]}>
+            <Text style={styles.detailLabel}>{t('khata.payment_status')}</Text>
+            <View style={styles.statusBadgeContainer}>
+              <Feather name="clock" size={13} color="#B45309" style={{ marginRight: 6 }} />
+              <Text style={styles.statusBadgeText}>
+                {t('khata.pending_verification')}
+              </Text>
+            </View>
+          </View>
         </View>
 
-          <TouchableOpacity
-            style={styles.doneBtn}
-            activeOpacity={0.8}
-            onPress={onPayNow}
-          >
-            <Text style={styles.doneBtnText}>
-              {t('khata.pay_now')}
-            </Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.doneBtn}
+          activeOpacity={0.8}
+          onPress={onPayNow}
+        >
+          <Text style={styles.doneBtnText}>
+            {t('khata.pay_now')}
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.alreadyPaidBtn}
-            activeOpacity={0.8}
-            onPress={onAlreadyPaid}
-          >
-            <Text style={styles.alreadyPaidBtnText}>
-              {t('khata.already_paid')}
-            </Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.alreadyPaidBtn}
+          activeOpacity={0.8}
+          onPress={onAlreadyPaid}
+        >
+          <Text style={styles.alreadyPaidBtnText}>
+            {t('khata.already_paid')}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );

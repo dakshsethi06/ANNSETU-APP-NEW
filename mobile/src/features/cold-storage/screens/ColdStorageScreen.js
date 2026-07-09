@@ -9,7 +9,7 @@ import KhataTab from '../../farmer/screens/KhataTab';
 import NotificationsTab from '../../notifications/screens/NotificationsTab';
 import ProfileTab from '../../farmer/screens/ProfileTab';
 import CreateRequestTab from '../../farmer/screens/CreateRequestTab';
-import { fetchWeather } from '../../weather/services/weatherService';
+import { fetchWeather } from '../../../core/network/api';
 import MandiPricePreview from '../../mandi/components/MandiPricePreview';
 import styles from '../../farmer/styles/farmerDashboardStyles';
 import layoutStyles from '../../farmer/styles/layoutStyles';
@@ -78,7 +78,6 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
         const { fetchColdStorages, fetchColdStorageSummary } = require('../services/storageService');
         const { fetchHoldings } = require('../../mandi/services/amadService');
         const { fetchNotifications } = require('../../notifications/services/notificationService');
-        const { fetchFarmerLedger } = require('../../farmer/services/farmerService');
 
         const list = await fetchColdStorages();
 
@@ -126,7 +125,7 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
           fetchWeather(locationName).catch(() => null),
           fetchHoldings().catch(() => []),
           fetchNotifications(targetId).catch(() => []),
-          fetchFarmerLedger(targetId).catch(() => []),
+          fetchFarmerLedger('default_farmer').catch(() => []),
         ]);
 
         if (summary) {
@@ -451,7 +450,7 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
               onBack={() => setActiveTab('home')}
               onMarkRead={() => {
                 const { fetchNotifications } = require('../../notifications/services/notificationService');
-                fetchNotifications(profile.id).then(list => setNotifications(list || [])).catch(() => {});
+                fetchNotifications(profile.id).then(list => setNotifications(list || [])).catch(() => { });
               }}
             />
           ) : activeTab === 'profile' ? (

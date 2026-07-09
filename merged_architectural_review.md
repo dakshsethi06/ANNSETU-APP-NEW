@@ -155,19 +155,19 @@ gantt
 * **Task 3.2: Implement Zustand state store**
   * Move auth session, loading states, and user roles from local `App.js` hooks into a consolidated global store. Clean up prop drilling.
 * **Task 3.3: Refactor role naming schema**
-  * Rename the `'ColdStorage'` role reference to `'FARMER'` (or similar) across the frontend codebase to clarify intent.
+  * Rename the `'ColdStorage'` role reference to `'FARMER'` (or similar) across the frontend codebase to clarify intent. DONE
 * **Task 3.4: Resolve circular network dependencies**
   * Isolate feature APIs and eliminate the core-depends-on-features barrel exports in `core/network/api.js`.
 * **Task 3.5: Extract district configuration list**
-  * Move the ~500 line `DISTRICTS_BY_STATE` array out of `RegisterScreen.js` into a static `districts.json` asset.
+  * Move the ~500 line `DISTRICTS_BY_STATE` array out of `RegisterScreen.js` into a static `districts.json` asset. DONE
 * **Task 3.6: Correct StockTab columns**
-  * Remove the duplicate "Age" column rendering in `StockTab.js` and show the commodity variety or storage room location.
+  * Remove the duplicate "Age" column rendering in `StockTab.js` and show the commodity variety or storage room location.DONE
 * **Task 3.7: Implement profile tab functions**
-  * Connect profile buttons to navigators or mock screens. Query and display actual user KYC state instead of showing "KYC Verified" unconditionally.
+  * Connect profile buttons to navigators or mock screens. Query and display actual user KYC state instead of showing "KYC Verified" unconditionally.DONE
 * **Task 3.8: Complete Mandi city lists**
-  * Correct the Mandi dropdown list to support all selection states. Clean up empty async wrapper scopes.
+  * Correct the Mandi dropdown list to support all selection states. Clean up empty async wrapper scopes. DONE
 * **Task 3.9: Remove default_farmer queries**
-  * Delete the developmental ledger loading stubs on `ColdStorageScreen` mount.
+  * Delete the developmental ledger loading stubs on `ColdStorageScreen` mount. DONE
 
 ---
 
