@@ -17,6 +17,9 @@ async function loginMpin(req, res) {
     if (!isFarmerRole) {
       const cs = await farmerRepository.getColdStorageByPhone(phone);
       if (cs) {
+        if (cs.account_status === 'SUSPENDED') {
+          return res.status(403).json({ success: false, error: "Sorry, can't login. You are suspended." });
+        }
         const csMpin = cs.mpin || '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c';
         if (verifyMpin(mpin, csMpin)) {
           const token = jwt.sign(
@@ -38,6 +41,9 @@ async function loginMpin(req, res) {
 
     const farmer = await farmerRepository.getFarmerByPhone(phone);
     if (farmer) {
+      if (farmer.account_status === 'SUSPENDED') {
+        return res.status(403).json({ success: false, error: "Sorry, can't login. You are suspended." });
+      }
       const farmerMpin = farmer.mpin || '1234';
       if (verifyMpin(mpin, farmerMpin)) {
         const token = jwt.sign(

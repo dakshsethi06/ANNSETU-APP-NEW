@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Feather } from '@expo/vector-icons';
 import { View, ActivityIndicator } from 'react-native';
 import { COLORS } from '../../core/theme/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import FarmerSelector from './screens/FarmerSelector';
 import RegisterFarmerModal from './modals/RegisterFarmerModal';
@@ -39,6 +40,7 @@ function FarmerTabs({ route }) {
     onRefreshFarmer 
   } = route.params;
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -50,9 +52,9 @@ function FarmerTabs({ route }) {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#E2E8F0',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          paddingBottom: insets.bottom > 0 ? insets.bottom + 4 : 10,
+          paddingTop: 8,
+          height: 60 + (insets.bottom > 0 ? insets.bottom : 8),
         },
       }}
     >

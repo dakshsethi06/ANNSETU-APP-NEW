@@ -50,7 +50,7 @@ export const useAuthStore = create(
           resolvedRole = 'ColdStorageFacility';
         } else if (registrationRole === 'vendor' || registrationRole === 'Vendor') {
           resolvedRole = 'Vendor';
-        } else if (registrationRole === 'farmer' || registrationRole === 'ColdStorage') {
+        } else if (registrationRole === 'farmer' || registrationRole === 'Farmer' || registrationRole === 'ColdStorage') {
           resolvedRole = 'ColdStorage';
         } else {
           try {

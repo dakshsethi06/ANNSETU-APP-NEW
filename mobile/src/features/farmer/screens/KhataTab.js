@@ -20,6 +20,10 @@ import styles from '../styles/khataTabStyles';
 
 export default function KhataTab({ farmerData, holdingsList = [], onPaymentSuccess, ledgerList = [], totalCharged = 0, totalPaid = 0 }) {
   const { state, handlers } = useKhataPayment(farmerData, holdingsList, onPaymentSuccess);
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
   const { pdfDownloading, receiptDownloading, handleConfirmTimeline } = useKhataDownloads(farmerData, state.lang);
   const [selectedEntry, setSelectedEntry] = React.useState(null);
   const [dateModalVisible, setDateModalVisible] = React.useState(false);
@@ -31,6 +35,10 @@ export default function KhataTab({ farmerData, holdingsList = [], onPaymentSucce
   const [imageLoading, setImageLoading] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
   if (state.showVerificationForm) {
     return (
       <KhataVerificationView

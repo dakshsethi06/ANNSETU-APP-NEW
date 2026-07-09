@@ -1,4 +1,5 @@
 import { BACKEND_URL } from '../../../core/network/config';
+import { useAuthStore } from '../../auth/store/useAuthStore';
 
 export async function fetchFarmers(state = '', serialNumber = '') {
   try {
@@ -6,8 +7,12 @@ export async function fetchFarmers(state = '', serialNumber = '') {
     if (state) url += `state=${encodeURIComponent(state)}&`;
     if (serialNumber) url += `serial_number=${encodeURIComponent(serialNumber)}&`;
     
+    const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(url, {
-      headers: { 'Cache-Control': 'no-cache' }
+      headers: { 
+        'Cache-Control': 'no-cache',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
     });
     if (!response.ok) throw new Error(`Server returned status ${response.status}`);
     const data = await response.json();
@@ -21,9 +26,13 @@ export async function fetchFarmers(state = '', serialNumber = '') {
 
 export async function addFarmer(farmerData) {
   try {
+    const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(`${BACKEND_URL}/api/farmers`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify(farmerData),
     });
     const data = await response.json();
@@ -37,8 +46,12 @@ export async function addFarmer(farmerData) {
 
 export async function fetchFarmerLedger(farmerId) {
   try {
+    const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(`${BACKEND_URL}/api/farmers/${encodeURIComponent(farmerId)}/ledger?t=${Date.now()}`, {
-      headers: { 'Cache-Control': 'no-cache' }
+      headers: { 
+        'Cache-Control': 'no-cache',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
     });
     if (!response.ok) throw new Error(`Server returned status ${response.status}`);
     const data = await response.json();
@@ -66,9 +79,13 @@ export async function fetchUserRole(phone) {
 
 export async function updateFarmerProfile(farmerId, updateData) {
   try {
+    const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(`${BACKEND_URL}/api/farmers/${encodeURIComponent(farmerId)}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify(updateData),
     });
     const data = await response.json();
@@ -82,9 +99,13 @@ export async function updateFarmerProfile(farmerId, updateData) {
 
 export async function sendProfileVerificationOtp(farmerId, targetType, targetValue) {
   try {
+    const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(`${BACKEND_URL}/api/otp/send-verification`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({ id: farmerId, targetType, targetValue }),
     });
     const data = await response.json();
@@ -98,9 +119,13 @@ export async function sendProfileVerificationOtp(farmerId, targetType, targetVal
 
 export async function verifyAndUpdateFarmerProfile(farmerId, targetType, targetValue, otpCode, updateData) {
   try {
+    const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(`${BACKEND_URL}/api/otp/verify-and-update`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({ id: farmerId, targetType, targetValue, otpCode, name: updateData.name }),
     });
     const data = await response.json();

@@ -4,12 +4,12 @@ require('dotenv').config();
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 // Middlewares
 const allowedOrigins = process.env.CORS_WHITELIST 
   ? process.env.CORS_WHITELIST.split(',') 
-  : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8081'];
+  : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:8081'];
 
 const corsOptions = {
   origin: (origin, callback) => {

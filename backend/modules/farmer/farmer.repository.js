@@ -5,7 +5,7 @@ const { getFarmerLedger } = require('./repositories/getFarmerLedger.repository')
 const db = require('../../config/database');
 
 async function getColdStorageByPhone(phone) {
-  const res = await db.query('SELECT id, "displayName", mpin FROM "ColdStorageOnboarding" WHERE phone = $1', [phone]);
+  const res = await db.query('SELECT id, "displayName", mpin, "account_status" FROM "ColdStorageOnboarding" WHERE phone = $1', [phone]);
   return res.rows[0];
 }
 
