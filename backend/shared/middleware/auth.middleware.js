@@ -41,7 +41,10 @@ module.exports = async (req, res, next) => {
   const pathOnly = req.originalUrl.split('?')[0];
 
   const isPublic = PUBLIC_ROUTES.some(route => {
-    if (pathOnly.startsWith('/api/payments/mock-checkout/')) {
+    if (
+      pathOnly.startsWith('/api/payments/mock-checkout/') ||
+      pathOnly.startsWith('/api/support/chat/')
+    ) {
       return true;
     }
     return route.path === pathOnly && route.method === req.method;

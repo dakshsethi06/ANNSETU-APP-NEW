@@ -49,10 +49,6 @@ export default function KhataVerificationView({
           {t('khata.payment_verification_details')}
         </Text>
 
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
         <View style={[styles.summaryDetailsCard, { marginBottom: 16, paddingVertical: 12 }]}>
           <View style={[styles.summaryDetailItem, { borderBottomWidth: 0, paddingBottom: 0 }]}>
             <Text style={styles.detailLabel}>{lang === 'en' ? 'Verifying Amount' : 'सत्यापन राशि'}</Text>
@@ -61,10 +57,6 @@ export default function KhataVerificationView({
             </Text>
           </View>
         </View>
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
         <KhataVerificationFormFields
           lang={lang}
           utrNumber={utrNumber}

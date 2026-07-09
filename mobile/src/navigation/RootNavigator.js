@@ -21,8 +21,8 @@ export default function RootNavigator({
 }) {
   const { session, role, setRole, logout } = useAuthStore();
 
-  const handleLoginSuccess = (phone) => {
-    useAuthStore.getState().setSession({ user: { phone: '+91' + phone } });
+  const handleLoginSuccess = (phone, role, token) => {
+    useAuthStore.getState().loginSuccess(phone, role, token);
   };
 
   const renderScreen = () => {

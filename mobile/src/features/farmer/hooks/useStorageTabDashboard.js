@@ -3,6 +3,7 @@ import { fetchFarmers, fetchFarmerLedger } from '../services/farmerService';
 import { fetchWeather } from '../../weather/services/weatherService';
 import { fetchHoldings } from '../../mandi/services/amadService';
 import { fetchNotifications } from '../../notifications/services/notificationService';
+import { supabase } from '../../../core/network/supabase';
 
 export function useStorageTabDashboard(loggedInPhone) {
   const [dbFarmers, setDbFarmers] = useState([]);
@@ -22,6 +23,42 @@ export function useStorageTabDashboard(loggedInPhone) {
   const [amadModalVisible, setAmadModalVisible] = useState(false);
   const [myStockModalVisible, setMyStockModalVisible] = useState(false);
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
+
+  // Subscribe to real-time notifications
+  useEffect(() => {
+    if (!selectedFarmerId) return;
+
+    const channel = supabase
+      .channel('app-notifications-dashboard')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'AppNotification',
+          filter: `userId=eq.${selectedFarmerId}`,
+        },
+        (payload) => {
+          console.log('[Realtime Notification] New notification payload:', payload.new);
+          const newNotif = {
+            id: payload.new.id,
+            title: payload.new.title,
+            message: payload.new.message,
+            type: payload.new.type,
+            createdAt: payload.new.createdAt,
+            isRead: payload.new.isRead,
+            actionUrl: payload.new.actionUrl,
+            timeLabel: 'Just now'
+          };
+          setNotificationsList((prev) => [newNotif, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedFarmerId]);
 
   useEffect(() => {
     loadDbFarmers();
@@ -48,11 +85,11 @@ export function useStorageTabDashboard(loggedInPhone) {
         }
         list = [found];
         setDbFarmers(list);
-        handleSelectFarmer(found.serial_number);
+        handleSelectFarmer(found.serial_number, false, found);
       } else {
         setDbFarmers(list);
         if (list.length > 0) {
-          handleSelectFarmer(list[0].serial_number);
+          handleSelectFarmer(list[0].serial_number, false, list[0]);
         }
       }
     } catch (err) {
@@ -68,7 +105,7 @@ export function useStorageTabDashboard(loggedInPhone) {
           pendingRent: 0,
         };
         setDbFarmers([fallback]);
-        handleSelectFarmer(fallback.serial_number);
+        handleSelectFarmer(fallback.serial_number, false, fallback);
       } else {
         setDbFarmers([]);
         setFarmerError(err.message || 'Failed to load farmers from database');
@@ -78,7 +115,7 @@ export function useStorageTabDashboard(loggedInPhone) {
     }
   };
 
-  const handleSelectFarmer = async (farmerId, isRefresh = false) => {
+  const handleSelectFarmer = async (farmerId, isRefresh = false, fallbackProfile = null) => {
     console.log('[handleSelectFarmer] Called with farmerId:', farmerId, 'isRefresh:', isRefresh);
     setSelectedFarmerId(farmerId);
     if (!isRefresh) {
@@ -94,7 +131,7 @@ export function useStorageTabDashboard(loggedInPhone) {
         selectedFarmer = farmers[0];
       } else {
         // Check local list for fallback profile (e.g. for new or unregistered login numbers)
-        const local = dbFarmers.find(f => f.serial_number === farmerId);
+        const local = fallbackProfile || dbFarmers.find(f => f.serial_number === farmerId);
         if (local) {
           selectedFarmer = local;
         }
@@ -145,12 +182,27 @@ export function useStorageTabDashboard(loggedInPhone) {
     }
   };
 
+  const markAllNotificationsAsRead = async () => {
+    const unread = notificationsList.filter(n => !n.isRead);
+    if (unread.length === 0) return;
+
+    // Optimistically update UI
+    setNotificationsList(prev => prev.map(n => ({ ...n, isRead: true })));
+
+    try {
+      const { markNotificationRead } = require('../../notifications/services/notificationService');
+      await Promise.all(unread.map(n => markNotificationRead(n.id)));
+    } catch (err) {
+      console.warn('Failed to mark notifications read:', err.message);
+    }
+  };
+
   return {
     dbFarmers, dbFarmersLoading, farmerSearchQuery, setFarmerSearchQuery,
     selectedFarmerId, setSelectedFarmerId, farmerLoading, farmerData, setFarmerData, farmerError,
     holdingsList, notificationsList, setNotificationsList, ledgerList, weatherData, dataLoading,
     registerModalVisible, setRegisterModalVisible, amadModalVisible, setAmadModalVisible,
     myStockModalVisible, setMyStockModalVisible, notificationsModalVisible, setNotificationsModalVisible,
-    loadDbFarmers, handleSelectFarmer
+    loadDbFarmers, handleSelectFarmer, markAllNotificationsAsRead
   };
 }

@@ -30,11 +30,6 @@ async function ensureUserForFarmer(farmerId) {
     await appNotificationRepository.insertShadowUser([farmerId, name, email, mpin, 'OPERATOR', true, now, now, coldStorageId, 1]);
   } catch (err) { console.error(`Error in ensureUserForFarmer for ${farmerId}:`, err.message); }
 }
-
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
 async function sendEmailWithLog({
   to,
   subject,

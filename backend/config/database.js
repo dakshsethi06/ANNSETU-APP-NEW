@@ -18,6 +18,17 @@ if (hasValidUrl) {
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000
     });
+    
+    pool.on('error', (err) => {
+      console.error('⚠️ Unexpected pg pool error:', err.message);
+    });
+
+    pool.on('connect', (client) => {
+      client.query('SET search_path TO public').catch(err => {
+        console.error('Failed to set search_path to public:', err.message);
+      });
+    });
+
     console.log('✅ PostgreSQL connection pool initialized successfully.');
   } catch (error) {
     console.error('❌ Failed to initialize PostgreSQL connection pool:', error.message);

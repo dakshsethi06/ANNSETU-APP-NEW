@@ -9,57 +9,61 @@ const mockTickets = [];
  * Live Freshdesk creation handler.
  */
 async function createTicketLive({ name, phone, email, category, subject, description, role, attachments }) {
-  const { FRESHDESK_DOMAIN: domain, FRESHDESK_API_KEY: apiKey } = process.env;
-  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  const url = `https://${cleanDomain}/api/v2/tickets`;
-  const authHeader = Buffer.from(`${apiKey}:X`).toString('base64');
-  
+  const { FREESCOUT_URL: rawUrl, FREESCOUT_API_KEY: apiKey } = process.env;
+  const cleanUrl = rawUrl ? rawUrl.replace(/\/$/, '') : '';
+  const url = `${cleanUrl}/conversations`;
+
   const userEmail = email || `${phone ? phone.replace(/[^0-9]/g, '') : 'user'}@annsetu.mock`;
   const ticketSubject = `[${category || 'General'}] ${subject}`;
   const ticketDescription = buildTicketDescriptionHtml({ category, name, phone, role, description });
+  const mailboxId = parseInt(process.env.FREESCOUT_MAILBOX_ID || '1', 10);
 
-  const headers = { Authorization: `Basic ${authHeader}` };
-  let data;
-
-  if (attachments?.length) {
-    data = new FormData();
-    data.append('subject', ticketSubject);
-    data.append('description', ticketDescription);
-    data.append('name', name || 'App User');
-    if (phone) data.append('phone', phone);
-    data.append('email', userEmail);
-    data.append('priority', '1');
-    data.append('status', '2');
-
-    attachments.forEach(file => {
-      if (file.base64) {
-        data.append('attachments[]', new Blob([Buffer.from(file.base64, 'base64')], { type: file.type }), file.name);
-      }
+  const formattedAttachments = (attachments || [])
+    .filter(file => file.base64)
+    .map(file => {
+      const base64Data = file.base64.includes(';base64,') 
+        ? file.base64.split(';base64,')[1] 
+        : file.base64;
+      return {
+        filename: file.name || 'attachment',
+        data: base64Data
+      };
     });
-  } else {
-    headers['Content-Type'] = 'application/json';
-    data = {
-      subject: ticketSubject,
-      description: ticketDescription,
-      name: name || 'App User',
-      phone: phone || undefined,
+
+  const headers = {
+    'X-FreeScout-API-Key': apiKey,
+    'Content-Type': 'application/json'
+  };
+
+  const body = {
+    type: 'email',
+    mailboxId,
+    subject: ticketSubject,
+    customer: {
       email: userEmail,
-      priority: 1,
-      status: 2,
-    };
-  }
+      firstName: name || 'App User',
+      phone: phone || undefined
+    },
+    threads: [
+      {
+        type: 'customer',
+        text: ticketDescription,
+        attachments: formattedAttachments.length ? formattedAttachments : undefined
+      }
+    ]
+  };
 
   try {
-    const response = await axios.post(url, data, { headers });
+    const response = await axios.post(url, body, { headers });
     return {
       success: true,
       ticketId: response.data.id,
-      message: 'Ticket successfully created in Freshdesk',
-      source: 'freshdesk'
+      message: 'Ticket successfully created in FreeScout',
+      source: 'freescout'
     };
   } catch (error) {
-    console.error('[Freshdesk Service] API connection error:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.description || 'Failed to connect to Freshdesk. Please check backend config.');
+    console.error('[FreeScout Service] API connection error:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || 'Failed to connect to FreeScout. Please check backend config.');
   }
 }
 
@@ -137,26 +141,52 @@ async function createTicketMock({ name, phone, email, category, subject, descrip
 /**
  * Live listing handler.
  */
+function mapFreescoutStatusToFreshdesk(status) {
+  switch (status) {
+    case 'active': return 2;
+    case 'pending': return 3;
+    case 'closed': return 5;
+    default: return 2;
+  }
+}
+
 async function listTicketsLive(phone) {
-  const domain = process.env.FRESHDESK_DOMAIN;
-  const apiKey = process.env.FRESHDESK_API_KEY;
-  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const { FREESCOUT_URL: rawUrl, FREESCOUT_API_KEY: apiKey } = process.env;
+  const cleanUrl = rawUrl ? rawUrl.replace(/\/$/, '') : '';
   const cleanPhone = phone ? phone.trim() : '';
-  const authHeader = Buffer.from(`${apiKey}:X`).toString('base64');
-  const headers = { Authorization: `Basic ${authHeader}`, 'Content-Type': 'application/json' };
+  const headers = {
+    'X-FreeScout-API-Key': apiKey,
+    'Content-Type': 'application/json'
+  };
 
   try {
-    const contactsUrl = `https://${cleanDomain}/api/v2/contacts?phone=${encodeURIComponent(cleanPhone)}`;
-    const contactsResponse = await axios.get(contactsUrl, { headers });
-    const contacts = contactsResponse.data || [];
-    if (contacts.length === 0) return [];
+    let url = `${cleanUrl}/conversations?customerPhone=${encodeURIComponent(cleanPhone)}&embed=threads`;
+    let response = await axios.get(url, { headers });
+    let conversations = response.data?._embedded?.conversations || response.data?.conversations || [];
 
-    const ticketsUrl = `https://${cleanDomain}/api/v2/tickets?requester_id=${contacts[0].id}&include=description`;
-    const response = await axios.get(ticketsUrl, { headers });
-    return response.data || [];
+    // Fallback search by mock email
+    if (conversations.length === 0) {
+      const mockEmail = `${phone ? phone.replace(/[^0-9]/g, '') : 'user'}@annsetu.mock`;
+      url = `${cleanUrl}/conversations?customerEmail=${encodeURIComponent(mockEmail)}&embed=threads`;
+      response = await axios.get(url, { headers });
+      conversations = response.data?._embedded?.conversations || response.data?.conversations || [];
+    }
+
+    return conversations.map(c => {
+      const firstThread = c.threads && c.threads.length > 0 ? c.threads[0].text : '';
+      return {
+        id: c.id,
+        subject: c.subject,
+        status: mapFreescoutStatusToFreshdesk(c.status),
+        created_at: c.createdAt,
+        updated_at: c.updatedAt,
+        description: c.preview || firstThread || '',
+        category: 'Support'
+      };
+    });
   } catch (error) {
-    console.error('[Freshdesk Service] List tickets error:', error.response?.data || error.message);
-    throw new Error('Failed to retrieve tickets from Freshdesk.');
+    console.error('[FreeScout Service] List tickets error:', error.response?.data || error.message);
+    throw new Error('Failed to retrieve tickets from FreeScout.');
   }
 }
 
@@ -175,20 +205,31 @@ async function listTicketsMock(phone) {
  * Live conversations handler.
  */
 async function getTicketConversationsLive(ticketId) {
-  const domain = process.env.FRESHDESK_DOMAIN;
-  const apiKey = process.env.FRESHDESK_API_KEY;
-  const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  const url = `https://${cleanDomain}/api/v2/tickets/${ticketId}/conversations`;
-  const authHeader = Buffer.from(`${apiKey}:X`).toString('base64');
+  const { FREESCOUT_URL: rawUrl, FREESCOUT_API_KEY: apiKey } = process.env;
+  const cleanUrl = rawUrl ? rawUrl.replace(/\/$/, '') : '';
+  const url = `${cleanUrl}/conversations/${ticketId}?embed=threads`;
+  const headers = {
+    'X-FreeScout-API-Key': apiKey,
+    'Content-Type': 'application/json'
+  };
 
   try {
-    const response = await axios.get(url, {
-      headers: { Authorization: `Basic ${authHeader}`, 'Content-Type': 'application/json' }
+    const response = await axios.get(url, { headers });
+    const threads = response.data?.threads || [];
+
+    return threads.map(t => {
+      const isIncoming = t.type === 'customer' || (t.createdBy && t.createdBy.type === 'customer');
+      return {
+        id: t.id,
+        body: t.text || '',
+        body_text: t.text || '',
+        created_at: t.createdAt,
+        incoming: isIncoming
+      };
     });
-    return response.data;
   } catch (error) {
-    console.error('[Freshdesk Service] Get conversations error:', error.response?.data || error.message);
-    throw new Error('Failed to retrieve conversations for ticket.');
+    console.error('[FreeScout Service] Get conversations error:', error.response?.data || error.message);
+    throw new Error('Failed to retrieve conversations from FreeScout.');
   }
 }
 

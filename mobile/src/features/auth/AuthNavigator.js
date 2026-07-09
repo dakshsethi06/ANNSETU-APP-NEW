@@ -7,38 +7,23 @@ import { useAuthStore } from './store/useAuthStore';
 
 const Stack = createStackNavigator();
 
-<<<<<<< Updated upstream
 export default function AuthNavigator({ onLoginSuccess }) {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
-      <Stack.Screen name="Login">
-        {({ navigation }) => {
-          const { loginSuccess } = useAuthStore();
-          const handleSuccess = onLoginSuccess || ((phone, role, token) => loginSuccess(phone, role, token));
-          return (
-            <LoginScreen
-              onLoginSuccess={handleSuccess}
-              onNavigateToRegister={() => navigation.navigate('Register')}
-              onNavigateToOtp={(phone) => navigation.navigate('Otp', { phone })}
-            />
-          );
-        }}
-=======
-export default function AuthNavigator() {
   const { loginSuccess, setHidePreviewFromLogin } = useAuthStore();
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
       <Stack.Screen name="Login">
-        {({ navigation }) => (
-          <LoginScreen
-            onLoginSuccess={loginSuccess}
-            onHidePreviewChange={setHidePreviewFromLogin}
-            onNavigateToRegister={() => navigation.navigate('Register')}
-            onNavigateToOtp={(phone) => navigation.navigate('Otp', { phone })}
-          />
-        )}
->>>>>>> Stashed changes
+        {({ navigation }) => {
+          const handleSuccess = onLoginSuccess || ((phone, role, token) => loginSuccess(phone, role, token));
+          return (
+            <LoginScreen
+              onLoginSuccess={handleSuccess}
+              onHidePreviewChange={setHidePreviewFromLogin}
+              onNavigateToRegister={() => navigation.navigate('Register')}
+              onNavigateToOtp={(phone) => navigation.navigate('Otp', { phone })}
+            />
+          );
+        }}
       </Stack.Screen>
       <Stack.Screen name="Register">
         {({ navigation }) => (

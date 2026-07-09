@@ -16,7 +16,7 @@ export default function StorageTab({ setActiveTab, onFullScreenChange }) {
     farmerLoading, farmerData, setFarmerData, farmerError, holdingsList, notificationsList, setNotificationsList, dataLoading,
     registerModalVisible, setRegisterModalVisible, amadModalVisible, setAmadModalVisible,
     myStockModalVisible, setMyStockModalVisible, notificationsModalVisible, setNotificationsModalVisible,
-    loadDbFarmers, handleSelectFarmer
+    loadDbFarmers, handleSelectFarmer, markAllNotificationsAsRead
   } = useStorageTabDashboard();
 
   // Notify parent about full-screen state changes
@@ -43,8 +43,12 @@ export default function StorageTab({ setActiveTab, onFullScreenChange }) {
           farmerData={farmerData}
           holdingsList={holdingsList}
           notifications={notificationsList}
+          hasUnreadNotifications={notificationsList.some(n => !n.isRead)}
           onBackPress={() => { setSelectedFarmerId(null); setFarmerData(null); setNotificationsList([]); }}
-          onNotificationsPress={() => setNotificationsModalVisible(true)}
+          onNotificationsPress={() => {
+            setNotificationsModalVisible(true);
+            markAllNotificationsAsRead();
+          }}
           onActionPress={handleActionPress}
         />
       );

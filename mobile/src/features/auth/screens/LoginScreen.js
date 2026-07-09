@@ -68,6 +68,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
   };
 
   const handleMpinLogin = async () => {
+    console.log('[handleMpinLogin] Button clicked. Phone:', phone, 'MPIN:', mpin);
     if (phone.length < 10) {
       Alert.alert('Error', 'Please enter a valid 10-digit mobile number.');
       return;
@@ -78,16 +79,26 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
     }
 
     setLoading(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 second timeout
     try {
       const { BACKEND_URL } = require('../../../core/network/config');
       const url = `${BACKEND_URL}/api/farmers/login-mpin`;
+      console.log('[handleMpinLogin] Request URL:', url);
+      console.log('[handleMpinLogin] Request Body:', { phone, mpin, role: loginMode });
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, mpin, role: loginMode }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+      console.log('[handleMpinLogin] Response Status:', response.status);
       const data = await response.json();
+      console.log('[handleMpinLogin] Response Data:', data);
+
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Invalid MPIN or phone number.');
       }
@@ -96,7 +107,16 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
         onLoginSuccess(phone, data.role, data.token);
       }
     } catch (error) {
-      Alert.alert('Login Failed', error.message);
+      clearTimeout(timeoutId);
+      console.error('[handleMpinLogin] Error:', error.message);
+      if (error.name === 'AbortError' || error.message.includes('aborted') || error.message.includes('Network request failed')) {
+        Alert.alert(
+          'Connection Error',
+          'Could not reach the server. Please check:\n1. If your phone/simulator is on the SAME Wi-Fi network as the laptop.\n2. If the backend server is running.'
+        );
+      } else {
+        Alert.alert('Login Failed', error.message);
+      }
     } finally {
       setLoading(false);
     }
