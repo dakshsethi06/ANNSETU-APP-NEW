@@ -31,11 +31,6 @@ export default function KhataTab({ farmerData, holdingsList = [], onPaymentSucce
   const [fullImageUrl, setFullImageUrl] = React.useState('');
   const [imageLoading, setImageLoading] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
-
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
   if (state.showVerificationForm) {
     return (
       <KhataVerificationView
