@@ -31,7 +31,10 @@ async function ensureUserForFarmer(farmerId) {
   } catch (err) { console.error(`Error in ensureUserForFarmer for ${farmerId}:`, err.message); }
 }
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 async function sendEmailWithLog({
   to,
   subject,
