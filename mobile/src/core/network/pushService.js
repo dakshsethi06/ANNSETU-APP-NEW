@@ -64,7 +64,7 @@ export async function registerForPushNotificationsAsync(userId) {
 
     return pushToken;
   } catch (error) {
-    console.error('[Push Service] Error in push token registration:', error.message);
+    console.warn('[Push Service] Error in push token registration:', error.message);
     return null;
   }
 }
