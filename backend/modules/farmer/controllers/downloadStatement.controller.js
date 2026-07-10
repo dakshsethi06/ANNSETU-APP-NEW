@@ -5,7 +5,7 @@ async function downloadStatement(req, res) {
   try {
     const { id } = req.params;
     const { fromDate, toDate } = req.query;
-    
+
     const farmer = await farmerRepository.getFarmerBasicDetails(id);
     if (!farmer) {
       return res.status(404).send(farmerConstants.ERROR_MESSAGES.FARMER_NOT_FOUND);
@@ -26,7 +26,7 @@ async function downloadStatement(req, res) {
         }
       }
       const d = new Date(str);
-      if (!isNaN(d.getTime())) {
+      if (!Number.isNaN(d.getTime())) {
         return d.toISOString().split('T')[0];
       }
       return null;
@@ -38,7 +38,7 @@ async function downloadStatement(req, res) {
     const toISTDateStr = (d) => {
       if (!d) return '';
       const dateObj = new Date(d);
-      if (isNaN(dateObj.getTime())) return '';
+      if (Number.isNaN(dateObj.getTime())) return '';
       return dateObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     };
 
@@ -56,23 +56,23 @@ async function downloadStatement(req, res) {
     }
     csv += `Farmer Name,${farmer.name}\n`;
     csv += `Phone,${farmer.phone}\n`;
-    csv += `Opening Balance,₹${parseFloat(farmer.openingBalance || 0).toFixed(2)}\n\n`;
-    
+    csv += `Opening Balance,₹${Number.parseFloat(farmer.openingBalance || 0).toFixed(2)}\n\n`;
+
     csv += `Date,Description,Amount (₹),Balance (₹)\n`;
-    
+
     const chronological = [...filteredLedger].reverse();
-    
+
     chronological.forEach(item => {
       const formattedDate = new Date(item.date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
-      const amountStr = item.amount < 0 
-        ? `-${Math.abs(item.amount).toFixed(2)}` 
+      const amountStr = item.amount < 0
+        ? `-${Math.abs(item.amount).toFixed(2)}`
         : `+${Math.abs(item.amount).toFixed(2)}`;
-      csv += `"${formattedDate}","${item.title.replace(/"/g, '""')}",${amountStr},${item.balance.toFixed(2)}\n`;
+      csv += `"${formattedDate}","${item.title.replaceAll('"', '""')}",${amountStr},${item.balance.toFixed(2)}\n`;
     });
 
-    const filename = normalizedFrom && normalizedTo 
-      ? `statement_${farmer.name.replace(/\s+/g, '_')}_${normalizedFrom}_to_${normalizedTo}.csv`
-      : `statement_${farmer.name.replace(/\s+/g, '_')}.csv`;
+    const filename = normalizedFrom && normalizedTo
+      ? `statement_${farmer.name.replaceAll(/\s+/g, '_')}_${normalizedFrom}_to_${normalizedTo}.csv`
+      : `statement_${farmer.name.replaceAll(/\s+/g, '_')}.csv`;
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);

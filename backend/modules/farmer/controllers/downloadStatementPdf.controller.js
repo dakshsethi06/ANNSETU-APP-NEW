@@ -31,7 +31,7 @@ async function downloadStatementPdf(req, res) {
       });
     }
 
-    let periodOpeningBalance = parseFloat(farmer.openingBalance || 0);
+    let periodOpeningBalance = Number.parseFloat(farmer.openingBalance || 0);
     if (normalizedFrom) {
       const beforeEntries = fullChronological.filter(item => toISTDateStr(item.date) < normalizedFrom);
       if (beforeEntries.length > 0) periodOpeningBalance = beforeEntries[beforeEntries.length - 1].balance;
@@ -65,7 +65,7 @@ async function downloadStatementPdf(req, res) {
       periodStr = `${oldestDate} - ${newestDate}`;
     }
 
-    const filename = normalizedFrom && normalizedTo 
+    const filename = normalizedFrom && normalizedTo
       ? `Khata_Statement_${normalizedFrom}_to_${normalizedTo}.pdf`
       : `Khata_Statement_${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })}.pdf`;
 
