@@ -22,7 +22,7 @@ async function createNewDispatch(data) {
   const { farmerId, coldStorageId, commodity, bags, vehicleNumber } = data;
 
   // Weight calculation: 1 packet = 0.5 Qtl
-  const weightQtl = parseFloat(bags) * 0.5;
+  const weightQtl = Number.parseFloat(bags) * 0.5;
 
   // Validate pre-requisites: active lot must exist
   const lotId = await dispatchRepo.getActiveLotForDispatch(farmerId, commodity);

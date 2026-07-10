@@ -11,13 +11,13 @@ function parseToISODate(str) {
     }
   }
   const d = new Date(str);
-  return !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : null;
+  return !Number.isNaN(d.getTime()) ? d.toISOString().split('T')[0] : null;
 }
 
 function toISTDateStr(d) {
   if (!d) return '';
   const dateObj = new Date(d);
-  return isNaN(dateObj.getTime()) ? '' : dateObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  return Number.isNaN(dateObj.getTime()) ? '' : dateObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 }
 
 function parseAndFormat(dStr) {
