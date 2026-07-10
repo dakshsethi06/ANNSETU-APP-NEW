@@ -22,7 +22,7 @@ global.fetch = async (input, init) => {
   } catch (err) {
     console.warn('Fetch interceptor failed to attach auth token:', err.message);
   }
-  return originalFetch(input, init);
+  return originalFetch.call(global, input, init);
 };
 
 

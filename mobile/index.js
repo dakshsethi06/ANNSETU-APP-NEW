@@ -29,7 +29,7 @@ global.fetch = async (url, options) => {
   } catch (err) {
     // Fail-safe: fallback to original options if something goes wrong
   }
-  return originalFetch(url, finalOptions);
+  return originalFetch.call(global, url, finalOptions);
 };
 
 registerRootComponent(App);
