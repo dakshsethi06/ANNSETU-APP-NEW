@@ -126,8 +126,8 @@ export default function CreateRequestTab({ onBackPress, coldStorageId }) {
       setRequestId(data.dispatch.nikasiNumber);
       
       const today = new Date(data.dispatch.createdAt);
-      const options = { day: '2-digit', month: 'short', year: 'numeric' };
-      const formattedDate = today.toLocaleDateString('en-IN', options).replace(/ /g, '-');
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const formattedDate = `${today.getDate().toString().padStart(2, '0')}-${months[today.getMonth()]}-${today.getFullYear()}`;
       setRequestDate(formattedDate);
       
       setStep(2);
@@ -271,10 +271,17 @@ export default function CreateRequestTab({ onBackPress, coldStorageId }) {
                       statusLabel = 'Delivered';
                     }
 
-                    const formattedDate = new Date(item.date).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                    });
+                    const formatDateSafe = (dateStr) => {
+                      try {
+                        const d = new Date(dateStr);
+                        if (isNaN(d.getTime())) return dateStr;
+                        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                        return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]}`;
+                      } catch (e) {
+                        return dateStr;
+                      }
+                    };
+                    const formattedDate = formatDateSafe(item.date);
 
                     return (
                       <View key={item.id} style={s.historyCard}>

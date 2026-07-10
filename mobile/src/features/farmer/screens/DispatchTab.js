@@ -205,10 +205,17 @@ export default function DispatchTab({ farmerId, onBackPress }) {
           ) : (
             filteredDispatches.map((item) => {
               const cfg = getStatusConfig(item.status);
-              const formattedDate = new Date(item.date).toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'short',
-              });
+              const formatDateSafe = (dateStr) => {
+                try {
+                  const d = new Date(dateStr);
+                  if (isNaN(d.getTime())) return dateStr;
+                  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                  return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]}`;
+                } catch (e) {
+                  return dateStr;
+                }
+              };
+              const formattedDate = formatDateSafe(item.date);
 
               return (
                 <View key={item.id} style={s.card}>

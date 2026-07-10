@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Alert, View, ActivityIndicator, Platform, Keyboard } from 'react-native';
+import { Alert, View, Text, ActivityIndicator, Platform, Keyboard } from 'react-native';
 import * as Updates from 'expo-updates';
 import * as Notifications from 'expo-notifications';
 import { supabase } from './src/core/network/supabase';

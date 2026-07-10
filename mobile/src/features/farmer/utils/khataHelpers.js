@@ -16,6 +16,7 @@ export const getFormattedReceiptUrl = (note, BACKEND_URL) => {
 export const formatLedgerDateTime = (dateStr, lang) => {
   try {
     const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
@@ -23,7 +24,12 @@ export const formatLedgerDateTime = (dateStr, lang) => {
     const isToday = d.toDateString() === today.toDateString();
     const isYesterday = d.toDateString() === yesterday.toDateString();
 
-    const timeStr = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    let hours = d.getHours();
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const timeStr = `${hours}:${minutes} ${ampm}`;
 
     if (isToday) {
       return lang === 'en' ? `Today, ${timeStr}` : `आज, ${timeStr}`;
@@ -32,7 +38,13 @@ export const formatLedgerDateTime = (dateStr, lang) => {
       return lang === 'en' ? `Yesterday, ${timeStr}` : `कल, ${timeStr}`;
     }
 
-    const datePart = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthsHi = ["जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"];
+    const monthName = lang === 'en' ? monthsEn[d.getMonth()] : monthsHi[d.getMonth()];
+    const day = d.getDate().toString().padStart(2, '0');
+    const year = d.getFullYear();
+
+    const datePart = `${day} ${monthName} ${year}`;
     return `${datePart}, ${timeStr}`;
   } catch (e) {
     return dateStr;
@@ -61,9 +73,22 @@ export function getDetailedTransactionInfo(item, farmer, state) {
   let formattedTime = '';
   try {
     const date = new Date(item.date);
-    const datePart = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    const timePart = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-    formattedTime = `${datePart}, ${timePart}`;
+    if (!isNaN(date.getTime())) {
+      const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const monthsHi = ["जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"];
+      const monthName = state.lang === 'en' ? monthsEn[date.getMonth()] : monthsHi[date.getMonth()];
+      const day = date.getDate().toString().padStart(2, '0');
+      const year = date.getFullYear();
+      
+      let hours = date.getHours();
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      formattedTime = `${day} ${monthName} ${year}, ${hours}:${minutes} ${ampm}`;
+    } else {
+      formattedTime = item.date;
+    }
   } catch (e) {
     formattedTime = item.date;
   }
@@ -83,11 +108,17 @@ export function getDetailedTransactionInfo(item, farmer, state) {
   };
 }
 
-export const formatDate = (dateStr) => {
+export const formatDate = (dateStr, lang = 'en') => {
   if (!dateStr) return '';
   try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const monthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthsHi = ["जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"];
+    const monthName = lang === 'en' ? monthsEn[d.getMonth()] : monthsHi[d.getMonth()];
+    const day = d.getDate().toString().padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day} ${monthName} ${year}`;
   } catch (e) {
     return dateStr;
   }

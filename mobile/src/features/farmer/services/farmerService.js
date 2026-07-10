@@ -1,5 +1,4 @@
 import { BACKEND_URL } from '../../../core/network/config';
-import { useAuthStore } from '../../auth/store/useAuthStore';
 
 export async function fetchFarmers(state = '', serialNumber = '') {
   try {
@@ -7,6 +6,7 @@ export async function fetchFarmers(state = '', serialNumber = '') {
     if (state) url += `state=${encodeURIComponent(state)}&`;
     if (serialNumber) url += `serial_number=${encodeURIComponent(serialNumber)}&`;
     
+    const { useAuthStore } = require('../../auth/store/useAuthStore');
     const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(url, {
       headers: { 
@@ -26,6 +26,7 @@ export async function fetchFarmers(state = '', serialNumber = '') {
 
 export async function addFarmer(farmerData) {
   try {
+    const { useAuthStore } = require('../../auth/store/useAuthStore');
     const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(`${BACKEND_URL}/api/farmers`, {
       method: 'POST',
@@ -46,6 +47,7 @@ export async function addFarmer(farmerData) {
 
 export async function fetchFarmerLedger(farmerId) {
   try {
+    const { useAuthStore } = require('../../auth/store/useAuthStore');
     const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(`${BACKEND_URL}/api/farmers/${encodeURIComponent(farmerId)}/ledger?t=${Date.now()}`, {
       headers: { 
@@ -79,6 +81,7 @@ export async function fetchUserRole(phone) {
 
 export async function updateFarmerProfile(farmerId, updateData) {
   try {
+    const { useAuthStore } = require('../../auth/store/useAuthStore');
     const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(`${BACKEND_URL}/api/farmers/${encodeURIComponent(farmerId)}`, {
       method: 'PUT',
@@ -99,6 +102,7 @@ export async function updateFarmerProfile(farmerId, updateData) {
 
 export async function sendProfileVerificationOtp(farmerId, targetType, targetValue) {
   try {
+    const { useAuthStore } = require('../../auth/store/useAuthStore');
     const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(`${BACKEND_URL}/api/otp/send-verification`, {
       method: 'POST',
@@ -119,6 +123,7 @@ export async function sendProfileVerificationOtp(farmerId, targetType, targetVal
 
 export async function verifyAndUpdateFarmerProfile(farmerId, targetType, targetValue, otpCode, updateData) {
   try {
+    const { useAuthStore } = require('../../auth/store/useAuthStore');
     const token = useAuthStore.getState().session?.access_token;
     const response = await fetch(`${BACKEND_URL}/api/otp/verify-and-update`, {
       method: 'POST',

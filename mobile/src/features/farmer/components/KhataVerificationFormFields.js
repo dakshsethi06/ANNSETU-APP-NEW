@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import styles from '../styles/khataTabStyles';
 
+import { formatDate } from '../utils/khataHelpers';
+
 export function KhataVerificationFormFields({
   lang,
   utrNumber,
@@ -40,7 +42,7 @@ export function KhataVerificationFormFields({
         >
           <Feather name="calendar" size={16} color="#2D6A4F" style={{ marginRight: 8 }} />
           <Text style={styles.dateSelectorText}>
-            {paymentDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {formatDate(paymentDate, lang)}
           </Text>
           <Feather name="chevron-down" size={16} color="#71717A" style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>

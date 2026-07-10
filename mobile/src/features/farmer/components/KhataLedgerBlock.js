@@ -17,8 +17,22 @@ export function KhataLedgerBlock({ lang, ledgerList, farmerData, setSelectedEntr
 
   const groups = {};
   const groupKeys = [];
+  
+  const getMonthKey = (dateStr) => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return lang === 'en' ? 'Unknown Date' : 'अज्ञात तिथि';
+      const monthsEn = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const monthsHi = ["जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"];
+      const monthName = lang === 'en' ? monthsEn[d.getMonth()] : monthsHi[d.getMonth()];
+      return `${monthName} ${d.getFullYear()}`;
+    } catch (e) {
+      return lang === 'en' ? 'Unknown Date' : 'अज्ञात तिथि';
+    }
+  };
+
   ledgerList.forEach(item => {
-    const monthKey = new Date(item.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'hi-IN', { month: 'long', year: 'numeric' });
+    const monthKey = getMonthKey(item.date);
     if (!groups[monthKey]) {
       groups[monthKey] = [];
       groupKeys.push(monthKey);

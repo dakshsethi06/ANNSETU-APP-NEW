@@ -3,6 +3,7 @@ import { Alert, NativeModules } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import RazorpayCheckout from 'react-native-razorpay';
 import { BACKEND_URL } from '../../../core/network/config';
+import { useTranslation } from 'react-i18next';
 
 export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   const { t, i18n } = useTranslation();
@@ -22,8 +23,13 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
 
   const [paymentId, setPaymentId] = useState('');
-
   const [paymentAmount, setPaymentAmount] = useState('');
+
+  // Missing states from previous refactoring
+  const [razorpayOrderData, setRazorpayOrderData] = useState(null);
+  const [paymentUrl, setPaymentUrl] = useState(null);
+  const [isOnlineSuccess, setIsOnlineSuccess] = useState(false);
+  const [verificationSuccessModalVisible, setVerificationSuccessModalVisible] = useState(false);
 
   const pendingRent = parseFloat(farmerData?.pendingRent || 0);
 
@@ -90,8 +96,6 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
 
   const handlePayPress = async (customAmount) => {
     setRazorpayOrderData(null); // Clear old order data before fetch
-
-    online.setRazorpayOrderData(null); // Clear old order data before fetch
 
     console.log('[handlePayPress] Received customAmount:', customAmount);
     console.log('[handlePayPress] Current state paymentAmount:', paymentAmount);
@@ -221,11 +225,25 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
           Alert.alert(t('khata.error_title'), verifyErr.message);
         }
       }).catch((error) => {
-        if (razorpayOrderData.payment_link_url) {
-          setPaymentUrl(razorpayOrderData.payment_link_url);
-        } else {
-          Alert.alert(t('khata.error_title'), (error && (error.description || error.message)) || 'Payment failed.');
+        console.log('[handleOnlineCheckout] RazorpayCheckout.open caught error:', error);
+        
+        // Identify if the error is a user cancellation
+        const errCode = error && error.code !== undefined ? String(error.code) : '';
+        const errDesc = (error && (error.description || error.message || (typeof error === 'string' ? error : ''))).toLowerCase();
+        const isCancelled = 
+          errCode === '0' ||
+          errCode === '2' ||
+          errCode === 'PAYMENT_CANCELLED' || 
+          errDesc.includes('cancel') || 
+          errDesc.includes('dismiss') || 
+          errDesc.includes('user');
+        
+        if (isCancelled) {
+          console.log('[handleOnlineCheckout] Payment was explicitly cancelled/dismissed by the user.');
+          return;
         }
+
+        Alert.alert(t('khata.error_title'), (error && (error.description || error.message)) || 'Payment failed.');
       });
     } catch (sdkErr) {
       if (razorpayOrderData.payment_link_url) setPaymentUrl(razorpayOrderData.payment_link_url);
@@ -261,21 +279,17 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     } catch (err) {
       Alert.alert('Error', err.message);
     }
-    if (targetAmount <= 0) return;
-    await online.handlePayPress(targetAmount);
   };
 
   const handleResetAll = () => {
-    verification.setUtrNumber('');
-    setPaymentMode('UPI');
-    setBankName('');
-    verification.setReceiptFile('');
-    verification.setReceiptFileName('');
-    datePicker.setDatePickerVisible(false);
-    verification.setVerificationStep(1);
-    verification.setShowVerificationForm(false);
+    setUtrNumber('');
+    setReceiptFile('');
+    setReceiptFileName('');
+    setDatePickerVisible(false);
+    setVerificationStep(1);
+    setShowVerificationForm(false);
     setShowSummary(false);
-    online.setIsOnlineSuccess(false);
+    setIsOnlineSuccess(false);
     if (onPaymentSuccess) onPaymentSuccess();
   };
 
@@ -294,18 +308,18 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       pickerMonth, setPickerMonth,
       pickerYear, setPickerYear,
       paymentId, setPaymentId,
-      verificationSuccessModalVisible: verification.verificationSuccessModalVisible, setVerificationSuccessModalVisible: verification.setVerificationSuccessModalVisible,
-      paymentUrl: online.paymentUrl, setPaymentUrl: online.setPaymentUrl,
-      razorpayOrderData: online.razorpayOrderData, setRazorpayOrderData: online.setRazorpayOrderData,
-      isOnlineSuccess: online.isOnlineSuccess, setIsOnlineSuccess: online.setIsOnlineSuccess,
+      verificationSuccessModalVisible, setVerificationSuccessModalVisible,
+      paymentUrl, setPaymentUrl,
+      razorpayOrderData, setRazorpayOrderData,
+      isOnlineSuccess, setIsOnlineSuccess,
       pendingRent,
       paymentAmount, setPaymentAmount
     },
     handlers: {
-      adjustDay: datePicker.adjustDay, adjustMonth: datePicker.adjustMonth, adjustYear: datePicker.adjustYear,
-      handleConfirmDate: datePicker.handleConfirmDate, handleUploadReceipt: verification.handleUploadReceipt,
-      handlePayPress, handleOnlineCheckout: online.handleOnlineCheckout,
-      handleFormSubmit: verification.handleFormSubmit, handleResetAll
+      adjustDay, adjustMonth, adjustYear,
+      handleConfirmDate, handleUploadReceipt,
+      handlePayPress, handleOnlineCheckout,
+      handleFormSubmit, handleResetAll
     }
   };
 }

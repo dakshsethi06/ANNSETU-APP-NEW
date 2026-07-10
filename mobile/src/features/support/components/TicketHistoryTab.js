@@ -136,11 +136,18 @@ export default function TicketHistoryTab({ tickets, loadingTickets, onSelectTab,
       {tickets.map(ticket => {
         const isExpanded = selectedTicketId === ticket.id;
         const statusInfo = getStatusLabel(ticket.status);
-        const ticketDate = ticket.created_at ? new Date(ticket.created_at).toLocaleDateString('en-IN', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric'
-        }) : 'N/A';
+        const formatDateSafe = (dateStr) => {
+          if (!dateStr) return 'N/A';
+          try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+          } catch (e) {
+            return 'N/A';
+          }
+        };
+        const ticketDate = formatDateSafe(ticket.created_at);
 
         return (
           <View key={ticket.id} style={s.ticketCard}>
