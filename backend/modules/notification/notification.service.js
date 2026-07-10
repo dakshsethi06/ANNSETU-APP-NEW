@@ -59,7 +59,11 @@ async function fetchNotifications(farmerId) {
   for (const item of dbNotifs) {
     if (item.isRead) {
       readNotifIds.add(item.id);
-      // Removed 'continue;' so read notifications still show up in the history
+      
+      // Auto-generated notifications disappear when read, but admin broadcasts stay until manually deleted.
+      if (item.type !== 'GLOBAL_BROADCAST') {
+        continue;
+      }
     }
 
     if (await checkStale(item, processedTxsMap)) {
