@@ -7,7 +7,8 @@ jest.mock('../config/database', () => ({
 }));
 
 jest.mock('../modules/payment/payment.repository', () => ({
-  updatePaymentStatus: jest.fn()
+  updatePaymentStatus: jest.fn(),
+  getPaymentById: jest.fn()
 }));
 
 describe('Payment Views Sanitization and Escaping Tests', () => {
@@ -29,8 +30,8 @@ describe('Payment Views Sanitization and Escaping Tests', () => {
       params: { orderId: maliciousOrderId }
     };
 
-    // Mock DB to return amount
-    db.query.mockResolvedValue({ rows: [{ amount: 150.50 }] });
+    // Mock repository to return amount
+    paymentRepository.getPaymentById.mockResolvedValue({ amount: 150.50 });
 
     await renderMockCheckout(mockReq, mockRes);
 

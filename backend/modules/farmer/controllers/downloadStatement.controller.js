@@ -1,5 +1,6 @@
 const farmerRepository = require('../farmer.repository');
 const farmerConstants = require('../farmer.constants');
+const { parseToISODate, toISTDateStr } = require('./dateHelpers');
 
 async function downloadStatement(req, res) {
   try {
@@ -13,34 +14,8 @@ async function downloadStatement(req, res) {
 
     const ledger = await farmerRepository.getFarmerLedger(id);
 
-    const parseToISODate = (str) => {
-      if (!str || str === 'undefined' || str === 'null') return null;
-      str = str.trim();
-      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-      const parts = str.split(/[-/]/);
-      if (parts.length === 3) {
-        if (parts[0].length === 2 && parts[2].length === 4) {
-          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-        } else if (parts[0].length === 4) {
-          return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-        }
-      }
-      const d = new Date(str);
-      if (!Number.isNaN(d.getTime())) {
-        return d.toISOString().split('T')[0];
-      }
-      return null;
-    };
-
     const normalizedFrom = parseToISODate(fromDate);
     const normalizedTo = parseToISODate(toDate);
-
-    const toISTDateStr = (d) => {
-      if (!d) return '';
-      const dateObj = new Date(d);
-      if (Number.isNaN(dateObj.getTime())) return '';
-      return dateObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-    };
 
     let filteredLedger = ledger;
     if (normalizedFrom && normalizedTo) {

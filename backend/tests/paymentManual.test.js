@@ -2,7 +2,8 @@ const db = require('../config/database');
 const { verifyManualPayment } = require('../modules/payment/payment.manual.controller');
 
 jest.mock('../config/database', () => ({
-  connect: jest.fn()
+  connect: jest.fn(),
+  query: jest.fn().mockResolvedValue({ rows: [] })
 }));
 
 jest.mock('../shared/notifications/notifications', () => ({
