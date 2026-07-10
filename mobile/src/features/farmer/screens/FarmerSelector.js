@@ -13,6 +13,7 @@ export default function FarmerSelector({
   onSearchQueryChange,
   onSelectFarmer,
   onRegisterPress,
+  onLogout,
 }) {
   const filteredFarmers = farmers.filter(
     (f) =>
@@ -35,7 +36,7 @@ export default function FarmerSelector({
       }}>
         <Text style={{ fontSize: 22, fontWeight: '800', color: COLORS.greenDeep }}>Annsetu</Text>
         <TouchableOpacity 
-          onPress={() => supabase.auth.signOut()} 
+          onPress={onLogout} 
           style={{ padding: 10, backgroundColor: '#F0FDF4', borderRadius: 20, borderWidth: 1, borderColor: '#DCFCE7' }}
           activeOpacity={0.7}
         >

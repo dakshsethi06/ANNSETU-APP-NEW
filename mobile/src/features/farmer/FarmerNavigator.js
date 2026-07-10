@@ -186,6 +186,7 @@ export default function FarmerNavigator({ loggedInPhone, onSwitchRole, onLogout 
                 onSearchQueryChange={setFarmerSearchQuery}
                 onSelectFarmer={handleSelectFarmer}
                 onRegisterPress={() => setRegisterModalVisible(true)}
+                onLogout={onLogout}
               />
               <RegisterFarmerModal
                 visible={registerModalVisible}
