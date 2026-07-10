@@ -158,7 +158,7 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, on
           }
         }
 
-        if (onNavigateToTab && (
+        if (onNavigateToTab && item.type !== 'GLOBAL_BROADCAST' && (
           item.title.toLowerCase().includes('approval') ||
           item.title.toLowerCase().includes('authorize') ||
           item.title.toLowerCase().includes('delivered') ||
