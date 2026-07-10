@@ -14,19 +14,6 @@ export default function AuthNavigator({ onLoginSuccess }) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
       <Stack.Screen name="Login">
-<<<<<<< Updated upstream
-        {({ navigation }) => {
-          const handleSuccess = onLoginSuccess || ((phone, role, token) => loginSuccess(phone, role, token));
-          return (
-            <LoginScreen
-              onLoginSuccess={handleSuccess}
-              onHidePreviewChange={setHidePreviewFromLogin}
-              onNavigateToRegister={() => navigation.navigate('Register')}
-              onNavigateToOtp={(phone) => navigation.navigate('Otp', { phone })}
-            />
-          );
-        }}
-=======
         {({ navigation }) => (
           <LoginScreen
             onLoginSuccess={handleSuccess}
@@ -35,7 +22,6 @@ export default function AuthNavigator({ onLoginSuccess }) {
             onNavigateToOtp={(phone) => navigation.navigate('Otp', { phone })}
           />
         )}
->>>>>>> Stashed changes
       </Stack.Screen>
       <Stack.Screen name="Register">
         {({ navigation }) => (
