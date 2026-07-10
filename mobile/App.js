@@ -102,8 +102,23 @@ export default function App() {
   }, [session]);
 
   useEffect(() => {
+    let resolved = false;
+    const done = () => {
+      if (!resolved) {
+        resolved = true;
+        setLoadingSession(false);
+      }
+    };
+
+    // 2.5-second timeout safety fallback
+    const timeoutId = setTimeout(() => {
+      console.warn("Initial session retrieval timed out. Proceeding to load app...");
+      done();
+    }, 2500);
+
     // 1. Fetch initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      clearTimeout(timeoutId);
       if (session) {
         setSession(session);
       } else {
@@ -112,10 +127,11 @@ export default function App() {
           setSession(null);
         }
       }
-      setLoadingSession(false);
+      done();
     }).catch(err => {
+      clearTimeout(timeoutId);
       console.warn("Failed to get initial session:", err);
-      setLoadingSession(false);
+      done();
     });
 
     // 2. Listen for auth changes (login, logout, token refresh)
@@ -172,6 +188,9 @@ export default function App() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8F5E9' }}>
         <ActivityIndicator size="large" color="#2E7D32" />
+        <Text style={{ marginTop: 10, color: '#2E7D32', fontWeight: 'bold' }}>
+          {!fontsLoaded ? "Loading Fonts..." : "Loading Session..."}
+        </Text>
       </View>
     );
   }
