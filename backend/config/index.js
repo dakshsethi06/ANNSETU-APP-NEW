@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const config = {
-  port: parseInt(process.env.PORT, 10) || 3001,
+  port: Number.parseInt(process.env.PORT, 10) || 3001,
   nodeEnv: process.env.NODE_ENV || 'development',
   databaseUrl: process.env.DATABASE_URL || '',
   mandiApiKey: process.env.MANDI_API_KEY || '',

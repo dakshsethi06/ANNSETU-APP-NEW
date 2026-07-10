@@ -16,7 +16,7 @@ async function createTicketLive({ name, phone, email, category, subject, descrip
   const userEmail = email || `${phone ? phone.replace(/[^0-9]/g, '') : 'user'}@annsetu.mock`;
   const ticketSubject = `[${category || 'General'}] ${subject}`;
   const ticketDescription = buildTicketDescriptionHtml({ category, name, phone, role, description });
-  const mailboxId = parseInt(process.env.FREESCOUT_MAILBOX_ID || '1', 10);
+  const mailboxId = Number.parseInt(process.env.FREESCOUT_MAILBOX_ID || '1', 10);
 
   const formattedAttachments = (attachments || [])
     .filter(file => file.base64)
@@ -89,7 +89,7 @@ async function createTicketMock({ name, phone, email, category, subject, descrip
     try {
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587'),
+        port: Number.parseInt(process.env.SMTP_PORT || '587', 10),
         secure: process.env.SMTP_PORT === '465',
         auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
       });

@@ -38,7 +38,7 @@ Body: ${bodyContent}
     try {
         const transporter = nodemailer.createTransport({
             host,
-            port: parseInt(port, 10),
+            port: Number.parseInt(port, 10),
             secure: port === '465', // True for port 465, false for others
             auth: {
                 user,

@@ -64,7 +64,7 @@ async function insertDispatch({ id, nikasiNumber, farmerId, coldStorageId, lotId
   `;
   const params = [
     id, nikasiNumber, farmerId, coldStorageId, lotId,
-    parseInt(bags, 10), weightQtl, 'Farmer Withdrawal', 'Farmer',
+    Number.parseInt(bags, 10), weightQtl, 'Farmer Withdrawal', 'Farmer',
     vehicleNumber || null, commodity, 'CREATED'
   ];
   const result = await db.query(sql, params);

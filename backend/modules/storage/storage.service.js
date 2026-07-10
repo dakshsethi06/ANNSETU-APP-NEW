@@ -59,18 +59,18 @@ async function fetchStorageSummary(coldStorageId) {
       city: cs.city, district: cs.district, state: cs.state
     },
     stock: {
-      packets: parseInt(stock.active_packets || 0, 10),
+      packets: Number.parseInt(stock.active_packets || 0, 10),
       weightMt: parseFloat(stock.active_weight || 0) * 0.1,
-      totalPackets: parseInt(stock.total_packets || 0, 10),
+      totalPackets: Number.parseInt(stock.total_packets || 0, 10),
       totalWeightMt: parseFloat(stock.total_weight || 0) * 0.1
     },
     dues: {
       amount: parseFloat(dues.total_dues || 0),
-      farmersCount: parseInt(dues.farmers_count || 0, 10)
+      farmersCount: Number.parseInt(dues.farmers_count || 0, 10)
     },
     todayAmad: {
-      entries: parseInt(today.entries_count || 0, 10),
-      packets: parseInt(today.packets_count || 0, 10)
+      entries: Number.parseInt(today.entries_count || 0, 10),
+      packets: Number.parseInt(today.packets_count || 0, 10)
     },
     recentActivity: activity.map(row => {
       const age_days = Math.floor(Math.abs(new Date() - new Date(row.amadDate)) / (1000 * 60 * 60 * 24)) || 0;

@@ -35,7 +35,7 @@ async function checkStale(item, processedTxsMap) {
   const match = item.message.match(/dispatch\s+(?:of\s+)?(\d+)\s+bags/i);
   const isDispatch = ['dispatch', 'approval', 'approved'].some(t => item.title.toLowerCase().includes(t));
   if (match && isDispatch) {
-    const bagsCount = parseInt(match[1], 10);
+    const bagsCount = Number.parseInt(match[1], 10);
     let processedTxs = processedTxsMap.get(item.userId);
     if (!processedTxs) {
       processedTxs = await getProcessedTransactions(item.userId);

@@ -7,8 +7,8 @@ async function getMandiPrices(req, res) {
     const commodity = req.query.commodity || 'All';
     const market = req.query.market || '';
     
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
+    const page = Number.parseInt(req.query.page, 10) || 1;
+    const limit = Number.parseInt(req.query.limit, 10) || 10;
     const offset = (page - 1) * limit;
 
     if (!apiKey) return res.status(500).json({ success: false, error: 'API key not configured. Please set MANDI_API_KEY in .env file.' });
