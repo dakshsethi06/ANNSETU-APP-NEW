@@ -11,37 +11,13 @@ async function loginMpin(req, res) {
   }
 
   try {
-    const isColdStorageRole = role === 'ColdStorageFacility' || role === 'coldstorage';
-    const isFarmerRole = role === 'ColdStorage' || role === 'farmer';
-
-    if (!isFarmerRole) {
-      const cs = await farmerRepository.getColdStorageByPhone(phone);
-      if (cs) {
-        const csMpin = cs.mpin || '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c';
-        if (verifyMpin(mpin, csMpin)) {
-          const token = jwt.sign(
-            { id: cs.id, phone: phone, role: farmerConstants.ROLES.COLD_STORAGE_FACILITY },
-            process.env.JWT_SECRET || 'annsetu_jwt_secret_key',
-            { expiresIn: '7d' }
-          );
-          return res.json({
-            success: true,
-            token,
-            role: farmerConstants.ROLES.COLD_STORAGE_FACILITY,
-            coldStorage: { id: cs.id, name: cs.displayName, phone: phone }
-          });
-        } else if (isColdStorageRole) {
-          return res.status(401).json({ success: false, error: farmerConstants.ERROR_MESSAGES.INVALID_MPIN_CS });
-        }
-      }
-    }
-
+    // 1. Try Farmer first
     const farmer = await farmerRepository.getFarmerByPhone(phone);
     if (farmer) {
       const farmerMpin = farmer.mpin || '1234';
       if (verifyMpin(mpin, farmerMpin)) {
         const token = jwt.sign(
-          { id: farmer.id, phone: farmer.phone, role: 'ColdStorage' },
+          { id: farmer.id, phone: farmer.phone, role: 'ColdStorage' }, // Mobile App expects 'ColdStorage' for Farmer role
           process.env.JWT_SECRET || 'annsetu_jwt_secret_key',
           { expiresIn: '7d' }
         );
@@ -50,6 +26,25 @@ async function loginMpin(req, res) {
           token,
           role: 'ColdStorage',
           farmer: { id: farmer.id, name: farmer.name, phone: farmer.phone, state: farmer.state }
+        });
+      }
+    }
+
+    // 2. Try Cold Storage Facility as fallback
+    const cs = await farmerRepository.getColdStorageByPhone(phone);
+    if (cs) {
+      const csMpin = cs.mpin || '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c';
+      if (verifyMpin(mpin, csMpin)) {
+        const token = jwt.sign(
+          { id: cs.id, phone: phone, role: farmerConstants.ROLES.COLD_STORAGE_FACILITY },
+          process.env.JWT_SECRET || 'annsetu_jwt_secret_key',
+          { expiresIn: '7d' }
+        );
+        return res.json({
+          success: true,
+          token,
+          role: farmerConstants.ROLES.COLD_STORAGE_FACILITY,
+          coldStorage: { id: cs.id, name: cs.displayName, phone: phone }
         });
       }
     }

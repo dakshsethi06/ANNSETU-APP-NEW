@@ -4,9 +4,9 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { FONTS } from '../../../core/theme/theme';
 import s from '../styles/notificationsTabStyles';
-import { fetchNotifications, markNotificationRead } from '../services/notificationService';
+import { fetchNotifications, markNotificationRead, deleteNotification } from '../services/notificationService';
 import { fetchFarmers } from '../../farmer/services/farmerService';
-import { BACKEND_URL } from '../../../core/network/api';
+import { BACKEND_URL, formatImageUrl } from '../../../core/network/api';
 
 export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, onMarkRead }) {
   const { t } = useTranslation();
@@ -150,10 +150,12 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, on
           setImageModalVisible(true);
         }
 
-        setNotifications(prev => prev.filter(n => n.id !== item.id));
-        await markNotificationRead(item.id);
-        if (onMarkRead) {
-          onMarkRead();
+        if (item.isRead === false) {
+          setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, isRead: true } : n));
+          await markNotificationRead(item.id);
+          if (onMarkRead) {
+            onMarkRead();
+          }
         }
 
         if (onNavigateToTab && (
@@ -164,6 +166,11 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, on
         )) {
           onNavigateToTab('dispatch');
         }
+      };
+
+      const handlePressDelete = async () => {
+        setNotifications(prev => prev.filter(n => n.id !== item.id));
+        await deleteNotification(item.id);
       };
 
       return (
@@ -198,6 +205,13 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, on
                   <Feather name="chevron-right" size={14} color="#2D6A4F" />
                 </View>
               )}
+
+              {/* Action row with dustbin */}
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 }}>
+                <TouchableOpacity onPress={handlePressDelete} style={{ padding: 4 }}>
+                  <Feather name="trash-2" size={16} color="#EF4444" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </TouchableOpacity>
@@ -331,7 +345,7 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, on
                           style={s.receiptFileRow}
                           activeOpacity={0.7}
                           onPress={() => {
-                            const url = paymentDetail.receiptFile;
+                            const url = formatImageUrl(paymentDetail.receiptFile);
                             if (url.startsWith('http')) {
                               setFullImageUrl(url);
                               setImageModalVisible(true);
@@ -404,7 +418,7 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, on
             {fullImageUrl ? (
               <View style={{ width: '100%', height: '85%', justifyContent: 'center', alignItems: 'center' }}>
                 <Image
-                  source={{ uri: fullImageUrl }}
+                  source={{ uri: formatImageUrl(fullImageUrl) }}
                   style={s.fullSizeImage}
                   resizeMode="contain"
                   onLoadStart={() => {

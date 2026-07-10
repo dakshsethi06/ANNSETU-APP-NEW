@@ -1,4 +1,4 @@
-import * as Notifications from 'expo-notifications';
+// import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { BACKEND_URL } from './config';
@@ -9,6 +9,12 @@ import { BACKEND_URL } from './config';
  */
 export async function registerForPushNotificationsAsync(userId) {
   if (!userId) return null;
+  
+  // Expo Go no longer supports push notifications as of SDK 53.
+  if (__DEV__) {
+    console.log('[Push Service] Skipping push registration in development mode (Expo Go).');
+    return null;
+  }
 
   try {
     // 1. Request permissions on Android / iOS

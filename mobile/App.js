@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Alert, View, ActivityIndicator, Platform, Keyboard } from 'react-native';
-import * as Updates from 'expo-updates';
-import * as Notifications from 'expo-notifications';
+// import * as Notifications from 'expo-notifications';
 import { supabase } from './src/core/network/supabase';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/features/auth/store/useAuthStore';
@@ -27,13 +26,13 @@ global.fetch = async (input, init) => {
 
 
 // Configure push notification alert settings when the app is foregrounded
-Notifications.setNotificationHandler({
+/* Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
-});
+}); */
 
 // Expo Google Fonts loader
 import { useFonts } from 'expo-font';
@@ -116,24 +115,7 @@ export default function App() {
       setSession(session);
     });
 
-    // 3. OTA Updates check
-    async function checkUpdates() {
-      if (__DEV__) return; 
-      try {
-        const update = await Updates.checkForUpdateAsync();
-        if (update.isAvailable) {
-          await Updates.fetchUpdateAsync();
-          Alert.alert(
-            "Update Available",
-            "A new update has been downloaded. The app will now reload to apply the changes.",
-            [{ text: "Reload Now", onPress: () => Updates.reloadAsync() }]
-          );
-        }
-      } catch (e) {
-        console.log("Error checking for updates:", e);
-      }
-    }
-    checkUpdates();
+    // 3. OTA Updates check (disabled in dev mode)
 
     // 4. Keyboard listeners to hide preview bar when typing
     const keyboardDidShowListener = Keyboard.addListener(

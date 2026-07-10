@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Modal, TouchableOpacity, Image, ActivityIndicator, Text, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { formatImageUrl } from '../../../core/network/config';
 
 export function KhataFullscreenImageModal({
   visible,
@@ -11,6 +12,8 @@ export function KhataFullscreenImageModal({
   imageError,
   setImageError
 }) {
+  const formattedUrl = formatImageUrl(fullImageUrl);
+
   return (
     <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center', zIndex: 20000 }}>
@@ -21,10 +24,10 @@ export function KhataFullscreenImageModal({
         >
           <Feather name="x" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        {fullImageUrl ? (
+        {formattedUrl ? (
           <View style={{ width: '100%', height: '85%', justifyContent: 'center', alignItems: 'center' }}>
             <Image
-              source={{ uri: fullImageUrl }}
+              source={{ uri: formattedUrl }}
               style={{ width: '90%', height: '90%' }}
               resizeMode="contain"
               onLoadStart={() => {
