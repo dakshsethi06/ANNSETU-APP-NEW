@@ -125,19 +125,21 @@ export function useStorageTabDashboard(loggedInPhone) {
     setFarmerError(null);
 
     try {
+      console.log('[handleSelectFarmer] Fetching farmer profile...');
       const farmers = await fetchFarmers('', farmerId);
       let selectedFarmer = null;
       if (farmers && farmers.length > 0) {
         selectedFarmer = farmers[0];
       } else {
         // Check local list for fallback profile (e.g. for new or unregistered login numbers)
+        console.log('[handleSelectFarmer] Profile not found in API, checking local list/fallback...');
         const local = fallbackProfile || dbFarmers.find(f => f.serial_number === farmerId);
         if (local) {
           selectedFarmer = local;
         }
       }
 
-      console.log('[handleSelectFarmer] Loaded selectedFarmer profile pendingRent:', selectedFarmer?.pendingRent);
+      console.log('[handleSelectFarmer] Loaded selectedFarmer profile:', selectedFarmer);
 
       if (selectedFarmer) {
         setFarmerData(selectedFarmer);
@@ -146,11 +148,12 @@ export function useStorageTabDashboard(loggedInPhone) {
       }
       
       const cityToQuery = selectedFarmer.village || selectedFarmer.district || selectedFarmer.state || 'Tundla';
+      console.log('[handleSelectFarmer] Fetching live holdings, notifications, ledger, and weather for:', cityToQuery);
 
       const [holdings, notifications, ledger, weather] = await Promise.all([
-        fetchHoldings(),
-        fetchNotifications(farmerId),
-        fetchFarmerLedger(farmerId),
+        fetchHoldings().catch(err => { console.warn('[handleSelectFarmer] fetchHoldings failed:', err.message); throw err; }),
+        fetchNotifications(farmerId).catch(err => { console.warn('[handleSelectFarmer] fetchNotifications failed:', err.message); throw err; }),
+        fetchFarmerLedger(farmerId).catch(err => { console.warn('[handleSelectFarmer] fetchFarmerLedger failed:', err.message); throw err; }),
         fetchWeather(cityToQuery).catch(async () => {
           // Fallback to district/state if village failed
           if (selectedFarmer.district && cityToQuery !== selectedFarmer.district) {
@@ -160,14 +163,14 @@ export function useStorageTabDashboard(loggedInPhone) {
         })
       ]);
 
-      console.log('[handleSelectFarmer] Loaded ledger items count:', ledger?.length);
+      console.log('[handleSelectFarmer] All data fetched successfully. Holdings count:', holdings?.length, 'Ledger count:', ledger?.length);
 
       setHoldingsList(holdings.filter((h) => h.id === farmerId) || []);
       setNotificationsList(notifications || []);
       setLedgerList(ledger || []);
       setWeatherData(weather);
     } catch (err) {
-      console.warn('Failed to fetch live farmer data:', err.message);
+      console.error('[handleSelectFarmer] Failed to fetch live farmer data. Error:', err.stack || err.message);
       if (!isRefresh) {
         setFarmerError(err.message || 'Failed to load farmer details');
         setFarmerData(null);
