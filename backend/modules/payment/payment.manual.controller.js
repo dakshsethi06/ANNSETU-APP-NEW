@@ -4,9 +4,10 @@ const paymentRepository = require('./payment.repository');
 const paymentConstants = require('./payment.constants');
 const farmerRepository = require('../farmer/farmer.repository');
 const { createAppNotification } = require('../../shared/notifications/notifications');
+const crypto = require('crypto');
 
 async function initiatePayment(req, res) {
-  console.log('[Payment Controller] initiatePayment called with body:', req.body);
+  console.log('[Payment Controller] initiatePayment called');
   const { farmerId, amount, paymentMode, coldStorageId: bodyColdStorageId } = req.body;
 
   try {
@@ -20,7 +21,7 @@ async function initiatePayment(req, res) {
     if (!resolvedColdStorageId) {
       return res.status(400).json({ success: false, error: 'coldStorageId is required.' });
     }
-    const paymentId = 'PAY-' + Date.now() + '-' + Math.floor(1000 + Math.random() * 9000);
+    const paymentId = 'PAY-' + Date.now() + '-' + crypto.randomInt(1000, 10000);
 
     const payment = await paymentRepository.initiateManualPayment(paymentId, farmerId, resolvedColdStorageId, parseFloat(amount), paymentMode || 'online');
 
@@ -33,7 +34,11 @@ async function initiatePayment(req, res) {
 
 async function verifyManualPayment(req, res) {
   const { paymentId, utrNumber, receiptFile, paymentDate, paymentMode, bankName } = req.body;
-  console.log('[Payment Controller] verifyPayment (manual) called for ID:', paymentId, 'UTR:', utrNumber);
+  console.log('[Payment Controller] verifyPayment (manual) called');
+
+  if (!paymentId || !/^[a-zA-Z0-9_-]+$/.test(paymentId)) {
+    return res.status(400).json({ success: false, error: 'Invalid payment ID format' });
+  }
 
   try {
     let finalReceiptPath = receiptFile;
@@ -54,7 +59,7 @@ async function verifyManualPayment(req, res) {
           finalReceiptPath = `${req.protocol}://${host}/uploads/${fileName}`;
         }
       } catch (saveErr) {
-        console.error('Failed to save receipt file:', saveErr.message);
+        console.error('Failed to save receipt file');
       }
     }
 
@@ -104,7 +109,7 @@ async function verifyManualPayment(req, res) {
 
     return res.json({ success: true, message: 'Payment verification submitted successfully' });
   } catch (error) {
-    console.error('verifyPayment (manual) error:', error.message);
+    console.error('verifyPayment (manual) error');
     return res.status(500).json({ success: false, error: error.message || 'Failed to verify payment' });
   }
 }

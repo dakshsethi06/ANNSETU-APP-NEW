@@ -21,7 +21,7 @@ async function downloadReceiptPdf(req, res) {
 
     const ledger = await farmerRepository.getFarmerLedger(id);
     const entry = ledger.find(item => item.id === entryId);
-    if (!entry) return res.status(404).send(`Ledger entry with ID ${entryId} not found.`);
+    if (!entry) return res.status(404).send('Ledger entry not found.');
 
     const filteredLedger = ledger.filter(item => {
       const itemDate = new Date(item.date).toISOString().split('T')[0];

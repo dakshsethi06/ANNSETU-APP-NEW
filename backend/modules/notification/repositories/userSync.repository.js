@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const { hashMpin } = require('../../../shared/utils/mpinUtils');
 
 async function getUserForFarmer(farmerId) {
   const userRes = await db.query('SELECT id FROM "User" WHERE id = $1', [farmerId]);
@@ -41,7 +42,7 @@ async function upsertUserPushToken(userId, email, pushToken) {
     const csRes = await db.query('SELECT "displayName", mpin FROM "ColdStorageOnboarding" WHERE id = $1', [userId]);
     if (csRes.rows.length > 0) {
       name = csRes.rows[0].displayName;
-      passwordHash = csRes.rows[0].mpin || '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c';
+      passwordHash = csRes.rows[0].mpin || hashMpin('1234');
       coldStorageId = userId;
     }
   }

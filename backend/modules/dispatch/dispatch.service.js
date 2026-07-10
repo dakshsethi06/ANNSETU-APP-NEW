@@ -2,6 +2,7 @@ const dispatchRepo = require('./dispatch.repository');
 const { createAppNotification } = require('../../shared/notifications/notifications');
 const { DEFAULT_COLD_STORAGE_ID } = require('../../config/constants');
 const { hashMpin, verifyMpin } = require('../../shared/utils/mpinUtils');
+const crypto = require('crypto');
 
 // ─── Service Methods ──────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ async function createNewDispatch(data) {
   const verifiedColdStorageId = await dispatchRepo.verifyColdStorage(coldStorageId);
 
   const id = 'NK-' + Date.now();
-  const nikasiNumber = 'NK-' + Math.floor(10000 + Math.random() * 90000);
+  const nikasiNumber = 'NK-' + crypto.randomInt(10000, 100000);
 
   const dispatch = await dispatchRepo.insertDispatch({
     id, nikasiNumber, farmerId,

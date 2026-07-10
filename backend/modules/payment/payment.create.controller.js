@@ -3,7 +3,7 @@ const paymentRepository = require('./payment.repository');
 const razorpayService = require('./razorpay.service');
 
 async function createOrder(req, res) {
-  console.log('[Create Order API] Incoming body:', req.body);
+  console.log('[Create Order API] Incoming body received');
   const { farmerId, amount } = req.body;
 
   try {
@@ -33,7 +33,7 @@ async function createOrder(req, res) {
     }
 
     let finalAmount = amount ? parseFloat(amount) : 0;
-    console.log('[Create Order API] parsed amount:', amount, '-> finalAmount:', finalAmount);
+    console.log('[Create Order API] parsed finalAmount:', finalAmount);
     if (!finalAmount) {
       finalAmount = await paymentRepository.getFarmerPendingRent(farmerId);
       console.log('[Create Order API] fallback to pending rent:', finalAmount);
@@ -112,7 +112,7 @@ async function createOrder(req, res) {
       payment_link_url: paymentLinkUrl
     });
   } catch (error) {
-    console.error('Razorpay createOrder error:', error.message);
+    console.error('Razorpay createOrder error');
     return res.status(500).json({ success: false, error: error.message || 'Failed to create payment order.' });
   }
 }

@@ -20,13 +20,13 @@ async function getPaymentDetails(req, res) {
       }
     });
   } catch (error) {
-    console.error('getPaymentDetails error:', error.message);
+    console.error('getPaymentDetails error');
     return res.status(500).json({ success: false, error: error.message });
   }
 }
 
 async function approvePayment(req, res) {
-  console.log('[Payment Controller] approvePayment called for ID:', req.params.id);
+  console.log('[Payment Controller] approvePayment called');
   const { id } = req.params;
 
   try {
@@ -48,7 +48,7 @@ async function approvePayment(req, res) {
 
     return res.json({ success: true, message: 'Payment approved successfully' });
   } catch (error) {
-    console.error('approvePayment error:', error.message);
+    console.error('approvePayment error');
     return res.status(500).json({ success: false, error: error.message });
   }
 }

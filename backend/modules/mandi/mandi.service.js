@@ -13,11 +13,11 @@ async function fetchMandiPrices(apiKey, state, commodity, market) {
   const cachedEntry = cache.get(cacheKey);
 
   if (cachedEntry && (Date.now() - cachedEntry.timestamp < CACHE_TTL_MS)) {
-    console.log(`[Mandi Cache] Cache hit for key: ${cacheKey}`);
+    console.log('[Mandi Cache] Cache hit');
     return cachedEntry.data;
   }
 
-  console.log(`[Mandi Cache] Cache miss. Fetching fresh data for: ${cacheKey}`);
+  console.log('[Mandi Cache] Cache miss. Fetching fresh data');
 
   const params = {
     'api-key': apiKey,
