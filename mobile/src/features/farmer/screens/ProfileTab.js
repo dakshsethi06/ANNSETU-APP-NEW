@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { updateFarmerProfile, sendProfileVerificationOtp, verifyAndUpdateFarmerProfile } from '../services/farmerService';
 import SupportModal from '../../support/modals/SupportModal';
 import ChatbotWebViewModal from '../../support/modals/ChatbotWebViewModal';
+import TranslatedText from '../../../core/components/TranslatedText';
 
 export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedInPhone, userRole, onRefreshFarmer }) {
   const { t, i18n } = useTranslation();
@@ -34,6 +35,12 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpTarget, setOtpTarget] = useState({ type: 'phone', value: '' });
+
+  // On-demand Verification fields
+  const [isPhoneVerified, setPhoneVerified] = useState(true);
+  const [isEmailVerified, setEmailVerified] = useState(true);
+  const [verifiedPhone, setVerifiedPhone] = useState('');
+  const [verifiedEmail, setVerifiedEmail] = useState('');
 
   const profileName = farmerData?.name || 'SN Sharma Trading';
   const roleLabel = farmerData ? t('register.roles.farmer.label') : t('register.roles.vendor.label');
@@ -108,37 +115,34 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
   ];
 
   const handleOpenEditModal = () => {
+    const currentPhone = farmerData?.phone || '';
+    const currentEmail = farmerData?.email || '';
     setEditName(farmerData?.name || '');
-    setEditPhone(farmerData?.phone || '');
-    setEditEmail(farmerData?.email || '');
+    setEditPhone(currentPhone);
+    setEditEmail(currentEmail);
+    setVerifiedPhone(currentPhone);
+    setVerifiedEmail(currentEmail);
+    setPhoneVerified(true);
+    setEmailVerified(true);
     setErrorMessage('');
     setIsVerifyingOtp(false);
     setEditModalVisible(true);
   };
 
-  const handleSaveProfile = async () => {
-    if (!editName.trim()) {
-      setErrorMessage(t('profile.validation_error_name'));
-      return;
+  const handleRequestOtp = async (type, value) => {
+    const cleanValue = value.trim();
+    if (type === 'phone') {
+      if (!cleanValue || cleanValue.length !== 10 || isNaN(cleanValue)) {
+        setErrorMessage(t('profile.validation_error_phone'));
+        return;
+      }
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!cleanValue || !emailRegex.test(cleanValue)) {
+        setErrorMessage(t('profile.validation_error_email'));
+        return;
+      }
     }
-    const cleanPhone = editPhone.trim();
-    if (!cleanPhone || cleanPhone.length !== 10 || isNaN(cleanPhone)) {
-      setErrorMessage(t('profile.validation_error_phone'));
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const cleanEmail = editEmail.trim().toLowerCase();
-    if (cleanEmail && !emailRegex.test(cleanEmail)) {
-      setErrorMessage(t('profile.validation_error_email'));
-      return;
-    }
-
-    const originalPhone = (farmerData?.phone || '').trim();
-    const originalEmail = (farmerData?.email || '').trim().toLowerCase();
-
-    const isPhoneChanged = cleanPhone !== originalPhone;
-    const isEmailChanged = (cleanEmail || null) !== (originalEmail || null);
 
     const serialNumber = farmerData?.serial_number || farmerData?.id;
     if (!serialNumber) {
@@ -150,35 +154,61 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
     setErrorMessage('');
 
     try {
-      if (isPhoneChanged) {
-        // Trigger OTP Verification for Phone Number
-        setOtpTarget({ type: 'phone', value: cleanPhone });
-        await sendProfileVerificationOtp(serialNumber, 'phone', cleanPhone);
-        setOtpCode('');
-        setIsVerifyingOtp(true);
-      } else if (isEmailChanged) {
-        // Trigger OTP Verification for Email Address
-        setOtpTarget({ type: 'email', value: cleanEmail });
-        await sendProfileVerificationOtp(serialNumber, 'email', cleanEmail);
-        setOtpCode('');
-        setIsVerifyingOtp(true);
-      } else {
-        // Only Name changed (or no changes at all) - direct save
-        await updateFarmerProfile(serialNumber, {
-          name: editName.trim(),
-          phone: cleanPhone,
-          email: cleanEmail || null,
-        });
-
-        if (onRefreshFarmer) {
-          await onRefreshFarmer();
-        }
-        setEditModalVisible(false);
-        Alert.alert(t('profile.title'), t('profile.save_success'));
-      }
+      setOtpTarget({ type, value: cleanValue });
+      await sendProfileVerificationOtp(serialNumber, type, cleanValue);
+      setOtpCode('');
+      setIsVerifyingOtp(true);
     } catch (err) {
-      console.warn('Error starting profile update:', err.message);
-      setErrorMessage(err.message || 'Failed to request verification.');
+      console.warn(`Error sending OTP for ${type}:`, err.message);
+      setErrorMessage(err.message || 'Failed to send verification OTP.');
+    } finally {
+      setLoadingSave(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      setErrorMessage(t('profile.validation_error_name'));
+      return;
+    }
+
+    const isPhoneChanged = editPhone.trim() !== (farmerData?.phone || '');
+    const isEmailChanged = editEmail.trim().toLowerCase() !== (farmerData?.email || '').toLowerCase();
+
+    if (isPhoneChanged && !isPhoneVerified) {
+      setErrorMessage('Please verify your new phone number first.');
+      return;
+    }
+
+    if (isEmailChanged && !isEmailVerified) {
+      setErrorMessage('Please verify your new email address first.');
+      return;
+    }
+
+    const serialNumber = farmerData?.serial_number || farmerData?.id;
+    if (!serialNumber) {
+      setErrorMessage('Farmer identifier not found.');
+      return;
+    }
+
+    setLoadingSave(true);
+    setErrorMessage('');
+
+    try {
+      await updateFarmerProfile(serialNumber, {
+        name: editName.trim(),
+        phone: editPhone.trim(),
+        email: editEmail.trim() || null,
+      });
+
+      if (onRefreshFarmer) {
+        await onRefreshFarmer();
+      }
+      setEditModalVisible(false);
+      Alert.alert(t('profile.title'), t('profile.save_success'));
+    } catch (err) {
+      console.warn('Error saving profile changes:', err.message);
+      setErrorMessage(err.message || 'Failed to save changes.');
     } finally {
       setLoadingSave(false);
     }
@@ -196,7 +226,6 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
     try {
       const serialNumber = farmerData?.serial_number || farmerData?.id;
 
-      // Perform verify and update on the backend
       await verifyAndUpdateFarmerProfile(
         serialNumber,
         otpTarget.type,
@@ -205,27 +234,20 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
         { name: editName.trim() }
       );
 
-      // Now check if the other field also changed (e.g. if we verified phone first, but email also changed)
-      const cleanPhone = editPhone.trim();
-      const cleanEmail = editEmail.trim().toLowerCase();
-      const originalEmail = (farmerData?.email || '').trim().toLowerCase();
-      const isEmailChanged = (cleanEmail || null) !== (originalEmail || null);
-
-      if (otpTarget.type === 'phone' && isEmailChanged) {
-        // Phone verification succeeded! Now trigger Email verification sequentially
-        setOtpTarget({ type: 'email', value: cleanEmail });
-        await sendProfileVerificationOtp(serialNumber, 'email', cleanEmail);
-        setOtpCode('');
-        setErrorMessage('');
-        Alert.alert(t('profile.title'), 'Phone number verified! Now enter the OTP sent to your new email.');
+      if (otpTarget.type === 'phone') {
+        setVerifiedPhone(otpTarget.value);
+        setPhoneVerified(true);
       } else {
-        // Verification complete!
-        if (onRefreshFarmer) {
-          await onRefreshFarmer();
-        }
-        setEditModalVisible(false);
-        setIsVerifyingOtp(false);
-        Alert.alert(t('profile.title'), t('profile.save_success'));
+        setVerifiedEmail(otpTarget.value);
+        setEmailVerified(true);
+      }
+
+      setIsVerifyingOtp(false);
+      setErrorMessage('');
+      Alert.alert(t('profile.title'), `${otpTarget.type === 'phone' ? 'Phone number' : 'Email address'} verified successfully!`);
+
+      if (onRefreshFarmer) {
+        await onRefreshFarmer();
       }
     } catch (err) {
       console.warn('Error verifying OTP:', err.message);
@@ -279,8 +301,8 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
             </View>
 
             <View style={s.profileTextGroup}>
-              <Text style={s.profileName}>{profileName}</Text>
-              <Text style={s.profileSubtitle}>{profileSubtitle}</Text>
+              <TranslatedText style={s.profileName}>{profileName}</TranslatedText>
+              <TranslatedText style={s.profileSubtitle}>{profileSubtitle}</TranslatedText>
 
               {/* Sensitive Details displayed directly in the settings tab hero section */}
               {farmerData?.phone ? (
@@ -308,7 +330,7 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
         <View style={s.roleCard}>
           <View style={s.roleCardLeft}>
             <Text style={s.roleCardLabel}>{t('profile.current_role')}</Text>
-            <Text style={s.roleCardValue}>{currentRole}</Text>
+            <TranslatedText style={s.roleCardValue}>{currentRole}</TranslatedText>
           </View>
           {onSwitchRole ? (
             <TouchableOpacity style={s.switchBtn} onPress={onSwitchRole} activeOpacity={0.8}>
@@ -378,31 +400,57 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
         </View>
       </ScrollView>
 
-      {/* Edit Profile Details Modal */}
+      {/* Edit Profile Details Modal (Full Screen) */}
       <Modal
         visible={editModalVisible}
-        transparent
+        transparent={false}
         animationType="slide"
         onRequestClose={() => {
           setEditModalVisible(false);
           setIsVerifyingOtp(false);
         }}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View style={{ width: '90%', backgroundColor: '#ffffff', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF7F0' }}>
+          {/* Header Bar */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            backgroundColor: '#ffffff',
+            borderBottomWidth: 1,
+            borderBottomColor: '#E5E2D9'
+          }}>
+            <TouchableOpacity 
+              onPress={() => {
+                setEditModalVisible(false);
+                setIsVerifyingOtp(false);
+              }} 
+              style={{ padding: 4 }}
+            >
+              <Feather name="arrow-left" size={24} color="#1E5C2E" />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: '#1E5C2E', fontFamily: FONTS.bold }}>
+              {t('profile.edit_profile_title')}
+            </Text>
+            <View style={{ width: 24 }} />
+          </View>
 
+          <ScrollView 
+            contentContainerStyle={{ padding: 20 }}
+            showsVerticalScrollIndicator={false}
+          >
             {!isVerifyingOtp ? (
               // EDIT FORM VIEW
               <>
-                <Text style={{ fontSize: 18, fontWeight: '800', color: '#1E5C2E', marginBottom: 16, fontFamily: FONTS.bold }}>
-                  {t('profile.edit_profile_title')}
-                </Text>
-
                 {/* Error Message */}
                 {errorMessage ? (
-                  <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 12, fontFamily: FONTS.regular }}>
-                    {errorMessage}
-                  </Text>
+                  <View style={{ padding: 12, backgroundColor: '#FEF2F2', borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: '#FCA5A5' }}>
+                    <Text style={{ color: '#DC2626', fontSize: 13, fontFamily: FONTS.regular }}>
+                      {errorMessage}
+                    </Text>
+                  </View>
                 ) : null}
 
                 {/* Full Name field */}
@@ -411,19 +459,19 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                 </Text>
                 <TextInput
                   style={{
-                    height: 44,
+                    height: 48,
                     borderWidth: 1,
                     borderColor: '#E5E2D9',
                     borderRadius: 12,
                     paddingHorizontal: 12,
-                    marginBottom: 14,
+                    marginBottom: 16,
                     fontFamily: FONTS.regular,
                     color: '#1A2E1A',
                     backgroundColor: '#FFFFFF',
                   }}
                   value={editName}
                   onChangeText={setEditName}
-                  placeholder="e.g. SN Sharma"
+                  placeholder="e.g. Niharika Chand"
                 />
 
                 {/* User Role (Disabled / Read-only) */}
@@ -432,12 +480,12 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                 </Text>
                 <TextInput
                   style={{
-                    height: 44,
+                    height: 48,
                     borderWidth: 1,
                     borderColor: '#E5E2D9',
                     borderRadius: 12,
                     paddingHorizontal: 12,
-                    marginBottom: 14,
+                    marginBottom: 16,
                     fontFamily: FONTS.regular,
                     color: '#71717A',
                     backgroundColor: '#F3F4F6',
@@ -451,63 +499,124 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                 <Text style={{ fontSize: 12, color: '#71717A', marginBottom: 4, fontFamily: FONTS.bold }}>
                   {t('profile.phone_number_label')}
                 </Text>
-                <TextInput
-                  style={{
-                    height: 44,
-                    borderWidth: 1,
-                    borderColor: '#E5E2D9',
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    marginBottom: 14,
-                    fontFamily: FONTS.regular,
-                    color: '#1A2E1A',
-                    backgroundColor: '#FFFFFF',
-                  }}
-                  value={editPhone}
-                  onChangeText={setEditPhone}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  placeholder="10-digit mobile number"
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                  <TextInput
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      borderWidth: 1,
+                      borderColor: '#E5E2D9',
+                      borderRadius: 12,
+                      paddingHorizontal: 12,
+                      fontFamily: FONTS.regular,
+                      color: '#1A2E1A',
+                      backgroundColor: '#FFFFFF',
+                    }}
+                    value={editPhone}
+                    onChangeText={(val) => {
+                      setEditPhone(val);
+                      setPhoneVerified(val === (farmerData?.phone || ''));
+                    }}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    placeholder="10-digit mobile number"
+                  />
+                  <TouchableOpacity
+                    style={{
+                      marginLeft: 10,
+                      paddingHorizontal: 16,
+                      height: 48,
+                      borderRadius: 12,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      backgroundColor: isPhoneVerified ? '#ECFDF5' : '#1E5C2E',
+                      borderWidth: isPhoneVerified ? 1 : 0,
+                      borderColor: '#A7F3D0',
+                    }}
+                    disabled={isPhoneVerified || loadingSave}
+                    onPress={() => handleRequestOtp('phone', editPhone)}
+                  >
+                    {isPhoneVerified ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Feather name="check" size={14} color="#047857" style={{ marginRight: 4 }} />
+                        <Text style={{ color: '#047857', fontWeight: '700', fontSize: 13, fontFamily: FONTS.bold }}>Verified</Text>
+                      </View>
+                    ) : (
+                      <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13, fontFamily: FONTS.bold }}>Verify</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
 
                 {/* Email Address field */}
                 <Text style={{ fontSize: 12, color: '#71717A', marginBottom: 4, fontFamily: FONTS.bold }}>
                   {t('profile.email_address_label')}
                 </Text>
-                <TextInput
-                  style={{
-                    height: 44,
-                    borderWidth: 1,
-                    borderColor: '#E5E2D9',
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    marginBottom: 20,
-                    fontFamily: FONTS.regular,
-                    color: '#1A2E1A',
-                    backgroundColor: '#FFFFFF',
-                  }}
-                  value={editEmail}
-                  onChangeText={setEditEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder="example@email.com"
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+                  <TextInput
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      borderWidth: 1,
+                      borderColor: '#E5E2D9',
+                      borderRadius: 12,
+                      paddingHorizontal: 12,
+                      fontFamily: FONTS.regular,
+                      color: '#1A2E1A',
+                      backgroundColor: '#FFFFFF',
+                    }}
+                    value={editEmail}
+                    onChangeText={(val) => {
+                      setEditEmail(val);
+                      setEmailVerified(val === (farmerData?.email || ''));
+                    }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholder="example@email.com"
+                  />
+                  <TouchableOpacity
+                    style={{
+                      marginLeft: 10,
+                      paddingHorizontal: 16,
+                      height: 48,
+                      borderRadius: 12,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      backgroundColor: isEmailVerified ? '#ECFDF5' : '#1E5C2E',
+                      borderWidth: isEmailVerified ? 1 : 0,
+                      borderColor: '#A7F3D0',
+                    }}
+                    disabled={isEmailVerified || loadingSave}
+                    onPress={() => handleRequestOtp('email', editEmail)}
+                  >
+                    {isEmailVerified ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Feather name="check" size={14} color="#047857" style={{ marginRight: 4 }} />
+                        <Text style={{ color: '#047857', fontWeight: '700', fontSize: 13, fontFamily: FONTS.bold }}>Verified</Text>
+                      </View>
+                    ) : (
+                      <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13, fontFamily: FONTS.bold }}>Verify</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
 
                 {/* Action buttons row */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                   <TouchableOpacity
                     style={{
                       flex: 1,
-                      paddingVertical: 12,
-                      backgroundColor: '#F5F3EE',
+                      paddingVertical: 14,
+                      backgroundColor: '#E5E2D9',
                       borderRadius: 12,
                       alignItems: 'center',
-                      marginRight: 10,
+                      marginRight: 12,
                     }}
-                    onPress={() => setEditModalVisible(false)}
+                    onPress={() => {
+                      setEditModalVisible(false);
+                      setIsVerifyingOtp(false);
+                    }}
                     disabled={loadingSave}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#71717A', fontFamily: FONTS.bold }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#4A4A4A', fontFamily: FONTS.bold }}>
                       {t('profile.cancel_btn')}
                     </Text>
                   </TouchableOpacity>
@@ -515,7 +624,7 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                   <TouchableOpacity
                     style={{
                       flex: 1,
-                      paddingVertical: 12,
+                      paddingVertical: 14,
                       backgroundColor: '#1E5C2E',
                       borderRadius: 12,
                       alignItems: 'center',
@@ -527,7 +636,7 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                     {loadingSave ? (
                       <ActivityIndicator size="small" color="#ffffff" />
                     ) : (
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#ffffff', fontFamily: FONTS.bold }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff', fontFamily: FONTS.bold }}>
                         {t('profile.save_changes_btn')}
                       </Text>
                     )}
@@ -548,9 +657,11 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
 
                 {/* Error Message */}
                 {errorMessage ? (
-                  <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 12, fontFamily: FONTS.regular }}>
-                    {errorMessage}
-                  </Text>
+                  <View style={{ padding: 12, backgroundColor: '#FEF2F2', borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: '#FCA5A5' }}>
+                    <Text style={{ color: '#DC2626', fontSize: 13, fontFamily: FONTS.regular }}>
+                      {errorMessage}
+                    </Text>
+                  </View>
                 ) : null}
 
                 <TextInput
@@ -560,13 +671,13 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                     borderColor: '#E5E2D9',
                     borderRadius: 12,
                     paddingHorizontal: 12,
-                    marginBottom: 16,
+                    marginBottom: 20,
                     fontFamily: FONTS.regular,
-                    fontSize: 16,
+                    fontSize: 18,
                     color: '#1A2E1A',
                     backgroundColor: '#FFFFFF',
                     textAlign: 'center',
-                    letterSpacing: 4,
+                    letterSpacing: 6,
                   }}
                   value={otpCode}
                   onChangeText={setOtpCode}
@@ -576,20 +687,20 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                 />
 
                 {/* Action buttons row */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
                   <TouchableOpacity
                     style={{
                       flex: 1,
-                      paddingVertical: 12,
-                      backgroundColor: '#F5F3EE',
+                      paddingVertical: 14,
+                      backgroundColor: '#E5E2D9',
                       borderRadius: 12,
                       alignItems: 'center',
-                      marginRight: 10,
+                      marginRight: 12,
                     }}
                     onPress={() => setIsVerifyingOtp(false)}
                     disabled={loadingSave}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#71717A', fontFamily: FONTS.bold }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#4A4A4A', fontFamily: FONTS.bold }}>
                       {t('profile.back_btn')}
                     </Text>
                   </TouchableOpacity>
@@ -597,7 +708,7 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                   <TouchableOpacity
                     style={{
                       flex: 1,
-                      paddingVertical: 12,
+                      paddingVertical: 14,
                       backgroundColor: '#1E5C2E',
                       borderRadius: 12,
                       alignItems: 'center',
@@ -609,7 +720,7 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                     {loadingSave ? (
                       <ActivityIndicator size="small" color="#ffffff" />
                     ) : (
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#ffffff', fontFamily: FONTS.bold }}>
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff', fontFamily: FONTS.bold }}>
                         {t('profile.verify_confirm_btn')}
                       </Text>
                     )}
@@ -628,9 +739,8 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                 </TouchableOpacity>
               </>
             )}
-
-          </View>
-        </View>
+          </ScrollView>
+        </SafeAreaView>
       </Modal>
 
       {/* Language / App Settings Modal */}

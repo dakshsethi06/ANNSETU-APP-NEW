@@ -7,6 +7,8 @@ import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import MandiPricePreview from '../../mandi/components/MandiPricePreview';
 import styles from '../styles/farmerDashboardStyles';
 import { supabase } from '../../../core/network/supabase';
+import { useTranslation } from 'react-i18next';
+import TranslatedText from '../../../core/components/TranslatedText';
 
 const QUICK_ACTIONS = [
   { label: 'My Stock', icon: 'package', bg: '#ECFDF5', color: '#047857' },
@@ -26,6 +28,7 @@ const BOTTOM_TABS = [
 ];
 
 export default function FarmerDashboard({ farmerData, holdingsList = [], notifications, hasUnreadNotifications, weatherData, onBackPress, onNotificationsPress, onActionPress, manualStockMt, manualBags, onUpdateStockPress }) {
+  const { t } = useTranslation();
   const activeAlertsCount = (notifications || []).filter(n =>
     n.type === 'aging' ||
     (n.type === 'warning' && n.title.toLowerCase().includes('crop'))
@@ -63,6 +66,16 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
     })
     : [];
 
+  const getActionLabelText = (label) => {
+    if (label === 'My Stock') return t('dashboard.my_stock');
+    if (label === 'Mandi Rates') return t('dashboard.mandi_rates');
+    if (label === 'My Khata') return t('dashboard.my_khata');
+    if (label === 'Dispatch') return t('dashboard.dispatch');
+    if (label === 'Weather') return t('dashboard.weather');
+    if (label === 'Book Space') return t('dashboard.book_space');
+    return label;
+  };
+
   return (
     <View style={styles.container}>
       {/* ─── Top Header ─── */}
@@ -97,7 +110,7 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
 
 
         {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={styles.sectionTitle}>{t('dashboard.quick_actions')}</Text>
         <View style={styles.quickActionsGrid}>
           {QUICK_ACTIONS.map((action) => (
             <TouchableOpacity
@@ -109,7 +122,7 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
               <View style={[styles.quickActionIconCircle, { backgroundColor: action.bg }]}>
                 <Feather name={action.icon} size={22} color={action.color} />
               </View>
-              <Text style={styles.quickActionLabel}>{action.label}</Text>
+              <Text style={styles.quickActionLabel}>{getActionLabelText(action.label)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -122,9 +135,9 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
 
         {/* Recent Activity Section */}
         <View style={styles.recentActivityHeader}>
-          <Text style={styles.recentActivityTitle}>Recent Activity</Text>
+          <Text style={styles.recentActivityTitle}>{t('dashboard.recent_activity')}</Text>
           <TouchableOpacity onPress={() => onActionPress('My Stock')} activeOpacity={0.7}>
-            <Text style={styles.recentActivityViewAll}>View All &gt;</Text>
+            <Text style={styles.recentActivityViewAll}>{t('dashboard.view_all_link')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -140,7 +153,7 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
             justifyContent: 'center',
             marginTop: 8,
           }}>
-            <Text style={{ fontSize: 13, color: '#6B7B6B', fontWeight: '500' }}>No recent activity / कोई हालिया गतिविधि नहीं</Text>
+            <Text style={{ fontSize: 13, color: '#6B7B6B', fontWeight: '500' }}>{t('dashboard.no_recent_activity')}</Text>
           </View>
         ) : (
           recentActivities.map((act) => {
@@ -149,25 +162,25 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
               <View key={act.id} style={styles.activityCard}>
                 <View style={styles.activityHeader}>
                   <View style={{ flex: 1, marginRight: 8 }}>
-                    <Text style={styles.activityTitleText}>{act.commodity} — {act.variety}</Text>
-                    <Text style={styles.activitySubtitleText} numberOfLines={1}>{act.location} · {act.cold_storage}</Text>
+                    <TranslatedText style={styles.activityTitleText}>{act.commodity} — {act.variety}</TranslatedText>
+                    <TranslatedText style={styles.activitySubtitleText} numberOfLines={1}>{act.location} · {act.cold_storage}</TranslatedText>
                   </View>
                   <View style={[styles.activityBadge, { backgroundColor: cfg.bg }]}>
-                    <Text style={[styles.activityBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
+                    <Text style={[styles.activityBadgeText, { color: cfg.color }]}>{t(`dashboard.${act.status}`)}</Text>
                   </View>
                 </View>
 
                 <View style={styles.activityStatsGrid}>
                   <View style={styles.activityStatCol}>
-                    <Text style={styles.activityStatLabel}>Bags</Text>
+                    <Text style={styles.activityStatLabel}>{t('dashboard.bags')}</Text>
                     <Text style={styles.activityStatValue}>{act.bags}</Text>
                   </View>
                   <View style={styles.activityStatCol}>
-                    <Text style={styles.activityStatLabel}>Weight</Text>
+                    <Text style={styles.activityStatLabel}>{t('dashboard.weight')}</Text>
                     <Text style={styles.activityStatValue}>{act.weight}</Text>
                   </View>
                   <View style={styles.activityStatCol}>
-                    <Text style={styles.activityStatLabel}>Age</Text>
+                    <Text style={styles.activityStatLabel}>{t('dashboard.age')}</Text>
                     <Text style={styles.activityStatValue}>{act.age_days}d</Text>
                   </View>
                 </View>
@@ -190,12 +203,12 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
           >
             <Feather name="sun" size={32} color="#FCD34D" />
             <View style={styles.weatherInfo}>
-              <Text style={styles.weatherLoc}>
+              <TranslatedText style={styles.weatherLoc}>
                 {weatherData ? weatherData.location : `${farmerData.village || farmerData.district || 'Tundla'}, ${farmerData.state || 'UP'}`}
-              </Text>
-              <Text style={styles.weatherDesc}>
-                {weatherData ? `${weatherData.description} · Humidity: ${weatherData.humidity}%` : 'Weather loading / clear sky'}
-              </Text>
+              </TranslatedText>
+              <TranslatedText style={styles.weatherDesc}>
+                {weatherData ? `${weatherData.description} · Humidity: ${weatherData.humidity}%` : t('dashboard.weather_loading')}
+              </TranslatedText>
             </View>
             <View style={styles.weatherRight}>
               <Text style={styles.weatherTemp}>

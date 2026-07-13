@@ -5,8 +5,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { fetchWeather } from '../services/weatherService';
 import s from '../styles/weatherStyles';
 import { FONTS } from '../../../core/theme/theme';
+import { useTranslation } from 'react-i18next';
+import TranslatedText from '../../../core/components/TranslatedText';
 
 export default function WeatherTab({ farmerData = {}, onBackPress }) {
+  const { t } = useTranslation();
   const farmerCity = farmerData.village || farmerData.district || farmerData.state || 'Tundla';
   
   const [weatherData, setWeatherData] = useState(null);
@@ -121,7 +124,7 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
           <TouchableOpacity style={s.backBtn} onPress={onBackPress} activeOpacity={0.7}>
             <Feather name="arrow-left" size={20} color="#1E5C2E" />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>Weather & Advisory</Text>
+          <Text style={s.headerTitle}>{t('weather.weather_and_advisory')}</Text>
         </View>
         <TouchableOpacity 
           style={[s.searchBtn, searchVisible && s.searchBtnActive]} 
@@ -139,7 +142,7 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
             <Feather name="search" size={14} color="#A1A1AA" style={{ marginRight: 8 }} />
             <TextInput
               style={s.searchInput}
-              placeholder="Search city or district (e.g. Agra, Ludhiana)"
+              placeholder={t('weather.search_placeholder')}
               placeholderTextColor="#A1A1AA"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -148,7 +151,7 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
             />
           </View>
           <TouchableOpacity style={s.searchActionBtn} onPress={handleSearchSubmit} activeOpacity={0.8}>
-            <Text style={s.searchActionText}>Search</Text>
+            <Text style={s.searchActionText}>{t('mandi.search')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -171,7 +174,7 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
               {/* Map pin location */}
               <View style={s.locationRow}>
                 <Feather name="map-pin" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={s.locationText}>{weatherData.location}</Text>
+                <TranslatedText style={s.locationText}>{weatherData.location}</TranslatedText>
               </View>
 
               {/* Temperature display */}
@@ -180,24 +183,25 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
                 <Feather name={getConditionIcon(weatherData.description)} size={44} color="#F59E0B" style={s.sunIcon} />
               </View>
 
-              <Text style={s.conditionText}>
-                {weatherData.description} · Feels like {weatherData.temp + 3}°C
-              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                <TranslatedText style={s.conditionText}>{weatherData.description}</TranslatedText>
+                <Text style={s.conditionText}> · {t('weather.feels_like')} {weatherData.temp + 3}°C</Text>
+              </View>
 
               {/* Weather Stats Row */}
               <View style={s.statsRow}>
                 <View style={s.statCol}>
-                  <Text style={s.statLabel}>Humidity</Text>
+                  <Text style={s.statLabel}>{t('weather.humidity')}</Text>
                   <Text style={s.statVal}>{weatherData.humidity}%</Text>
                 </View>
 
                 <View style={s.statCol}>
-                  <Text style={s.statLabel}>Wind</Text>
+                  <Text style={s.statLabel}>{t('weather.wind')}</Text>
                   <Text style={s.statVal}>{weatherData.windSpeed} km/h</Text>
                 </View>
 
                 <View style={s.statCol}>
-                  <Text style={s.statLabel}>Rain</Text>
+                  <Text style={s.statLabel}>{t('weather.rain')}</Text>
                   <Text style={s.statVal}>
                     {weatherData.forecast && weatherData.forecast[0] ? weatherData.forecast[0].humidity : 5}%
                   </Text>
@@ -206,14 +210,14 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
             </LinearGradient>
 
             {/* ─── 5-Day Forecast ─── */}
-            <Text style={s.sectionTitle}>5-Day Forecast</Text>
+            <Text style={s.sectionTitle}>{t('weather.five_day_forecast')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.forecastScrollView}>
               {weatherData.forecast?.map((day, i) => {
                 const isToday = i === 0;
                 return (
                   <View key={i} style={[s.forecastCard, isToday && s.forecastCardActive]}>
                     <Text style={[s.forecastDay, isToday && s.forecastDayActive]}>
-                      {isToday ? 'Today' : day.date}
+                      {isToday ? t('weather.today') : day.date}
                     </Text>
                     <Feather
                       name={getConditionIcon(day.conditionText)}
@@ -233,16 +237,16 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
             </ScrollView>
 
             {/* ─── Crop Advisory List ─── */}
-            <Text style={s.sectionTitle}>Crop Advisory</Text>
+            <Text style={s.sectionTitle}>{t('weather.crop_advisory')}</Text>
 
             {/* Advisory Item 1 */}
             <View style={[s.advisoryCard, s.advisoryCardGreen]}>
               <View style={s.advisoryHeader}>
                 <Feather name="check-circle" size={16} color="#047857" style={{ marginRight: 8 }} />
-                <Text style={[s.advisoryTitle, { color: '#047857' }]}>Good transport weather</Text>
+                <Text style={[s.advisoryTitle, { color: '#047857' }]}>{t('weather.advisory1_title')}</Text>
               </View>
               <Text style={[s.advisorySubText, { color: '#065F46' }]}>
-                Clear skies today and tomorrow. Ideal for dispatch and field transport operations.
+                {t('weather.advisory1_text')}
               </Text>
             </View>
 
@@ -250,10 +254,10 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
             <View style={[s.advisoryCard, s.advisoryCardOrange]}>
               <View style={s.advisoryHeader}>
                 <Feather name="alert-triangle" size={16} color="#B45309" style={{ marginRight: 8 }} />
-                <Text style={[s.advisoryTitle, { color: '#B45309' }]}>Rain expected Wednesday</Text>
+                <Text style={[s.advisoryTitle, { color: '#B45309' }]}>{t('weather.advisory2_title')}</Text>
               </View>
               <Text style={[s.advisorySubText, { color: '#92400E' }]}>
-                Plan dispatch before Wednesday. Rainfall of 15-20mm expected. Avoid field operations.
+                {t('weather.advisory2_text')}
               </Text>
             </View>
 
@@ -261,10 +265,10 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
             <View style={[s.advisoryCard, s.advisoryCardBlue]}>
               <View style={s.advisoryHeader}>
                 <Feather name="info" size={16} color="#1D4ED8" style={{ marginRight: 8 }} />
-                <Text style={[s.advisoryTitle, { color: '#1D4ED8' }]}>Cold storage optimal</Text>
+                <Text style={[s.advisoryTitle, { color: '#1D4ED8' }]}>{t('weather.advisory3_title')}</Text>
               </View>
               <Text style={[s.advisorySubText, { color: '#1E40AF' }]}>
-                Ideal storage temperature inside facility rooms. Humidity is stable.
+                {t('weather.advisory3_text')}
               </Text>
             </View>
           </View>
@@ -273,5 +277,3 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
     </View>
   );
 }
-
-

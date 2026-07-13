@@ -7,6 +7,7 @@ import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import StateModal from '../../../core/modals/StateModal';
 import CityModal from '../../../core/modals/CityModal';
 import { FONTS } from '../../../core/theme/theme';
+import TranslatedText from '../../../core/components/TranslatedText';
 import s from '../styles/mandiTabStyles';
 
 export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
@@ -160,7 +161,7 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
               <Feather name="edit-2" size={14} color="#A1A1AA" style={{ marginRight: 8 }} />
               <TextInput
                 style={s.textInput}
-                placeholder="Search any crop (e.g. Wheat, Rice, Garlic)"
+                placeholder={t('mandi.search_crop_placeholder')}
                 placeholderTextColor="#A1A1AA"
                 value={cropInput}
                 onChangeText={setCropInput}
@@ -171,16 +172,16 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
           <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
             <TouchableOpacity style={[s.filterInputRow, { flex: 1 }]} onPress={() => setStateModalVisible(true)}>
               <Text style={s.filterInputLabel}>{t('register.state')}</Text>
-              <Text style={s.filterInputValue}>{tempState || t('mandi.choose_state')}</Text>
+              <TranslatedText style={s.filterInputValue}>{tempState === 'All' ? t('mandi.choose_state') : tempState}</TranslatedText>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={[s.filterInputRow, { flex: 1 }, !tempState && { opacity: 0.5 }]} 
+              style={[s.filterInputRow, { flex: 1 }, tempState === 'All' && { opacity: 0.5 }]} 
               onPress={() => setCityModalVisible(true)}
-              disabled={!tempState}
+              disabled={tempState === 'All'}
             >
               <Text style={s.filterInputLabel}>{t('register.district')}</Text>
-              <Text style={s.filterInputValue}>{tempCity || t('mandi.all_mandis')}</Text>
+              <TranslatedText style={s.filterInputValue}>{tempCity === 'All' ? t('mandi.all_mandis') : tempCity}</TranslatedText>
             </TouchableOpacity>
           </View>
 
@@ -190,10 +191,10 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
               onPress={() => { 
                 setTempState('All'); 
                 setTempCity('All'); 
-                setCropInput('All');
+                setCropInput('');
               }}
             >
-              <Text style={s.filterResetBtnText}>Reset</Text>
+              <Text style={s.filterResetBtnText}>{t('mandi.reset')}</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -205,7 +206,7 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
                 setSearchVisible(false); 
               }}
             >
-              <Text style={s.filterApplyBtnText}>Search</Text>
+              <Text style={s.filterApplyBtnText}>{t('mandi.search')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -243,7 +244,7 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
                 onPress={() => handlePillPress(c)}
                 activeOpacity={0.8}
               >
-                <Text style={[s.cropPillText, isActive && s.cropPillTextActive]}>{c}</Text>
+                <TranslatedText style={[s.cropPillText, isActive && s.cropPillTextActive]}>{c}</TranslatedText>
               </TouchableOpacity>
             );
           })}
@@ -253,7 +254,11 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
               onPress={() => handlePillPress('All')}
               activeOpacity={0.8}
             >
-              <Text style={[s.cropPillText, s.cropPillTextActive]}>Search: {selectedCrop} ✕</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={[s.cropPillText, s.cropPillTextActive]}>{t('mandi.search')}: </Text>
+                <TranslatedText style={[s.cropPillText, s.cropPillTextActive]}>{selectedCrop}</TranslatedText>
+                <Text style={[s.cropPillText, s.cropPillTextActive]}> ✕</Text>
+              </View>
             </TouchableOpacity>
           )}
         </ScrollView>
@@ -283,13 +288,17 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
             <Feather name="wifi-off" size={32} color="#DC2626" style={{ marginBottom: 12 }} />
             <Text style={s.errorText}>{error}</Text>
             <TouchableOpacity style={s.retryBtn} onPress={handleFetch} activeOpacity={0.8}>
-              <Text style={s.retryBtnText}>Retry Connection</Text>
+              <Text style={s.retryBtnText}>{t('mandi.retry_conn')}</Text>
             </TouchableOpacity>
           </View>
         ) : tab === 'mandi' ? (
           records.length === 0 ? (
             <View style={s.emptyCard}>
-              <Text style={s.emptyText}>No price records found for "{selectedCrop}".</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Text style={s.emptyText}>{t('mandi.no_price_records')} "</Text>
+                <TranslatedText style={s.emptyText}>{selectedCrop}</TranslatedText>
+                <Text style={s.emptyText}>".</Text>
+              </View>
             </View>
           ) : (
             records.map((p, i) => {
@@ -297,10 +306,13 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
               return (
                 <View key={i} style={s.card}>
                   <View style={s.cardLeft}>
-                    <Text style={s.cardCrop}>{p.commodity}</Text>
+                    <TranslatedText style={s.cardCrop}>{p.commodity}</TranslatedText>
                     <View style={s.cardLocRow}>
                       <Feather name="map-pin" size={11} color="#71717A" style={{ marginRight: 4 }} />
-                      <Text style={s.cardLocText}>{p.market} Mandi</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <TranslatedText style={s.cardLocText}>{p.market}</TranslatedText>
+                        <Text style={s.cardLocText}> {t('mandi.mandi_suffix')}</Text>
+                      </View>
                     </View>
                   </View>
                   
@@ -325,22 +337,30 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
         ) : (
           filteredAuctions.length === 0 ? (
             <View style={s.emptyCard}>
-              <Text style={s.emptyText}>No auction prices found for "{selectedCrop}".</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Text style={s.emptyText}>{t('mandi.no_auction_prices')} "</Text>
+                <TranslatedText style={s.emptyText}>{selectedCrop}</TranslatedText>
+                <Text style={s.emptyText}>".</Text>
+              </View>
             </View>
           ) : (
             filteredAuctions.map((p, i) => (
               <View key={i} style={s.card}>
                 <View style={s.cardLeft}>
-                  <Text style={s.cardCrop}>{p.commodity}</Text>
+                  <TranslatedText style={s.cardCrop}>{p.commodity}</TranslatedText>
                   <View style={s.cardLocRow}>
                     <Feather name="map-pin" size={11} color="#71717A" style={{ marginRight: 4 }} />
-                    <Text style={s.cardLocText}>{p.storage}</Text>
+                    <TranslatedText style={s.cardLocText}>{p.storage}</TranslatedText>
                   </View>
                 </View>
                 
                 <View style={s.cardRight}>
                   <Text style={s.cardPrice}>₹{p.price} / qtl</Text>
-                  <Text style={s.auctionMetaText}>{p.bags} bags · {p.date}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    <Text style={s.auctionMetaText}>{p.bags} </Text>
+                    <Text style={s.auctionMetaText}>{t('khata.bags_unit_other')} · </Text>
+                    <TranslatedText style={s.auctionMetaText}>{p.date}</TranslatedText>
+                  </View>
                 </View>
               </View>
             ))
@@ -354,5 +374,3 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
     </View>
   );
 }
-
-

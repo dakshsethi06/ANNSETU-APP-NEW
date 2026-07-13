@@ -7,23 +7,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/features/auth/store/useAuthStore';
 import { NavigationContainer } from '@react-navigation/native';
 
-// Global fetch interceptor to automatically attach JWT token
-const originalFetch = global.fetch;
-global.fetch = async (input, init) => {
-  try {
-    const sessionObj = useAuthStore.getState().session;
-    if (sessionObj && sessionObj.access_token) {
-      init = init || {};
-      init.headers = init.headers || {};
-      if (!init.headers['Authorization'] && !init.headers['authorization']) {
-        init.headers['Authorization'] = `Bearer ${sessionObj.access_token}`;
-      }
-    }
-  } catch (err) {
-    console.warn('Fetch interceptor failed to attach auth token:', err.message);
-  }
-  return originalFetch.call(global, input, init);
-};
+// NOTE: Global fetch interceptor is defined in index.js — do not duplicate here.
 
 
 // Configure push notification alert settings when the app is foregrounded
@@ -70,6 +54,7 @@ export default function App() {
     setLoadingSession,
     setKeyboardVisible,
     determineRole,
+    _hasHydrated,
   } = useAuthStore();
 
   // Load custom fonts for native Android / iOS builds (APK/IPA)
@@ -101,7 +86,10 @@ export default function App() {
     }
   }, [session]);
 
+  // Wait for zustand persist rehydration before initializing session
   useEffect(() => {
+    if (!_hasHydrated) return; // Don't run until store is rehydrated
+
     let resolved = false;
     const done = () => {
       if (!resolved) {
@@ -182,14 +170,14 @@ export default function App() {
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
-  }, []);
+  }, [_hasHydrated]);
 
-  if (!fontsLoaded || loadingSession) {
+  if (!fontsLoaded || !_hasHydrated || loadingSession) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8F5E9' }}>
         <ActivityIndicator size="large" color="#2E7D32" />
         <Text style={{ marginTop: 10, color: '#2E7D32', fontWeight: 'bold' }}>
-          {!fontsLoaded ? "Loading Fonts..." : "Loading Session..."}
+          {!fontsLoaded ? "Loading Fonts..." : !_hasHydrated ? "Restoring Session..." : "Loading Session..."}
         </Text>
       </View>
     );

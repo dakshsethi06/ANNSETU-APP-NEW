@@ -9,6 +9,8 @@ export const useAuthStore = create(
       session: null,
       role: 'Farmer', // Default role
       loadingSession: true,
+      _hasHydrated: false,
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
       showRoleSwitcher: false,
       isKeyboardVisible: false,
       hidePreviewFromLogin: false,
@@ -82,6 +84,10 @@ export const useAuthStore = create(
       name: 'auth-store',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({ session: state.session, role: state.role }), // Only persist session & role
+      onRehydrateStorage: () => (state) => {
+        // Called when rehydration is complete
+        state?.setHasHydrated?.(true);
+      },
     }
   )
 );

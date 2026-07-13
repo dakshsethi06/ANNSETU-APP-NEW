@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { fetchMandiPrices } from '../services/mandiService';
 import { COLORS, FONTS } from '../../../core/theme/theme';
+import TranslatedText from '../../../core/components/TranslatedText';
 
 import s from '../styles/mandiPricePreviewStyles';
 
@@ -60,7 +61,7 @@ export default function MandiPricePreview({ farmerState, onViewAll }) {
       <View style={s.headerRow}>
         <Text style={s.title}>{t('mandi.live_mandi_prices')}</Text>
         <TouchableOpacity onPress={onViewAll} activeOpacity={0.7}>
-          <Text style={s.viewAllBtn}>View All &gt;</Text>
+          <Text style={s.viewAllBtn}>{t('dashboard.view_all_link')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -70,13 +71,15 @@ export default function MandiPricePreview({ farmerState, onViewAll }) {
           <ActivityIndicator size="small" color="#1E5C2E" style={{ paddingVertical: 20 }} />
         ) : prices.length === 0 ? (
           <View style={s.emptyContainer}>
-            <Text style={s.emptyText}>No active live mandi prices found.</Text>
+            <Text style={s.emptyText}>{t('mandi.no_price_records')} "All"</Text>
           </View>
         ) : (
           <View style={s.rowsContainer}>
             {prices.map((item, idx) => {
               const isLast = idx === prices.length - 1;
               const isUp = item.change >= 0;
+              const commodityVarietyText = `${item.commodity}${item.variety && item.variety !== '-' ? ` (${item.variety})` : ''}`;
+              
               return (
                 <View 
                   key={idx} 
@@ -86,10 +89,13 @@ export default function MandiPricePreview({ farmerState, onViewAll }) {
                   ]}
                 >
                   <View style={s.rowLeft}>
-                    <Text style={s.cropName}>
-                      {item.commodity}{item.variety && item.variety !== '-' ? ` (${item.variety})` : ''}
-                    </Text>
-                    <Text style={s.marketLabel}>{item.market} Mandi</Text>
+                    <TranslatedText style={s.cropName}>
+                      {commodityVarietyText}
+                    </TranslatedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <TranslatedText style={s.marketLabel}>{item.market}</TranslatedText>
+                      <Text style={s.marketLabel}> {t('mandi.mandi_suffix')}</Text>
+                    </View>
                   </View>
                   
                   <View style={s.rowRight}>
