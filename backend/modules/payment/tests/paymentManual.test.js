@@ -79,6 +79,20 @@ describe('payment.manual.controller unit tests', () => {
       await initiatePayment(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
+
+    test('returns default 500 message when error has no message', async () => {
+      req = { body: { farmerId: 'f1', amount: 100, coldStorageId: 'CS1', paymentMode: 'MANUAL' } };
+      farmerRepository.getFarmerBasicDetails.mockResolvedValueOnce({ name: 'Ram' });
+      // Throws a string to bypass error.message
+      paymentRepository.initiateManualPayment.mockRejectedValueOnce('Some string error');
+      const spyError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      await initiatePayment(req, res);
+      
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Failed to initiate payment' }));
+      spyError.mockRestore();
+    });
   });
 
   describe('verifyManualPayment', () => {
@@ -191,6 +205,44 @@ describe('payment.manual.controller unit tests', () => {
       spyWrite.mockRestore();
     });
 
+    test('falls back gracefully if fs.writeFileSync throws an error', async () => {
+      req = {
+        body: {
+          paymentId: 'PAY123',
+          utrNumber: 'UTR123456789012',
+          receiptFile: `data:image/png;base64,dGVzdA==`,
+          paymentDate: '2026-07-14',
+          paymentMode: 'MANUAL',
+          bankName: 'SBI'
+        },
+        protocol: 'http',
+        get: jest.fn().mockReturnValue('localhost:3001')
+      };
+      
+      const spyExists = jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+      const spyMkdir = jest.spyOn(fs, 'mkdirSync').mockImplementation(() => {});
+      const spyWrite = jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {
+        throw new Error('Disk full');
+      });
+      const spyError = jest.spyOn(console, 'error').mockImplementation(() => {});
+      
+      paymentRepository.verifyManualPaymentTx.mockResolvedValueOnce({
+        success: true,
+        payment: { id: 'PAY123', farmerId: 'f1', coldStorageId: 'cs1', amount: '100.00' }
+      });
+      farmerRepository.getFarmerBasicDetails.mockResolvedValueOnce({ name: 'Ram Singh' });
+
+      await verifyManualPayment(req, res);
+
+      expect(spyError).toHaveBeenCalledWith('Failed to save receipt file');
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+
+      spyExists.mockRestore();
+      spyMkdir.mockRestore();
+      spyWrite.mockRestore();
+      spyError.mockRestore();
+    });
+
     test('returns preCheckFailed and 200 status on duplicate UTR reference from transaction result', async () => {
       req = {
         body: {
@@ -275,6 +327,127 @@ describe('payment.manual.controller unit tests', () => {
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Tx Failed' }));
 
       spyWrite.mockRestore();
+    });
+
+    test('ignores receipt saving if receiptFile is a data URL but does not match regex', async () => {
+      req = {
+        body: {
+          paymentId: 'PAY123',
+          utrNumber: 'UTR123456789012',
+          receiptFile: `data:completely-wrong-format-no-base64`,
+          paymentDate: '2026-07-14',
+          paymentMode: 'MANUAL',
+          bankName: 'SBI'
+        },
+        protocol: 'http',
+        get: jest.fn().mockReturnValue('localhost:3001')
+      };
+      
+      const spyExists = jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+      const spyMkdir = jest.spyOn(fs, 'mkdirSync').mockImplementation(() => {});
+      const spyWrite = jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
+      paymentRepository.verifyManualPaymentTx.mockResolvedValueOnce({
+        success: true,
+        payment: { id: 'PAY123', farmerId: 'f1', coldStorageId: 'cs1', amount: '100.00' }
+      });
+      farmerRepository.getFarmerBasicDetails.mockResolvedValueOnce({ name: 'Ram Singh' });
+
+      await verifyManualPayment(req, res);
+
+      // Regex fails to match, so writeFileSync should NOT be called
+      expect(spyWrite).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+
+      spyExists.mockRestore();
+      spyMkdir.mockRestore();
+      spyWrite.mockRestore();
+    });
+
+    test('does not send warning notification if paymentInfo is null during invalid UTR', async () => {
+      req = {
+        body: {
+          paymentId: 'PAY123',
+          utrNumber: 'INVALID_UTR',
+          paymentDate: '2026-07-14'
+        }
+      };
+
+      paymentRepository.getPaymentById.mockResolvedValueOnce(null);
+
+      await verifyManualPayment(req, res);
+
+      expect(paymentRepository.getPaymentById).toHaveBeenCalledWith('PAY123');
+      // Notification skipped because paymentInfo is null
+      expect(createAppNotification).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: false,
+        preCheckFailed: true
+      }));
+    });
+
+    test('falls back to current Date if paymentDate is not provided', async () => {
+      req = {
+        body: {
+          paymentId: 'PAY123',
+          utrNumber: 'UTR123456789012',
+          receiptFile: null,
+          // paymentDate is intentionally omitted
+          paymentMode: 'MANUAL',
+          bankName: 'SBI'
+        }
+      };
+      
+      paymentRepository.verifyManualPaymentTx.mockResolvedValueOnce({
+        success: true,
+        payment: { id: 'PAY123', farmerId: 'f1', coldStorageId: 'cs1', amount: '100.00' }
+      });
+      farmerRepository.getFarmerBasicDetails.mockResolvedValueOnce({ name: 'Ram Singh' });
+
+      await verifyManualPayment(req, res);
+
+      // Verify it was called with a Date object (current date fallback)
+      expect(paymentRepository.verifyManualPaymentTx).toHaveBeenCalledWith(
+        'PAY123', 'UTR123456789012', null, expect.any(Date), 'MANUAL', 'SBI'
+      );
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+    });
+
+    test('returns default 500 status if txResult.status is falsy and success is false', async () => {
+      req = {
+        body: {
+          paymentId: 'PAY123',
+          utrNumber: 'UTR123456789012',
+          receiptFile: null
+        }
+      };
+
+      // Falsy status should default to 500
+      paymentRepository.verifyManualPaymentTx.mockResolvedValueOnce({ success: false, error: 'General failure' });
+
+      await verifyManualPayment(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'General failure' }));
+    });
+
+    test('returns default 500 message when error has no message in verifyManualPayment', async () => {
+      req = {
+        body: {
+          paymentId: 'PAY123',
+          utrNumber: 'UTR123456789012',
+          receiptFile: null
+        }
+      };
+
+      // Throws a string to bypass error.message
+      paymentRepository.verifyManualPaymentTx.mockRejectedValueOnce('Some string error');
+      const spyError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      await verifyManualPayment(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Failed to verify payment' }));
+      spyError.mockRestore();
     });
   });
 });

@@ -205,13 +205,27 @@ describe('chat.controller unit tests', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Send failed' });
     });
+
+    test('returns 500 with default message when comment addition fails with empty error', async () => {
+      req = { params: { ticketId: 't1' }, body: { message: 'hello' } };
+      supportService.addChatMessage.mockRejectedValueOnce(new Error(''));
+
+      await chatController.sendChatMessage(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Failed to send message.' });
+    });
   });
 
   describe('getChatMessages', () => {
-    test('returns chat messages successfully', async () => {
+    test('returns chat messages successfully with user and agent name fallbacks', async () => {
       req = { params: { ticketId: 't1' } };
       supportService.getChatMessages.mockResolvedValueOnce({
-        messages: [{ id: '1', text: 'hello', sender: 'agent', agentName: 'Agent Bob', time: '2026' }],
+        messages: [
+          { id: '1', text: 'hello', sender: 'user', time: '2026' },
+          { id: '2', text: 'hi', sender: 'agent', time: '2026' }, // missing agentName
+          { id: '3', text: 'hi', sender: 'agent', agentName: 'Bob', time: '2026' }
+        ],
         status: 'Open'
       });
 
@@ -221,7 +235,11 @@ describe('chat.controller unit tests', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         status: 'Open',
-        messages: [{ id: '1', text: 'hello', sender: 'agent', agentName: 'Agent Bob', time: '2026' }]
+        messages: [
+          { id: '1', text: 'hello', sender: 'user', agentName: undefined, time: '2026' },
+          { id: '2', text: 'hi', sender: 'agent', agentName: 'Support Agent', time: '2026' },
+          { id: '3', text: 'hi', sender: 'agent', agentName: 'Bob', time: '2026' }
+        ]
       });
     });
 
@@ -305,7 +323,7 @@ describe('chat.controller unit tests', () => {
     });
 
     test('does not send notification if user sync query yields no farmer matches', async () => {
-      req = { params: { ticketId: 't1' } };
+      req = { params: { ticketId: 't-no-farmer' } };
       supportService.getChatMessages.mockResolvedValueOnce({
         messages: [],
         status: 'closed',
@@ -316,6 +334,7 @@ describe('chat.controller unit tests', () => {
 
       await chatController.getChatMessages(req, res);
 
+      expect(res.status).toHaveBeenCalledWith(200);
       expect(createAppNotification).not.toHaveBeenCalled();
     });
 
@@ -326,6 +345,16 @@ describe('chat.controller unit tests', () => {
       await chatController.getChatMessages(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    test('returns 500 with default message when fetch fails with empty error', async () => {
+      req = { params: { ticketId: 't1' } };
+      supportService.getChatMessages.mockRejectedValueOnce(new Error(''));
+
+      await chatController.getChatMessages(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Failed to fetch messages.' });
     });
   });
 
@@ -346,6 +375,16 @@ describe('chat.controller unit tests', () => {
       await chatController.closeChatSession(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    test('returns 500 with default message when close failure has empty error', async () => {
+      req = { params: { ticketId: 't1' } };
+      supportService.closeTicket.mockRejectedValueOnce(new Error(''));
+
+      await chatController.closeChatSession(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Failed to end chat session.' });
     });
   });
 

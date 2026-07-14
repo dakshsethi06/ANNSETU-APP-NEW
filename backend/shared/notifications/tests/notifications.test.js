@@ -176,6 +176,41 @@ describe('notifications core unit tests', () => {
         ])
       );
     });
+
+    test('uses html instead of text and writes SENT log', async () => {
+      emailService.sendEmail.mockResolvedValueOnce({ provider: 'smtp' });
+      appNotificationRepository.insertNotificationLog.mockResolvedValueOnce({ id: 'log_id' });
+
+      await notifications.sendEmail({ to: 'test@mail.com', subject: 'Subject', html: '<p>HTML</p>' });
+
+      expect(appNotificationRepository.insertNotificationLog).toHaveBeenCalledWith(
+        expect.arrayContaining(['<p>HTML</p>', 'SENT', 'smtp'])
+      );
+    });
+
+    test('uses empty string for message when both text and html are null in success block', async () => {
+      emailService.sendEmail.mockResolvedValueOnce({ provider: 'smtp' });
+      appNotificationRepository.insertNotificationLog.mockResolvedValueOnce({ id: 'log_id' });
+
+      await notifications.sendEmail({ to: 'test@mail.com', subject: 'Subject' });
+
+      expect(appNotificationRepository.insertNotificationLog).toHaveBeenCalledWith(
+        expect.arrayContaining(['', 'SENT', 'smtp'])
+      );
+    });
+
+    test('uses empty string for message when both text and html are null in catch block', async () => {
+      emailService.sendEmail.mockRejectedValueOnce(new Error('Error'));
+      process.env.SMTP_HOST = 'smtp.host.com';
+      process.env.SMTP_USER = 'user';
+      process.env.SMTP_PASS = 'pass';
+
+      await expect(notifications.sendEmail({ to: 'test@mail.com', subject: 'Subject' })).rejects.toThrow('Error');
+
+      expect(appNotificationRepository.insertNotificationLog).toHaveBeenCalledWith(
+        expect.arrayContaining(['', 'FAILED', 'smtp']) // '' empty message
+      );
+    });
   });
 
   describe('sendSMS (with logging)', () => {
@@ -241,6 +276,33 @@ describe('notifications core unit tests', () => {
           null,
           'Twilio limit hit'
         ])
+      );
+    });
+
+    test('writes FAILED log with console provider if no SMS config is present', async () => {
+      smsService.sendSMS.mockRejectedValueOnce(new Error('API error'));
+      // Ensure no config
+      delete process.env.TWILIO_ACCOUNT_SID;
+      delete process.env.SMS_API_URL;
+
+      await expect(notifications.sendSMS({ to: '9876543210', message: 'Hello SMS' })).rejects.toThrow('API error');
+
+      expect(appNotificationRepository.insertNotificationLog).toHaveBeenCalledWith(
+        expect.arrayContaining(['FAILED', 'console'])
+      );
+    });
+
+    test('writes FAILED log with sms-api provider if Twilio is configured', async () => {
+      smsService.sendSMS.mockRejectedValueOnce(new Error('API error'));
+      process.env.TWILIO_ACCOUNT_SID = 'sid';
+      process.env.TWILIO_AUTH_TOKEN = 'token';
+      process.env.TWILIO_FROM_NUMBER = 'num';
+      delete process.env.SMS_API_URL;
+
+      await expect(notifications.sendSMS({ to: '9876543210', message: 'Hello SMS' })).rejects.toThrow('API error');
+
+      expect(appNotificationRepository.insertNotificationLog).toHaveBeenCalledWith(
+        expect.arrayContaining(['FAILED', 'sms-api'])
       );
     });
   });
@@ -453,6 +515,95 @@ describe('notifications core unit tests', () => {
       expect(spyWarn).toHaveBeenCalledWith('[Auto Notification Hook] Failed to send Email:', 'Email server offline');
 
       spyWarn.mockRestore();
+    });
+
+    test('handles missing userId by skipping ensureUserForFarmer and background tasks', async () => {
+      appNotificationRepository.insertAppNotification.mockResolvedValueOnce({ id: 'notif_abc' });
+      const result = await notifications.createAppNotification({ title: 'System', message: 'Alert' });
+      expect(result).toEqual({ id: 'notif_abc' });
+      expect(appNotificationRepository.getUserForFarmer).not.toHaveBeenCalled();
+    });
+
+    test('handles missing result from insertAppNotification', async () => {
+      appNotificationRepository.getUserForFarmer.mockResolvedValueOnce(true);
+      appNotificationRepository.insertAppNotification.mockResolvedValueOnce(null);
+      const result = await notifications.createAppNotification({ userId: 'u1', title: 'T', message: 'M' });
+      expect(result).toBeNull();
+      expect(db.query).not.toHaveBeenCalled();
+    });
+
+    test('handles farmer without user email and phone starting with +', async () => {
+      appNotificationRepository.getUserForFarmer.mockResolvedValueOnce(true);
+      appNotificationRepository.insertAppNotification.mockResolvedValueOnce({ id: 'notif_abc' });
+      
+      db.query.mockResolvedValueOnce({
+        rows: [{ name: null, phone: '+919999999999' }] // name null tests 'User' fallback, phone starts with +
+      }).mockResolvedValueOnce({
+        rows: [] // missing email
+      });
+
+      smsService.sendSMS.mockResolvedValueOnce({ provider: 'console', providerMessageId: 'm1' });
+      emailService.sendEmail.mockResolvedValueOnce({ provider: 'console', providerMessageId: 'm2' });
+
+      await notifications.createAppNotification({ userId: 'u1', title: 'T', message: 'M' });
+
+      expect(smsService.sendSMS).toHaveBeenCalledWith(expect.objectContaining({ to: '+919999999999' }));
+      expect(emailService.sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'farmer_u1@annsetu.local', text: expect.stringContaining('Dear User,') }));
+    });
+
+    test('handles user without phone but with email', async () => {
+      appNotificationRepository.getUserForFarmer.mockResolvedValueOnce(true);
+      appNotificationRepository.insertAppNotification.mockResolvedValueOnce({ id: 'notif_abc' });
+      
+      db.query.mockResolvedValueOnce({
+        rows: [{ name: 'Ram', phone: null }] // missing phone
+      }).mockResolvedValueOnce({
+        rows: [{ email: 'ram@mail.com' }] 
+      });
+
+      emailService.sendEmail.mockResolvedValueOnce({ provider: 'console', providerMessageId: 'm2' });
+
+      await notifications.createAppNotification({ userId: 'u1', title: 'T', message: 'M' });
+
+      expect(smsService.sendSMS).not.toHaveBeenCalled();
+      expect(emailService.sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'ram@mail.com' }));
+    });
+    test('handles cold storage operator without phone or email', async () => {
+      appNotificationRepository.getUserForFarmer.mockResolvedValueOnce(true);
+      appNotificationRepository.insertAppNotification.mockResolvedValueOnce({ id: 'notif_abc' });
+      
+      db.query.mockResolvedValueOnce({
+        rows: [] // not a farmer
+      }).mockResolvedValueOnce({
+        rows: [] // no user
+      }).mockResolvedValueOnce({
+        rows: [{ name: 'CS Op', phone: null, email: null }] // CS operator with no phone or email
+      });
+
+      await notifications.createAppNotification({ userId: 'u1', title: 'T', message: 'M' });
+
+      // Should not call either SMS or Email
+      expect(smsService.sendSMS).not.toHaveBeenCalled();
+      expect(emailService.sendEmail).not.toHaveBeenCalled();
+    });
+    test('handles cold storage operator with phone but without email', async () => {
+      appNotificationRepository.getUserForFarmer.mockResolvedValueOnce(true);
+      appNotificationRepository.insertAppNotification.mockResolvedValueOnce({ id: 'notif_abc' });
+      
+      db.query.mockResolvedValueOnce({
+        rows: [] // not a farmer
+      }).mockResolvedValueOnce({
+        rows: [] // no user
+      }).mockResolvedValueOnce({
+        rows: [{ name: 'CS Op', phone: '9876543210', email: null }] // CS operator with phone but no email
+      });
+
+      smsService.sendSMS.mockResolvedValueOnce({ provider: 'console', providerMessageId: 'm1' });
+
+      await notifications.createAppNotification({ userId: 'u1', title: 'T', message: 'M' });
+
+      expect(smsService.sendSMS).toHaveBeenCalled();
+      expect(emailService.sendEmail).not.toHaveBeenCalled();
     });
   });
 });

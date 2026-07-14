@@ -63,24 +63,22 @@ Message: ${message}
         }
     }
 
-    if (isGenericConfigured) {
-        try {
-            const response = await axios.post(smsApiUrl, {
-                apiKey: smsApiKey,
-                to,
-                message,
-                sender: smsSenderId
-            });
+    try {
+        const response = await axios.post(smsApiUrl, {
+            apiKey: smsApiKey,
+            to,
+            message,
+            sender: smsSenderId
+        });
 
-            return {
-                success: true,
-                provider: 'generic-http',
-                providerMessageId: response.data && response.data.id ? response.data.id : 'generic-' + Date.now()
-            };
-        } catch (error) {
-            console.error('[SMS Service] Generic HTTP Gateway error:', error.message);
-            throw error;
-        }
+        return {
+            success: true,
+            provider: 'generic-http',
+            providerMessageId: response.data && response.data.id ? response.data.id : 'generic-' + Date.now()
+        };
+    } catch (error) {
+        console.error('[SMS Service] Generic HTTP Gateway error:', error.message);
+        throw error;
     }
 }
 

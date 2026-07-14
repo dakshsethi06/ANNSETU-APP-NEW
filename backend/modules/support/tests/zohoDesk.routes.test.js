@@ -141,6 +141,18 @@ describe('zohoDesk.routes unit tests', () => {
       expect(res.status).toBe(422);
       expect(res.body.error).toBe('Validation failed');
     });
+
+    test('returns fallback error message if message is missing', async () => {
+      mockFetchHandlers['api/v1/tickets'] = () => Promise.resolve({
+        ok: false,
+        status: 500,
+        json: async () => ({})
+      });
+
+      const res = await request(app).post('/zoho/tickets').send({ subject: 'S', description: 'D' });
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('Failed to create ticket.');
+    });
   });
 
   describe('GET /tickets', () => {
@@ -207,6 +219,30 @@ describe('zohoDesk.routes unit tests', () => {
       const res = await request(app).get('/zoho/tickets').query({ phone: '9876543210' });
       expect(res.status).toBe(400);
       expect(res.body.error).toBe('Bad format');
+    });
+
+    test('returns fallback error message if message is missing in search', async () => {
+      mockFetchHandlers['tickets/search'] = () => Promise.resolve({
+        ok: false,
+        status: 500,
+        json: async () => ({})
+      });
+
+      const res = await request(app).get('/zoho/tickets').query({ phone: '9876543210' });
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('Failed to fetch tickets.');
+    });
+
+    test('handles missing result.data gracefully', async () => {
+      mockFetchHandlers['tickets/search'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({}) // missing data
+      });
+
+      const res = await request(app).get('/zoho/tickets').query({ phone: '9876543210' });
+      expect(res.status).toBe(200);
+      expect(res.body.tickets).toEqual([]);
     });
 
     test('returns 500 when searching tickets fails completely due to generic error', async () => {

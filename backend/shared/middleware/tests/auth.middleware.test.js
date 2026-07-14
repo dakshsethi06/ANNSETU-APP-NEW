@@ -77,6 +77,42 @@ describe('auth middleware', () => {
       expect(req.user).toMatchObject({ userId: 'F1', role: 'farmer' });
     });
 
+    test('uses fallback annsetu_jwt_secret_key if process.env.JWT_SECRET is not defined', async () => {
+      const originalSecret = process.env.JWT_SECRET;
+      delete process.env.JWT_SECRET;
+      
+      const token = jwt.sign({ userId: 'F3', role: 'farmer' }, 'annsetu_jwt_secret_key', { expiresIn: '1h' });
+      req.headers.authorization = `Bearer ${token}`;
+      
+      await authMiddleware(req, res, next);
+      
+      expect(next).toHaveBeenCalled();
+      expect(req.user).toMatchObject({ userId: 'F3', role: 'farmer' });
+      
+      if (originalSecret !== undefined) {
+        process.env.JWT_SECRET = originalSecret;
+      }
+    });
+
+    test('uses process.env.JWT_SECRET if defined', async () => {
+      const originalSecret = process.env.JWT_SECRET;
+      process.env.JWT_SECRET = 'custom_test_secret';
+      
+      const token = jwt.sign({ userId: 'F2', role: 'farmer' }, 'custom_test_secret', { expiresIn: '1h' });
+      req.headers.authorization = `Bearer ${token}`;
+      
+      await authMiddleware(req, res, next);
+      
+      expect(next).toHaveBeenCalled();
+      expect(req.user).toMatchObject({ userId: 'F2', role: 'farmer' });
+      
+      if (originalSecret === undefined) {
+        delete process.env.JWT_SECRET;
+      } else {
+        process.env.JWT_SECRET = originalSecret;
+      }
+    });
+
     test('rejects expired local JWT (and failed Supabase fallback) → 401', async () => {
       const expired = jwt.sign({ userId: 'F1' }, JWT_SECRET, { expiresIn: '-1h' });
       req.headers.authorization = `Bearer ${expired}`;

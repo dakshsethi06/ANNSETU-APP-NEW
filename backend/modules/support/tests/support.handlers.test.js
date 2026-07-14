@@ -78,6 +78,61 @@ describe('support.handlers unit tests', () => {
       });
     });
 
+    test('handles missing env vars and missing email/phone gracefully', async () => {
+      delete process.env.FREESCOUT_URL;
+      delete process.env.FREESCOUT_MAILBOX_ID;
+
+      axios.post.mockResolvedValueOnce({ data: { id: 456 } });
+
+      const result = await handlers.createTicketLive({
+        subject: 'S',
+        description: 'D',
+        attachments: [
+          { base64: 'data:image/jpeg;base64,123' } // missing file.name
+        ]
+      });
+
+      expect(axios.post).toHaveBeenCalledWith(
+        '/conversations',
+        expect.objectContaining({
+          mailboxId: 1, // fallback to 1
+          customer: expect.objectContaining({
+            email: 'user@annsetu.mock' // fallback for missing email/phone
+          }),
+          threads: expect.arrayContaining([
+            expect.objectContaining({
+              attachments: [
+                { filename: 'attachment', data: '123' } // fallback for missing filename
+              ]
+            })
+          ])
+        }),
+        expect.any(Object)
+      );
+      expect(result.ticketId).toBe(456);
+    });
+
+    test('handles missing email but present phone to hit phone replace branch', async () => {
+      axios.post.mockResolvedValueOnce({ data: { id: 789 } });
+
+      const result = await handlers.createTicketLive({
+        subject: 'S',
+        description: 'D',
+        phone: '123-456'
+      });
+
+      expect(axios.post).toHaveBeenCalledWith(
+        'http://freescout.local/conversations',
+        expect.objectContaining({
+          customer: expect.objectContaining({
+            email: '123456@annsetu.mock' // phone replace logic
+          })
+        }),
+        expect.any(Object)
+      );
+      expect(result.ticketId).toBe(789);
+    });
+
     test('throws error when FreeScout API call fails', async () => {
       const err = new Error('Network error');
       err.response = { data: { message: 'Freescout error' } };
@@ -130,6 +185,26 @@ describe('support.handlers unit tests', () => {
       expect(result.source).toBe('mock');
     });
 
+    test('creates mock ticket and falls back to SMTP_USER if SMTP_FROM is missing and default port if SMTP_PORT is missing', async () => {
+      process.env.SMTP_HOST = 'smtp.gmail.com';
+      process.env.SMTP_USER = 'user@gmail.com';
+      delete process.env.SMTP_FROM;
+      delete process.env.SMTP_PORT;
+
+      const mockSendMail = jest.fn().mockResolvedValueOnce();
+      nodemailer.createTransport.mockReturnValueOnce({ sendMail: mockSendMail });
+
+      await handlers.createTicketMock({ subject: 'S', description: 'D' });
+
+      expect(nodemailer.createTransport).toHaveBeenCalledWith(expect.objectContaining({
+        port: 587 // fallback
+      }));
+      expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
+        from: 'user@gmail.com', // fallback
+        to: 'user@gmail.com'
+      }));
+    });
+
     test('logs email dispatch errors during SMTP failures gracefully without throwing', async () => {
       process.env.SMTP_HOST = 'smtp.gmail.com';
       process.env.SMTP_USER = 'user@gmail.com';
@@ -172,6 +247,20 @@ describe('support.handlers unit tests', () => {
       ]);
     });
 
+    test('handles missing env vars and missing phone gracefully, parsing response fallbacks', async () => {
+      delete process.env.FREESCOUT_URL;
+      
+      axios.get.mockResolvedValueOnce({ data: { conversations: [{ id: 99, status: 'unknown' }] } }); // _embedded missing
+
+      const result = await handlers.listTicketsLive(undefined); // undefined phone
+
+      expect(axios.get).toHaveBeenCalledWith(
+        '/conversations?customerPhone=&embed=threads',
+        expect.any(Object)
+      );
+      expect(result).toHaveLength(1);
+    });
+
     test('falls back to search by mock email if phone lookup yields no conversations', async () => {
       axios.get
         .mockResolvedValueOnce({ data: { conversations: [] } }) // empty phone search
@@ -183,6 +272,17 @@ describe('support.handlers unit tests', () => {
       expect(axios.get).toHaveBeenNthCalledWith(2, expect.stringContaining('customerEmail=9876543210%40annsetu.mock'), expect.any(Object));
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(10);
+    });
+
+    test('handles fallback email search when phone is missing completely and response is empty', async () => {
+      axios.get
+        .mockResolvedValueOnce({ data: {} }) // empty phone search with completely missing arrays
+        .mockResolvedValueOnce({ data: {} }); // email search success with completely missing arrays
+
+      const result = await handlers.listTicketsLive(undefined);
+
+      expect(axios.get).toHaveBeenNthCalledWith(2, expect.stringContaining('customerEmail=user%40annsetu.mock'), expect.any(Object));
+      expect(result).toHaveLength(0);
     });
 
     test('throws error on list live API failures', async () => {
@@ -202,6 +302,15 @@ describe('support.handlers unit tests', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].subject).toContain('Match 1');
+    });
+
+    test('handles missing phones gracefully', async () => {
+      // Create mock ticket with missing phone
+      await handlers.createTicketMock({ phone: undefined, subject: 'No Phone', description: 'D3' });
+
+      const result = await handlers.listTicketsMock(undefined); // search with undefined phone
+      
+      expect(Array.isArray(result)).toBe(true);
     });
   });
 
@@ -224,6 +333,30 @@ describe('support.handlers unit tests', () => {
         { id: 2, body: 'other message', body_text: 'other message', created_at: '2026-07-14', incoming: true },
         { id: 3, body: 'agent reply', body_text: 'agent reply', created_at: '2026-07-14', incoming: false }
       ]);
+    });
+
+    test('handles missing env vars and missing thread texts gracefully', async () => {
+      delete process.env.FREESCOUT_URL;
+
+      const mockFreescoutData = {
+        threads: [
+          { id: 4, type: 'note', createdAt: '2026-07-14' } // missing text
+        ]
+      };
+      axios.get.mockResolvedValueOnce({ data: mockFreescoutData });
+
+      const result = await handlers.getTicketConversationsLive('123');
+
+      expect(axios.get).toHaveBeenCalledWith('/conversations/123?embed=threads', expect.any(Object));
+      expect(result[0].body).toBe('');
+    });
+
+    test('handles missing threads gracefully', async () => {
+      axios.get.mockResolvedValueOnce({ data: {} }); // missing threads
+
+      const result = await handlers.getTicketConversationsLive('123');
+
+      expect(result).toEqual([]);
     });
 
     test('throws error when thread retrieval fails', async () => {

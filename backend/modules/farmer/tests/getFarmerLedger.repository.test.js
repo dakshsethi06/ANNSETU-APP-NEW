@@ -118,4 +118,40 @@ describe('Ledger Calculation Unit Tests', () => {
     expect(result[2].id).toBe('1');
     expect(result[2].balance).toBe(500);
   });
+
+  test('should handle farmer ledger when openingBalance query returns no rows', async () => {
+    db.query.mockImplementation((sql, params) => {
+      if (sql.includes('SELECT "openingBalance"')) {
+        return Promise.resolve({ rows: [] }); // Empty rows
+      }
+      return Promise.resolve({ rows: [] });
+    });
+
+    const result = await getFarmerLedger('farmer_123');
+    // Ledger should be empty, but we're mostly testing that it doesn't crash
+    // and correctly falls back to 0.
+    expect(result).toHaveLength(0);
+  });
+
+  test('should handle farmer ledger when openingBalance is null', async () => {
+    db.query.mockImplementation((sql, params) => {
+      if (sql.includes('SELECT "openingBalance"')) {
+        return Promise.resolve({ rows: [{ openingBalance: null }] }); // Null balance
+      }
+      if (sql.includes('FROM "NikasiTransaction"')) {
+        return Promise.resolve({
+          rows: [
+            { id: '1', date: '2026-07-01T10:00:00.000Z', amount: -500 }
+          ]
+        });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+
+    const result = await getFarmerLedger('farmer_123');
+    // Start: 0
+    // 2026-07-01: Rent bill (-500). Dues increase: 0 - (-500) = 500
+    expect(result).toHaveLength(1);
+    expect(result[0].balance).toBe(500);
+  });
 });

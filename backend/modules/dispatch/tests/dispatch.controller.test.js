@@ -41,6 +41,16 @@ describe('dispatch.controller', () => {
         expect.objectContaining({ success: false })
       );
     });
+
+    test('defaults error message when service throws error without message', async () => {
+      const err = new Error();
+      err.message = ''; // Falsy message
+      dispatchService.fetchDispatches.mockRejectedValue(err);
+      await controller.getDispatches(req, res);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Failed to fetch dispatches from database' })
+      );
+    });
   });
 
   describe('createDispatch', () => {
@@ -70,6 +80,16 @@ describe('dispatch.controller', () => {
       dispatchService.createNewDispatch.mockRejectedValue(new Error('db down'));
       await controller.createDispatch(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    test('defaults error message when error has no message', async () => {
+      const err = new Error();
+      err.message = '';
+      dispatchService.createNewDispatch.mockRejectedValue(err);
+      await controller.createDispatch(req, res);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Failed to create dispatch in database' })
+      );
     });
   });
 
@@ -104,6 +124,16 @@ describe('dispatch.controller', () => {
       await controller.approveDispatch(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
     });
+
+    test('defaults error message when error has no message', async () => {
+      const err = new Error();
+      err.message = '';
+      dispatchService.approveDispatchByMpin.mockRejectedValue(err);
+      await controller.approveDispatch(req, res);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Failed to approve dispatch in database' })
+      );
+    });
   });
 
   describe('deliverDispatch', () => {
@@ -133,6 +163,16 @@ describe('dispatch.controller', () => {
       
       await controller.deliverDispatch(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    test('defaults error message when error has no message', async () => {
+      const err = new Error();
+      err.message = '';
+      dispatchService.markDispatchDelivered.mockRejectedValue(err);
+      await controller.deliverDispatch(req, res);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Failed to deliver dispatch in database' })
+      );
     });
   });
 });

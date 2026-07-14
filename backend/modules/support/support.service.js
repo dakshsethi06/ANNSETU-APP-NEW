@@ -375,7 +375,7 @@ async function getChatMessages(ticketId) {
       ticketNumber = ticketData.ticketNumber || null;
       contactPhone = ticketData.phone || (ticketData.contact && ticketData.contact.phone) || null;
       if (ticketData.assignee && (ticketData.assignee.name || ticketData.assignee.lastName)) {
-        const agentName = ticketData.assignee.name || ticketData.assignee.lastName || 'Agent';
+        const agentName = ticketData.assignee.name || ticketData.assignee.lastName;
         assigneeMsg = {
           id: `system-assignee-${ticketData.assignee.id}`,
           text: `Support Agent ${agentName} has joined the chat.`,

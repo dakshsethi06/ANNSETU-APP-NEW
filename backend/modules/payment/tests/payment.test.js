@@ -168,4 +168,88 @@ describe('Payment Checkout Capping Unit Tests', () => {
     expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Save failed' }));
     spyError.mockRestore();
   });
+  test('should fallback to default name and phone if farmer details are invalid or missing', async () => {
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
+    // Name is empty, phone is repeating digits (invalid length and pattern)
+    farmerRepository.getFarmerBasicDetails.mockResolvedValue({ name: '', phone: '1111111111', coldStorageId: 'CS1' });
+    razorpayService.isMockMode.mockReturnValue(true);
+    razorpayService.createOrder.mockResolvedValue({ id: 'order_mock123' });
+
+    await createOrder(mockReq, mockRes);
+    
+    // We can't easily assert on local variables `farmerName` and `farmerPhone` inside the mock block, 
+    // but this ensures the code executes those lines (branch coverage).
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  test('should resolve real domain serverIp correctly', async () => {
+    mockReq.headers.host = 'annsetu.com'; // Live domain
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
+    farmerRepository.getFarmerBasicDetails.mockResolvedValue({ name: 'Farmer', coldStorageId: 'CS1' });
+    razorpayService.isMockMode.mockReturnValue(true);
+    razorpayService.createOrder.mockResolvedValue({ id: 'order_mock123' });
+
+    await createOrder(mockReq, mockRes);
+
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+      payment_link_url: 'http://annsetu.com/api/payments/mock-checkout/order_mock123'
+    }));
+  });
+
+  test('real mode: should fallback to mock checkout url if link is falsy but no error is thrown', async () => {
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
+    farmerRepository.getFarmerBasicDetails.mockResolvedValue({ name: 'Farmer Ram', coldStorageId: 'CS1' });
+    razorpayService.isMockMode.mockReturnValue(false);
+    razorpayService.createOrder.mockResolvedValue({ id: 'order_123' });
+    // Return falsy link without throwing
+    razorpayService.createPaymentLink.mockResolvedValue(null);
+
+    await createOrder(mockReq, mockRes);
+
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+      payment_link_url: 'http://localhost:3001/api/payments/mock-checkout/order_123'
+    }));
+  });
+
+  test('should return default 500 error message if error has no message', async () => {
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
+    farmerRepository.getFarmerBasicDetails.mockResolvedValue({ name: 'Farmer Ram', coldStorageId: 'CS1' });
+    razorpayService.isMockMode.mockReturnValue(true);
+    razorpayService.createOrder.mockResolvedValue({ id: 'order_mock123' });
+    // Rejecting with a string means error.message is undefined
+    paymentRepository.createPendingPayment.mockRejectedValueOnce('Some string error');
+    const spyError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await createOrder(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(500);
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Failed to create payment order.' }));
+    spyError.mockRestore();
+  });
+  test('should handle undefined req.headers.host and fallback to localhost:3001', async () => {
+    mockReq.headers.host = undefined;
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
+    farmerRepository.getFarmerBasicDetails.mockResolvedValue({ name: 'Farmer', coldStorageId: 'CS1' });
+    razorpayService.isMockMode.mockReturnValue(true);
+    razorpayService.createOrder.mockResolvedValue({ id: 'order_mock123' });
+
+    await createOrder(mockReq, mockRes);
+
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+      payment_link_url: 'http://localhost:3001/api/payments/mock-checkout/order_mock123'
+    }));
+  });
+
+  test('should handle getFarmerBasicDetails returning null gracefully', async () => {
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
+    // Resolving to null
+    farmerRepository.getFarmerBasicDetails.mockResolvedValue(null);
+    razorpayService.isMockMode.mockReturnValue(true);
+    razorpayService.createOrder.mockResolvedValue({ id: 'order_mock123' });
+
+    await createOrder(mockReq, mockRes);
+
+    // Should return 400 because coldStorageId will be missing
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+  });
 });

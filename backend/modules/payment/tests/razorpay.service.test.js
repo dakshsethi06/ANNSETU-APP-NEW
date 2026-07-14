@@ -203,6 +203,13 @@ describe('razorpay.service', () => {
       expect(mockPaymentsFetch).not.toHaveBeenCalled();
     });
 
+    test('mock mode: returns fabricated payment with random ID if paymentId is not provided', async () => {
+      const svc = loadService({});
+      const details = await svc.fetchPaymentDetails();
+      expect(details.id).toMatch(/^pay_mock_/);
+      expect(mockPaymentsFetch).not.toHaveBeenCalled();
+    });
+
     test('real mode: pay_mock_ ids still return fabricated details', async () => {
       const svc = loadService({ RAZORPAY_KEY_SECRET: 'real_secret' });
       const details = await svc.fetchPaymentDetails('pay_mock_123');

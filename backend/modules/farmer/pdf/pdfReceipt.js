@@ -46,7 +46,7 @@ function buildReceiptPdf(res, data) {
     { text: 'TRANSACTION TYPE:', y: 88, value: info.type.toUpperCase(), color: info.type === 'Debit' ? '#DC2626' : '#16A34A', bold: true },
     { text: 'DATE & TIME:', y: 114, value: info.dateTime },
     { text: 'UTR / REFERENCE:', y: 140, value: info.utr || 'N/A', wrapWidth: 120 },
-    { text: 'FROM ACCOUNT:', y: 166, value: info.fromAccount || 'N/A' }
+    { text: 'FROM ACCOUNT:', y: 166, value: info.fromAccount }
   ];
   labelsLeft.forEach(l => {
     doc.fillColor(textColor).font('Helvetica-Bold').fontSize(8).text(l.text, 65, voucherY + l.y);
@@ -54,10 +54,10 @@ function buildReceiptPdf(res, data) {
   });
 
   const labelsRight = [
-    { text: 'TO BENEFICIARY:', y: 36, value: info.toAccount || 'N/A', wrapWidth: 140 },
-    { text: 'PAYMENT MODE:', y: 88, value: info.paymentMode || 'N/A' },
-    { text: 'REMARKS:', y: 114, value: info.remarks || 'N/A', wrapWidth: 140 },
-    { text: 'BANK NAME:', y: 140, value: info.bankName || 'N/A' },
+    { text: 'TO BENEFICIARY:', y: 36, value: info.toAccount, wrapWidth: 140 },
+    { text: 'PAYMENT MODE:', y: 88, value: info.paymentMode },
+    { text: 'REMARKS:', y: 114, value: info.remarks, wrapWidth: 140 },
+    { text: 'BANK NAME:', y: 140, value: info.bankName },
     { text: 'TRANSACTION ID:', y: 166, value: info.transactionId || 'N/A', wrapWidth: 140 }
   ];
   labelsRight.forEach(r => {

@@ -144,6 +144,55 @@ describe('support.service unit tests', () => {
       });
     });
 
+    test('derives fallback email when both email and phone are missing, handles missing ticketNumber in response', async () => {
+      mockFetchHandlers['v1/tickets'] = (url, opts) => {
+        const parsed = JSON.parse(opts.body);
+        expect(parsed.email).toBe('user@annsetu.com'); // fallback
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: async () => ({ id: '555' }) // missing ticketNumber
+        });
+      };
+
+      const service = require('../support.service');
+      const result = await service.createTicket({
+        subject: 'Sub', description: 'Desc' // no email, no phone
+      });
+
+      expect(result.ticketId).toBe('555');
+    });
+
+    test('derives fallback email when email is missing but phone is present', async () => {
+      mockFetchHandlers['v1/tickets'] = (url, opts) => {
+        const parsed = JSON.parse(opts.body);
+        expect(parsed.email).toBe('123456@annsetu.com'); // derived from phone
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: async () => ({ id: '777', ticketNumber: '12' })
+        });
+      };
+
+      const service = require('../support.service');
+      const result = await service.createTicket({
+        subject: 'Sub', description: 'Desc', phone: '123-456'
+      });
+      expect(result.ticketId).toBe('12');
+    });
+
+    test('throws default message when ticket creation response is not ok and message is missing', async () => {
+      mockFetchHandlers['v1/tickets'] = () => Promise.resolve({
+        ok: false,
+        status: 400,
+        json: async () => ({}) // missing message
+      });
+
+      const service = require('../support.service');
+      await expect(service.createTicket({ subject: 'S', description: 'D' }))
+        .rejects.toThrow('Failed to create ticket on Zoho Desk.');
+    });
+
     test('throws custom message when ticket creation response is not ok', async () => {
       mockFetchHandlers['v1/tickets'] = () => Promise.resolve({
         ok: false,
@@ -210,6 +259,34 @@ describe('support.service unit tests', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('t1');
     });
+
+    test('handles completely missing data array and missing contact gracefully', async () => {
+      mockFetchHandlers['v1/tickets'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: null // missing data array
+        })
+      });
+
+      const service = require('../support.service');
+      let result = await service.listTickets();
+      expect(result).toEqual([]);
+
+      // Now with missing contact
+      mockFetchHandlers['v1/tickets'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [{ id: 't99' }] // missing contact, missing assignee
+        })
+      });
+
+      result = await service.listTickets();
+      expect(result).toHaveLength(1);
+      expect(result[0].contactName).toBe('App User');
+      expect(result[0].assigneeName).toBe('Unassigned');
+    });
   });
 
   describe('getTicketConversations', () => {
@@ -239,6 +316,55 @@ describe('support.service unit tests', () => {
       expect(result[3].body).toBe('fourth message');
       expect(result[4].body).toBe('fifth message');
       expect(result[5].body).toBe('sixth message');
+    });
+
+    test('handles missing arrays and missing fields in getTicketConversations safely', async () => {
+      mockFetchHandlers['conversations'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            { id: 'c10' } // missing content, contentText, summary, author, type, isForward
+          ]
+        })
+      });
+
+      const service = require('../support.service');
+      const result = await service.getTicketConversations('t1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].body).toBe(''); // default fallback
+      expect(result[0].type).toBe('reply'); // default fallback
+      expect(result[0].author).toBe('Agent'); // default fallback
+    });
+
+    test('handles missing fromEmailAddress for isAgentReply false branch', async () => {
+      mockFetchHandlers['conversations'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            { id: 'c11', isForward: false } // fromEmailAddress is undefined
+          ]
+        })
+      });
+
+      const service = require('../support.service');
+      const result = await service.getTicketConversations('t1');
+
+      expect(result[0].isAgentReply).toBe(false); // falls back to false
+    });
+
+    test('returns empty array when missing data completely', async () => {
+      mockFetchHandlers['conversations'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: null })
+      });
+
+      const service = require('../support.service');
+      const result = await service.getTicketConversations('t1');
+      expect(result).toEqual([]);
     });
 
     test('returns empty array if response is 204 or 404', async () => {
@@ -293,6 +419,18 @@ describe('support.service unit tests', () => {
       await expect(service.addChatMessage('ticket1', 'msg'))
         .rejects.toThrow('Write access denied');
     });
+
+    test('throws default error if comment request fails without message, text is empty', async () => {
+      mockFetchHandlers['comments'] = () => Promise.resolve({
+        ok: false,
+        status: 400,
+        text: async () => ''
+      });
+
+      const service = require('../support.service');
+      await expect(service.addChatMessage('ticket1', 'msg'))
+        .rejects.toThrow('Failed to add comment to Zoho Desk ticket.');
+    });
   });
 
   describe('getChatMessages', () => {
@@ -345,6 +483,152 @@ describe('support.service unit tests', () => {
       expect(result.messages[2].id).toBe('c2');
       expect(result.messages[3].id).toBe('c1');
       expect(result.messages[4].id).toBe('v1');
+    });
+
+    test('handles completely missing fields and arrays gracefully in getChatMessages', async () => {
+      mockFetchHandlers['comments'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            { id: 'c99' } // missing content
+          ]
+        })
+      });
+
+      mockFetchHandlers['conversations'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            { id: 'v99', direction: 'out', contentText: 'some text' } // missing content, summary
+          ]
+        })
+      });
+
+      mockFetchHandlers['v1/tickets/t1'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({}) // missing everything
+      });
+
+      const service = require('../support.service');
+      const result = await service.getChatMessages('t1');
+
+      expect(result.status).toBe('Open'); // fallback
+      expect(result.ticketNumber).toBeNull();
+      expect(result.contactPhone).toBeNull();
+      expect(result.messages).toHaveLength(2); // 1 empty comment, 1 conversation
+      
+      const emptyComment = result.messages.find(m => m.id === 'c99');
+      expect(emptyComment.text).toBe('');
+      expect(emptyComment.sender).toBe('agent'); // fallback to agent for empty text
+
+      const convMsg = result.messages.find(m => m.id === 'v99');
+      expect(convMsg.text).toBe('some text');
+      expect(convMsg.agentName).toBe('Support Agent');
+    });
+
+    test('handles completely missing data arrays in comments and conversations', async () => {
+      mockFetchHandlers['comments'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: null })
+      });
+
+      mockFetchHandlers['conversations'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: null })
+      });
+
+      mockFetchHandlers['v1/tickets/t1'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ contact: {} }) // hit contact.phone fallback
+      });
+
+      const service = require('../support.service');
+      const result = await service.getChatMessages('t1');
+
+      expect(result.messages).toHaveLength(0);
+    });
+
+    test('handles 204 No Content responses from comments and conversations and !ok ticket response', async () => {
+      mockFetchHandlers['comments'] = () => Promise.resolve({ ok: true, status: 204 });
+      mockFetchHandlers['conversations'] = () => Promise.resolve({ ok: true, status: 204 });
+      mockFetchHandlers['v1/tickets/t1'] = () => Promise.resolve({ ok: false, status: 404 }); // !ok
+
+      const service = require('../support.service');
+      const result = await service.getChatMessages('t1');
+
+      expect(result.messages).toHaveLength(0);
+      expect(result.status).toBe('Open');
+    });
+
+    test('handles agent name regex match failure and assignee without names', async () => {
+      mockFetchHandlers['comments'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            { id: 'c101', content: '👨‍💻 no colon format' } // starts with agent emoji but no colon to match regex
+          ]
+        })
+      });
+
+      mockFetchHandlers['conversations'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            { id: 'v101', direction: 'out', isDescriptionThread: false } // no content, contentText, summary
+          ]
+        })
+      });
+
+      mockFetchHandlers['v1/tickets/t1'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          assignee: { id: 'a99' } // has assignee but no name or lastName
+        })
+      });
+
+      const service = require('../support.service');
+      const result = await service.getChatMessages('t1');
+
+      const noColonAgent = result.messages.find(m => m.id === 'c101');
+      expect(noColonAgent.agentName).toBe('Support Agent'); // regex match failed fallback
+      expect(noColonAgent.text).toBe('👨‍💻 no colon format');
+
+      const emptyConv = result.messages.find(m => m.id === 'v101');
+      expect(emptyConv.text).toBe('');
+      
+      // Should not have assigneeMsg because assignee had no name
+      const assigneeMsg = result.messages.find(m => m.id.includes('system-assignee'));
+      expect(assigneeMsg).toBeUndefined();
+    });
+
+    test('handles assignee fallback to lastName and missing ticket createdTime', async () => {
+      mockFetchHandlers['comments'] = () => Promise.resolve({ ok: true, status: 204 });
+      mockFetchHandlers['conversations'] = () => Promise.resolve({ ok: true, status: 204 });
+      
+      mockFetchHandlers['v1/tickets/t1'] = () => Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          assignee: { id: 'a99', lastName: 'Smith' } // hits lastName fallback, createdTime missing
+        })
+      });
+
+      const service = require('../support.service');
+      const result = await service.getChatMessages('t1');
+
+      const assigneeMsg = result.messages.find(m => m.id.includes('system-assignee'));
+      expect(assigneeMsg).toBeDefined();
+      expect(assigneeMsg.text).toBe('Support Agent Smith has joined the chat.');
+      expect(assigneeMsg.time).toBeDefined(); // should be current ISO string
     });
 
     test('logs failures and skips steps without failing the overall call', async () => {

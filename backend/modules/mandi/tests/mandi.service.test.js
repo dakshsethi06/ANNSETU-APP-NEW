@@ -213,6 +213,9 @@ describe('Mandi Service', () => {
     // Test with state and market, but no commodity
     await fetchMandiPrices(API_KEY, 'OnlyState', null, 'OnlyMarket');
 
-    expect(axios.get).toHaveBeenCalledTimes(3);
+    // Test with no state, but commodity and market
+    await fetchMandiPrices(API_KEY, null, 'OnlyCommodity', 'OnlyMarket');
+
+    expect(axios.get).toHaveBeenCalledTimes(4);
   });
 });

@@ -162,6 +162,16 @@ describe('dispatch.service', () => {
       });
     });
 
+    test('uses fallback string for farmer name when name is missing', async () => {
+      dispatchRepo.getFarmerWithMpin.mockResolvedValue({ name: '', mpin: hashMpin('1234') });
+      await approveDispatchByMpin('NK-1', '1234');
+      expect(createAppNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Farmer authorized dispatch')
+        })
+      );
+    });
+
     test('cleans up pending notification and notifies vendor + cold storage', async () => {
       await approveDispatchByMpin('NK-1', '1234');
       expect(dispatchRepo.deleteNotification).toHaveBeenCalledWith(

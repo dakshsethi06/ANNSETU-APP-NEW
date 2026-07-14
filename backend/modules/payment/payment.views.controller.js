@@ -2,18 +2,17 @@ const fs = require('fs');
 const path = require('path');
 const paymentRepository = require('./payment.repository');
 
+const HTML_ESCAPE_MAP = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+};
+
 function escapeHTML(str) {
   if (str === null || str === undefined) return '';
-  return String(str).replace(/[&<>"']/g, (match) => {
-    switch (match) {
-      case '&': return '&amp;';
-      case '<': return '&lt;';
-      case '>': return '&gt;';
-      case '"': return '&quot;';
-      case "'": return '&#39;';
-      default: return match;
-    }
-  });
+  return String(str).replace(/[&<>"']/g, (match) => HTML_ESCAPE_MAP[match]);
 }
 
 async function renderMockCheckout(req, res) {
@@ -79,8 +78,8 @@ async function renderSuccessPage(req, res) {
     const css = fs.readFileSync(cssPath, 'utf8');
     
     html = html.replace('/* CSS_PLACEHOLDER */', css);
-    html = html.replace(/{{orderId}}/g, escapeHTML(finalOrderId || ''));
-    html = html.replace(/{{paymentId}}/g, escapeHTML(finalPaymentId || ''));
+    html = html.replace(/{{orderId}}/g, escapeHTML(finalOrderId));
+    html = html.replace(/{{paymentId}}/g, escapeHTML(finalPaymentId));
     
     res.send(html);
   } catch (err) {

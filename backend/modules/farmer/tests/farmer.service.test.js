@@ -39,6 +39,16 @@ describe('farmer.service', () => {
     });
   });
 
+  describe('fetchLedger', () => {
+    test('delegates to repository getFarmerLedger', async () => {
+      const rows = [{ entry: 1 }];
+      farmerRepository.getFarmerLedger.mockResolvedValue(rows);
+      const result = await service.fetchLedger('F1');
+      expect(result).toEqual(rows);
+      expect(farmerRepository.getFarmerLedger).toHaveBeenCalledWith('F1');
+    });
+  });
+
   describe('registerNewFarmer', () => {
     const data = {
       serial_number: 'SN001',
@@ -201,6 +211,16 @@ describe('farmer.service', () => {
         statusCode: 400,
       });
       expect(farmerRepository.updateFarmerMpin).not.toHaveBeenCalled();
+    });
+
+    test('uses fallback message when OTP verification fails without specific message', async () => {
+      const err = new Error();
+      err.message = '';
+      verifySupabaseOtp.mockRejectedValue(err);
+      await expect(service.resetUserMpin('9876543210', '000000', '5678')).rejects.toMatchObject({
+        statusCode: 400,
+        message: farmerConstants.ERROR_MESSAGES.INVALID_OTP,
+      });
     });
 
     test('throws 400 when new mpin is shorter than 4 chars', async () => {

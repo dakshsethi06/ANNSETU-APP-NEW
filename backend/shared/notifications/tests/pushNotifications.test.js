@@ -71,6 +71,21 @@ describe('pushNotifications unit tests', () => {
     spyLog.mockRestore();
   });
 
+  test('does not log status if response structure is incomplete', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ pushToken: 'ExponentPushToken[abc123]' }] });
+    axios.post.mockResolvedValueOnce({
+      data: {} // Missing data.data
+    });
+    const spyLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+    await sendPushNotification('user123', 'Title', 'Body');
+
+    // Should only be called once with the Delivery message, but not the status message
+    expect(spyLog).toHaveBeenCalledTimes(1);
+    expect(spyLog).not.toHaveBeenCalledWith(expect.stringContaining('[Push Notification] Response status:'));
+    spyLog.mockRestore();
+  });
+
   test('catches request exception and console errors them', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ pushToken: 'ExponentPushToken[abc123]' }] });
     axios.post.mockRejectedValueOnce(new Error('Gateway Down'));

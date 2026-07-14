@@ -146,12 +146,12 @@ describe('payment.repository', () => {
       spyWarn.mockRestore();
     });
 
-    test('allocates PAID amount to NikasiTransaction balances sequentially', async () => {
+    test('allocates PAID amount to NikasiTransaction balances sequentially and handles null paidAmount', async () => {
       const payment = { id: 'ord_1', farmerId: 'farmer_1', amount: '250.00', status: 'PENDING' };
       const bills = {
         rows: [
           { id: 'bill_1', balanceDueAmount: '100.00', paidAmount: '50.00' },
-          { id: 'bill_2', balanceDueAmount: '200.00', paidAmount: '0.00' },
+          { id: 'bill_2', balanceDueAmount: '200.00', paidAmount: null }, // testing || 0 fallback
           { id: 'bill_3', balanceDueAmount: '100.00', paidAmount: '0.00' }
         ]
       };
@@ -244,6 +244,20 @@ describe('payment.repository', () => {
       await expect(
         paymentRepository.updatePaymentStatus('ord_1', 'PAID')
       ).rejects.toThrow('Connect failed');
+    });
+
+    test('updates status but skips Nikasi updates if new status is not PAID', async () => {
+      const payment = { id: 'ord_1', farmerId: 'farmer_1', amount: '300.00', status: 'PENDING' };
+      mockClient.query
+        .mockResolvedValueOnce({ rows: [] }) // BEGIN
+        .mockResolvedValueOnce({ rows: [payment] }) // FOR UPDATE
+        .mockResolvedValueOnce({ rows: [] }); // UPDATE Payment
+      
+      await paymentRepository.updatePaymentStatus('ord_1', 'FAILED', 'pay_1');
+
+      // fetchPaymentDetails should not be called since status isn't PAID (actually it only checks if pay_1 exists in fetch, but let's check Nikasi isn't queried)
+      expect(mockClient.query).not.toHaveBeenCalledWith(expect.stringContaining('UPDATE "NikasiTransaction"'), expect.any(Array));
+      expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
     });
   });
 
@@ -359,12 +373,12 @@ describe('payment.repository', () => {
       expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
     });
 
-    test('approves payment, handles remainingAmount >= due, and deletes app notification', async () => {
+    test('approves payment, handles remainingAmount >= due, and deletes app notification with null paidAmount', async () => {
       const payment = { id: 'p1', amount: '150.00', farmerId: 'f1', reference: 'ref1', coldStorageId: 'cs1' };
       const bills = {
         rows: [
           { id: 'bill_1', balanceDueAmount: '100.00', paidAmount: '10.00' },
-          { id: 'bill_2', balanceDueAmount: '100.00', paidAmount: '20.00' },
+          { id: 'bill_2', balanceDueAmount: '100.00', paidAmount: null }, // testing fallback
           { id: 'bill_3', balanceDueAmount: '100.00', paidAmount: '0.00' }
         ]
       };
@@ -383,8 +397,8 @@ describe('payment.repository', () => {
 
       // bill_1 paid (110)
       expect(mockClient.query).toHaveBeenCalledWith(expect.stringContaining('"balanceDueAmount" = 0'), [110, 'bill_1']);
-      // bill_2 partially paid (paidAmount: 20 + remaining 50 = 70, balanceDueAmount: 100 - 50 = 50)
-      expect(mockClient.query).toHaveBeenCalledWith(expect.stringContaining('"balanceDueAmount" = $1'), [50, 70, 'bill_2']);
+      // bill_2 partially paid (paidAmount: 0 + remaining 50 = 50, balanceDueAmount: 100 - 50 = 50)
+      expect(mockClient.query).toHaveBeenCalledWith(expect.stringContaining('"balanceDueAmount" = $1'), [50, 50, 'bill_2']);
       expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
     });
 
