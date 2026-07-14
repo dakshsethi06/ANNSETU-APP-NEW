@@ -1,8 +1,13 @@
 import React from 'react';
 import { Modal, SafeAreaView, View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Platform, StatusBar } from 'react-native';
-import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, FONTS } from '../../../core/theme/theme';
+
+// Only import WebView on native — web doesn't support it
+let WebView;
+if (Platform.OS !== 'web') {
+  WebView = require('react-native-webview').WebView;
+}
 
 export default function ChatbotWebViewModal({ visible, onClose }) {
   const orgId = process.env.EXPO_PUBLIC_ZOHO_ZIA_ORG_ID || "60077542507";
@@ -88,6 +93,31 @@ export default function ChatbotWebViewModal({ visible, onClose }) {
     </html>
   `;
 
+  // ---------- WEB PLATFORM: render inside a full-screen overlay with iframe ----------
+  if (Platform.OS === 'web') {
+    if (!visible) return null;
+    return (
+      <View style={s.webOverlay}>
+        {/* Header */}
+        <View style={s.header}>
+          <TouchableOpacity style={s.closeBtn} onPress={onClose} activeOpacity={0.7}>
+            <Feather name="arrow-left" size={24} color={COLORS.greenDeep || '#1E5C2E'} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>Annsetu AI Assistant / एआई सहायक</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        {/* Iframe renders the Zoho chatbot HTML directly */}
+        <iframe
+          srcDoc={chatbotHtml}
+          style={{ flex: 1, border: 'none', width: '100%', height: '100%' }}
+          title="Annsetu AI Assistant"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        />
+      </View>
+    );
+  }
+
+  // ---------- NATIVE PLATFORM: use react-native-webview inside Modal ----------
   return (
     <Modal
       visible={visible}
@@ -134,6 +164,18 @@ const s = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FAF7F0',
+  },
+  // Full-screen overlay for web platform
+  webOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    backgroundColor: '#FAF7F0',
+    display: 'flex',
+    flexDirection: 'column',
   },
   header: {
     flexDirection: 'row',
