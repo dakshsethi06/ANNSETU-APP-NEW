@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>18/18</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">58.33% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>7/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/1</span>
+                <span class='fraction'>1/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/18</span>
+                <span class='fraction'>18/18</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -94,68 +94,68 @@
 <a name='L29'></a><a href='#L29'>29</a>
 <a name='L30'></a><a href='#L30'>30</a>
 <a name='L31'></a><a href='#L31'>31</a>
-<a name='L32'></a><a href='#L32'>32</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L32'></a><a href='#L32'>32</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const farmerRepository = <span class="cstat-no" title="statement not covered" >require('../farmer.repository');</span>
-const farmerConstants = <span class="cstat-no" title="statement not covered" >require('../farmer.constants');</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const farmerRepository = require('../farmer.repository');
+const farmerConstants = require('../farmer.constants');
 &nbsp;
-async function <span class="fstat-no" title="function not covered" >updateFarmer(</span>req, res) {
-  const { id } = <span class="cstat-no" title="statement not covered" >req.params;</span>
-  const { name, phone, email, aadhaarNumber, panNumber } = <span class="cstat-no" title="statement not covered" >req.body;</span>
+async function updateFarmer(req, res) {
+  const { id } = req.params;
+  const { name, phone, email, aadhaarNumber, panNumber } = req.body;
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    const current = <span class="cstat-no" title="statement not covered" >await farmerRepository.getFarmerBasicDetails(id);</span>
-<span class="cstat-no" title="statement not covered" >    if (!current) {</span>
-<span class="cstat-no" title="statement not covered" >      return res.status(404).json({ success: false, error: farmerConstants.ERROR_MESSAGES.FARMER_NOT_FOUND });</span>
+  try {
+    const current = await farmerRepository.getFarmerBasicDetails(id);
+    if (!current) {
+      return res.status(404).json({ success: false, error: farmerConstants.ERROR_MESSAGES.FARMER_NOT_FOUND });
     }
 &nbsp;
-    const finalName = <span class="cstat-no" title="statement not covered" >name !== undefined ? name : current.name;</span>
-    const finalPhone = <span class="cstat-no" title="statement not covered" >phone !== undefined ? phone : current.phone;</span>
-    const finalEmail = <span class="cstat-no" title="statement not covered" >email !== undefined ? email : current.email;</span>
-    const finalAadhaar = <span class="cstat-no" title="statement not covered" >aadhaarNumber !== undefined ? aadhaarNumber : current.aadhaarNumber;</span>
-    const finalPan = <span class="cstat-no" title="statement not covered" >panNumber !== undefined ? panNumber : current.panNumber;</span>
+    const finalName = name !== undefined ? name : <span class="branch-1 cbranch-no" title="branch not covered" >current.name;</span>
+    const finalPhone = phone !== undefined ? <span class="branch-0 cbranch-no" title="branch not covered" >phone </span>: current.phone;
+    const finalEmail = email !== undefined ? <span class="branch-0 cbranch-no" title="branch not covered" >email </span>: current.email;
+    const finalAadhaar = aadhaarNumber !== undefined ? <span class="branch-0 cbranch-no" title="branch not covered" >aadhaarNumber </span>: current.aadhaarNumber;
+    const finalPan = panNumber !== undefined ? <span class="branch-0 cbranch-no" title="branch not covered" >panNumber </span>: current.panNumber;
 &nbsp;
-    const farmer = <span class="cstat-no" title="statement not covered" >await farmerRepository.updateFarmerBasicDetails(</span>
+    const farmer = await farmerRepository.updateFarmerBasicDetails(
       id, finalName, finalPhone, finalEmail, finalAadhaar, finalPan
     );
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return res.json({ success: true, farmer: farmer });</span>
+    return res.json({ success: true, farmer: farmer });
   } catch (error) {
-<span class="cstat-no" title="statement not covered" >    console.error('PostgreSQL updateFarmer error:', error.message);</span>
-<span class="cstat-no" title="statement not covered" >    return res.status(500).json({ success: false, error: 'Failed to update farmer profile.' });</span>
+    console.error('PostgreSQL updateFarmer error:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to update farmer profile.' });
   }
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = { updateFarmer };</span>
+module.exports = { updateFarmer };
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -163,7 +163,7 @@ async function <span class="fstat-no" title="function not covered" >updateFarmer
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T08:12:43.272Z
+                at 2026-07-14T13:00:59.150Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

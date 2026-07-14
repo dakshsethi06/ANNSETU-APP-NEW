@@ -246,5 +246,6 @@ module.exports = {
   listTicketsLive,
   listTicketsMock,
   getTicketConversationsLive,
-  getTicketConversationsMock
+  getTicketConversationsMock,
+  mockTickets
 };

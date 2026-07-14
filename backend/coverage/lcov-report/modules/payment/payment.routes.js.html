@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/20</span>
+                <span class='fraction'>20/20</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/20</span>
+                <span class='fraction'>20/20</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -91,62 +91,62 @@
 <a name='L26'></a><a href='#L26'>26</a>
 <a name='L27'></a><a href='#L27'>27</a>
 <a name='L28'></a><a href='#L28'>28</a>
-<a name='L29'></a><a href='#L29'>29</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L29'></a><a href='#L29'>29</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = <span class="cstat-no" title="statement not covered" >require('express');</span>
-const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = require('express');
+const router = express.Router();
 &nbsp;
-const createOrder = <span class="cstat-no" title="statement not covered" >require('./payment.create.controller');</span>
-const verifyPayment = <span class="cstat-no" title="statement not covered" >require('./payment.verify.controller');</span>
-const handleWebhook = <span class="cstat-no" title="statement not covered" >require('./payment.webhook.controller');</span>
-const manualController = <span class="cstat-no" title="statement not covered" >require('./payment.manual.controller');</span>
-const approveController = <span class="cstat-no" title="statement not covered" >require('./payment.approve.controller');</span>
-const rejectController = <span class="cstat-no" title="statement not covered" >require('./payment.reject.controller');</span>
-const viewsController = <span class="cstat-no" title="statement not covered" >require('./payment.views.controller');</span>
-const { validateCreateOrder, validateInitiatePayment, validateGetPaymentDetails } = <span class="cstat-no" title="statement not covered" >require('./payment.validator');</span>
+const createOrder = require('./payment.create.controller');
+const verifyPayment = require('./payment.verify.controller');
+const handleWebhook = require('./payment.webhook.controller');
+const manualController = require('./payment.manual.controller');
+const approveController = require('./payment.approve.controller');
+const rejectController = require('./payment.reject.controller');
+const viewsController = require('./payment.views.controller');
+const { validateCreateOrder, validateInitiatePayment, validateGetPaymentDetails } = require('./payment.validator');
 &nbsp;
 // Online payments (Razorpay)
-<span class="cstat-no" title="statement not covered" >router.post('/payments/order', validateCreateOrder, createOrder);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/payments/verify', verifyPayment);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/payments/webhook', handleWebhook);</span>
+router.post('/payments/order', validateCreateOrder, createOrder);
+router.post('/payments/verify', verifyPayment);
+router.post('/payments/webhook', handleWebhook);
 &nbsp;
 // Offline / Manual payments
-<span class="cstat-no" title="statement not covered" >router.post('/payments/initiated', validateInitiatePayment, manualController.initiatePayment);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/payments/:id', validateGetPaymentDetails, approveController.getPaymentDetails);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/payments/:id/approve', approveController.approvePayment);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/payments/:id/reject', rejectController.rejectPayment);</span>
+router.post('/payments/initiated', validateInitiatePayment, manualController.initiatePayment);
+router.get('/payments/:id', validateGetPaymentDetails, approveController.getPaymentDetails);
+router.post('/payments/:id/approve', approveController.approvePayment);
+router.post('/payments/:id/reject', rejectController.rejectPayment);
 &nbsp;
 // Payment Views (HTML templates)
-<span class="cstat-no" title="statement not covered" >router.get('/payments/mock-checkout/:orderId', viewsController.renderMockCheckout);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/payments/success', viewsController.renderSuccessPage);</span>
+router.get('/payments/mock-checkout/:orderId', viewsController.renderMockCheckout);
+router.get('/payments/success', viewsController.renderSuccessPage);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = router;</span>
+module.exports = router;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -154,7 +154,7 @@ const { validateCreateOrder, validateInitiatePayment, validateGetPaymentDetails 
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T08:12:43.272Z
+                at 2026-07-14T13:00:59.150Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

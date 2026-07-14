@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -81,42 +81,42 @@
 <a name='L16'></a><a href='#L16'>16</a>
 <a name='L17'></a><a href='#L17'>17</a>
 <a name='L18'></a><a href='#L18'>18</a>
-<a name='L19'></a><a href='#L19'>19</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L19'></a><a href='#L19'>19</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const db = <span class="cstat-no" title="statement not covered" >require('../../config/database');</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const db = require('../../config/database');
 &nbsp;
-async function <span class="fstat-no" title="function not covered" >getApprovedFacilities(</span>) {
-  const facilitiesRes = <span class="cstat-no" title="statement not covered" >await db.query(`SELECT id, "displayName" FROM "ColdStorageOnboarding" WHERE status = 'APPROVED'`);</span>
-<span class="cstat-no" title="statement not covered" >  return facilitiesRes.rows;</span>
+async function getApprovedFacilities() {
+  const facilitiesRes = await db.query(`SELECT id, "displayName" FROM "ColdStorageOnboarding" WHERE status = 'APPROVED'`);
+  return facilitiesRes.rows;
 }
 &nbsp;
-async function <span class="fstat-no" title="function not covered" >getActiveLots(</span>facilityId) {
-  const lotsRes = <span class="cstat-no" title="statement not covered" >await db.query(</span>
+async function getActiveLots(facilityId) {
+  const lotsRes = await db.query(
     `SELECT id, "farmerId", commodity AS crop, packets AS bags, "availablePackets", "amadDate"
      FROM "AmadLot"
      WHERE "coldStorageId" = $1 AND "availablePackets" &gt; 0`,
     [facilityId]
   );
-<span class="cstat-no" title="statement not covered" >  return lotsRes.rows;</span>
+  return lotsRes.rows;
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = { getApprovedFacilities, getActiveLots };</span>
+module.exports = { getApprovedFacilities, getActiveLots };
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -124,7 +124,7 @@ async function <span class="fstat-no" title="function not covered" >getActiveLot
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T08:12:43.272Z
+                at 2026-07-14T13:00:59.150Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/16</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/16</span>
+                <span class='fraction'>16/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -82,44 +82,44 @@
 <a name='L17'></a><a href='#L17'>17</a>
 <a name='L18'></a><a href='#L18'>18</a>
 <a name='L19'></a><a href='#L19'>19</a>
-<a name='L20'></a><a href='#L20'>20</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L20'></a><a href='#L20'>20</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = <span class="cstat-no" title="statement not covered" >require('express');</span>
-const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
-const farmerController = <span class="cstat-no" title="statement not covered" >require('./farmer.controller');</span>
-const { validateRegisterFarmer, validateLoginMpin, validateResetMpin } = <span class="cstat-no" title="statement not covered" >require('./farmer.validator');</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = require('express');
+const router = express.Router();
+const farmerController = require('./farmer.controller');
+const { validateRegisterFarmer, validateLoginMpin, validateResetMpin } = require('./farmer.validator');
 &nbsp;
 // Farmers endpoints
-<span class="cstat-no" title="statement not covered" >router.get('/farmers', farmerController.getFarmers);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/farmers', validateRegisterFarmer, farmerController.registerFarmer);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/farmers/:id/ledger', farmerController.getLedger);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/farmers/:id/statement/download', farmerController.downloadStatement);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/farmers/:id/statement/download-pdf', farmerController.downloadStatementPdf);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/farmers/:id/statement/download-receipt-pdf', farmerController.downloadReceiptPdf);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/farmers/login-mpin', validateLoginMpin, farmerController.loginMpin);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/farmers/reset-mpin', validateResetMpin, farmerController.resetMpin);</span>
-<span class="cstat-no" title="statement not covered" >router.put('/farmers/:id', farmerController.updateFarmer);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/otp/send-verification', farmerController.sendProfileOtp);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/otp/verify-and-update', farmerController.verifyAndUpdateProfile);</span>
+router.get('/farmers', farmerController.getFarmers);
+router.post('/farmers', validateRegisterFarmer, farmerController.registerFarmer);
+router.get('/farmers/:id/ledger', farmerController.getLedger);
+router.get('/farmers/:id/statement/download', farmerController.downloadStatement);
+router.get('/farmers/:id/statement/download-pdf', farmerController.downloadStatementPdf);
+router.get('/farmers/:id/statement/download-receipt-pdf', farmerController.downloadReceiptPdf);
+router.post('/farmers/login-mpin', validateLoginMpin, farmerController.loginMpin);
+router.post('/farmers/reset-mpin', validateResetMpin, farmerController.resetMpin);
+router.put('/farmers/:id', farmerController.updateFarmer);
+router.post('/otp/send-verification', farmerController.sendProfileOtp);
+router.post('/otp/verify-and-update', farmerController.verifyAndUpdateProfile);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = router;</span>
+module.exports = router;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -127,7 +127,7 @@ const { validateRegisterFarmer, validateLoginMpin, validateResetMpin } = <span c
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T08:12:43.272Z
+                at 2026-07-14T13:00:59.150Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

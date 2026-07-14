@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -87,54 +87,54 @@
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
 <a name='L24'></a><a href='#L24'>24</a>
-<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const amadService = <span class="cstat-no" title="statement not covered" >require('./amad.service');</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const amadService = require('./amad.service');
 &nbsp;
-async function <span class="fstat-no" title="function not covered" >createAmad(</span>req, res) {
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    const lot = <span class="cstat-no" title="statement not covered" >await amadService.createNewAmadLot(req.body);</span>
-<span class="cstat-no" title="statement not covered" >    return res.status(201).json({ success: true, lot });</span>
+async function createAmad(req, res) {
+  try {
+    const lot = await amadService.createNewAmadLot(req.body);
+    return res.status(201).json({ success: true, lot });
   } catch (error) {
-<span class="cstat-no" title="statement not covered" >    console.error('PostgreSQL Amad POST error:', error.message);</span>
-    const status = <span class="cstat-no" title="statement not covered" >error.statusCode || 400;</span>
-<span class="cstat-no" title="statement not covered" >    return res.status(status).json({ success: false, error: error.message || 'Failed to register Amad lot in database' });</span>
+    console.error('PostgreSQL Amad POST error:', error.message);
+    const status = error.statusCode || 400;
+    return res.status(status).json({ success: false, error: error.message || 'Failed to register Amad lot in database' });
   }
 }
 &nbsp;
-async function <span class="fstat-no" title="function not covered" >getHoldings(</span>req, res) {
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    const holdings = <span class="cstat-no" title="statement not covered" >await amadService.fetchHoldings();</span>
-<span class="cstat-no" title="statement not covered" >    return res.json({ success: true, holdings });</span>
+async function getHoldings(req, res) {
+  try {
+    const holdings = await amadService.fetchHoldings();
+    return res.json({ success: true, holdings });
   } catch (error) {
-<span class="cstat-no" title="statement not covered" >    console.error('PostgreSQL holdings GET error:', error.message);</span>
-<span class="cstat-no" title="statement not covered" >    return res.status(500).json({ success: false, error: 'Failed to fetch holdings from database' });</span>
+    console.error('PostgreSQL holdings GET error:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to fetch holdings from database' });
   }
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = { createAmad, getHoldings };</span>
+module.exports = { createAmad, getHoldings };
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -142,7 +142,7 @@ async function <span class="fstat-no" title="function not covered" >getHoldings(
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T08:12:43.272Z
+                at 2026-07-14T13:00:59.150Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

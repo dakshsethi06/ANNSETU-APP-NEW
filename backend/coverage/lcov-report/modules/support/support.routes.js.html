@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>14/14</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>14/14</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -89,9 +89,9 @@
 <a name='L24'></a><a href='#L24'>24</a>
 <a name='L25'></a><a href='#L25'>25</a>
 <a name='L26'></a><a href='#L26'>26</a>
-<a name='L27'></a><a href='#L27'>27</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L27'></a><a href='#L27'>27</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -99,25 +99,25 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const router = <span class="cstat-no" title="statement not covered" >require('express').Router();</span>
-const { createSupportTicket, getTickets, getConversations } = <span class="cstat-no" title="statement not covered" >require('./support.controller');</span>
-const { validateCreateSupportTicket, validateGetTickets } = <span class="cstat-no" title="statement not covered" >require('./support.validator');</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const router = require('express').Router();
+const { createSupportTicket, getTickets, getConversations } = require('./support.controller');
+const { validateCreateSupportTicket, validateGetTickets } = require('./support.validator');
 const { 
   startChat, 
   sendChatMessage, 
@@ -125,22 +125,22 @@ const {
   closeChatSession,
   getActiveChatSession,
   submitChatFeedback
-} = <span class="cstat-no" title="statement not covered" >require('./chat.controller');</span>
+} = require('./chat.controller');
 &nbsp;
 // Ticket routes
-<span class="cstat-no" title="statement not covered" >router.post('/support/ticket', validateCreateSupportTicket, createSupportTicket);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/support/tickets', validateGetTickets, getTickets);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/support/tickets/:id/conversations', getConversations);</span>
+router.post('/support/ticket', validateCreateSupportTicket, createSupportTicket);
+router.get('/support/tickets', validateGetTickets, getTickets);
+router.get('/support/tickets/:id/conversations', getConversations);
 &nbsp;
 // Live Chat routes
-<span class="cstat-no" title="statement not covered" >router.post('/support/chat/start', startChat);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/support/chat/active', getActiveChatSession);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/support/chat/:ticketId/message', sendChatMessage);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/support/chat/:ticketId/messages', getChatMessages);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/support/chat/:ticketId/close', closeChatSession);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/support/chat/:ticketId/feedback', submitChatFeedback);</span>
+router.post('/support/chat/start', startChat);
+router.get('/support/chat/active', getActiveChatSession);
+router.post('/support/chat/:ticketId/message', sendChatMessage);
+router.get('/support/chat/:ticketId/messages', getChatMessages);
+router.post('/support/chat/:ticketId/close', closeChatSession);
+router.post('/support/chat/:ticketId/feedback', submitChatFeedback);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = router;</span>
+module.exports = router;
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -148,7 +148,7 @@ const {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T08:12:43.272Z
+                at 2026-07-14T13:00:59.150Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
