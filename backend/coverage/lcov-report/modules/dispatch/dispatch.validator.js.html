@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>12/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/3</span>
+                <span class='fraction'>3/3</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -112,39 +112,39 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -154,40 +154,40 @@
  * Fails fast on missing required fields before the controller is invoked.
  */
 &nbsp;
-function <span class="fstat-no" title="function not covered" >validateCreateDispatch(</span>req, res, next) {
-  const { farmerId, coldStorageId, commodity, bags } = <span class="cstat-no" title="statement not covered" >req.body;</span>
-<span class="cstat-no" title="statement not covered" >  if (!farmerId || !coldStorageId || !commodity || !bags) {</span>
-<span class="cstat-no" title="statement not covered" >    return res.status(400).json({</span>
+function validateCreateDispatch(req, res, next) {
+  const { farmerId, coldStorageId, commodity, bags } = req.body;
+  if (!farmerId || !coldStorageId || !commodity || !bags) {
+    return res.status(400).json({
       success: false,
       error: 'farmerId, coldStorageId, commodity, and bags are required.'
     });
   }
-<span class="cstat-no" title="statement not covered" >  next();</span>
+  next();
 }
 &nbsp;
-function <span class="fstat-no" title="function not covered" >validateApproveDispatch(</span>req, res, next) {
-  const { mpin } = <span class="cstat-no" title="statement not covered" >req.body;</span>
-<span class="cstat-no" title="statement not covered" >  if (!mpin) {</span>
-<span class="cstat-no" title="statement not covered" >    return res.status(400).json({</span>
+function validateApproveDispatch(req, res, next) {
+  const { mpin } = req.body;
+  if (!mpin) {
+    return res.status(400).json({
       success: false,
       error: 'MPIN is required for dispatch authorization.'
     });
   }
-<span class="cstat-no" title="statement not covered" >  next();</span>
+  next();
 }
 &nbsp;
-function <span class="fstat-no" title="function not covered" >validateGetDispatches(</span>req, res, next) {
-  const { farmerId, coldStorageId } = <span class="cstat-no" title="statement not covered" >req.query;</span>
-<span class="cstat-no" title="statement not covered" >  if (!farmerId &amp;&amp; !coldStorageId) {</span>
-<span class="cstat-no" title="statement not covered" >    return res.status(400).json({</span>
+function validateGetDispatches(req, res, next) {
+  const { farmerId, coldStorageId } = req.query;
+  if (!farmerId &amp;&amp; !coldStorageId) {
+    return res.status(400).json({
       success: false,
       error: 'Either farmerId or coldStorageId is required.'
     });
   }
-<span class="cstat-no" title="statement not covered" >  next();</span>
+  next();
 }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = {</span>
+module.exports = {
   validateCreateDispatch,
   validateApproveDispatch,
   validateGetDispatches
@@ -199,7 +199,7 @@ function <span class="fstat-no" title="function not covered" >validateGetDispatc
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T07:28:20.903Z
+                at 2026-07-14T07:51:49.829Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
