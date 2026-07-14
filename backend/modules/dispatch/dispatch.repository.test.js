@@ -1,9 +1,9 @@
-jest.mock('../config/database', () => ({
+jest.mock('../../config/database', () => ({
   query: jest.fn(),
 }));
 
-const db = require('../config/database');
-const repo = require('../modules/dispatch/dispatch.repository');
+const db = require('../../config/database');
+const repo = require('./dispatch.repository');
 
 describe('dispatch.repository', () => {
   beforeEach(() => {

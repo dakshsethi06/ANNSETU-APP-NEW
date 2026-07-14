@@ -1,20 +1,20 @@
-jest.mock('../modules/dispatch/dispatch.repository');
-jest.mock('../shared/notifications/notifications', () => ({
+jest.mock('./dispatch.repository');
+jest.mock('../../shared/notifications/notifications', () => ({
   createAppNotification: jest.fn().mockResolvedValue({}),
 }));
-jest.mock('../config/constants', () => ({
+jest.mock('../../config/constants', () => ({
   DEFAULT_COLD_STORAGE_ID: 'CS-DEFAULT',
 }));
 
-const dispatchRepo = require('../modules/dispatch/dispatch.repository');
-const { createAppNotification } = require('../shared/notifications/notifications');
-const { hashMpin } = require('../shared/utils/mpinUtils');
+const dispatchRepo = require('./dispatch.repository');
+const { createAppNotification } = require('../../shared/notifications/notifications');
+const { hashMpin } = require('../../shared/utils/mpinUtils');
 const {
   fetchDispatches,
   createNewDispatch,
   approveDispatchByMpin,
   markDispatchDelivered,
-} = require('../modules/dispatch/dispatch.service');
+} = require('./dispatch.service');
 
 describe('dispatch.service', () => {
   beforeEach(() => {
@@ -153,13 +153,13 @@ describe('dispatch.service', () => {
       expect(result.status).toBe('IN_TRANSIT');
     });
 
-    test('SECURITY: farmer with NO mpin set — default "1234" is accepted', async () => {
-      // Documents current behavior: farmer.mpin || '1234' fallback means
-      // any dispatch for a farmer without an MPIN can be approved with 1234.
-      // This should arguably fail closed instead. See audit notes.
+    test('SECURITY: farmer with NO mpin set — throws 403 Forbidden', async () => {
+      // Validates that if a farmer hasn't set an MPIN, it fails closed instead of falling back to default
       dispatchRepo.getFarmerWithMpin.mockResolvedValue({ name: 'Ram', mpin: null });
-      const result = await approveDispatchByMpin('NK-1', '1234');
-      expect(result.status).toBe('IN_TRANSIT');
+      await expect(approveDispatchByMpin('NK-1', '1234')).rejects.toMatchObject({
+        statusCode: 403,
+        message: expect.stringContaining('MPIN not set'),
+      });
     });
 
     test('cleans up pending notification and notifies vendor + cold storage', async () => {
@@ -177,6 +177,33 @@ describe('dispatch.service', () => {
       dispatchRepo.deleteNotification.mockRejectedValue(new Error('cleanup failed'));
       const result = await approveDispatchByMpin('NK-1', '1234');
       expect(result.status).toBe('IN_TRANSIT');
+    });
+
+    test('approval succeeds even if notification cleanup fails', async () => {
+      dispatchRepo.deleteNotification.mockRejectedValue(new Error('cleanup failed'));
+      const result = await approveDispatchByMpin('NK-1', '1234');
+      expect(result.status).toBe('IN_TRANSIT');
+    });
+
+    test('approval succeeds even if notification creation fails', async () => {
+      createAppNotification.mockRejectedValue(new Error('creation failed'));
+      const result = await approveDispatchByMpin('NK-1', '1234');
+      expect(result.status).toBe('IN_TRANSIT');
+    });
+
+    test('uses fallback strings when dispatch data lacks remarkEnglish or coldStorageId', async () => {
+      // Missing remarkEnglish and coldStorageId
+      dispatchRepo.getDispatchById.mockResolvedValue({
+        id: 'NK-1', farmerId: 'F1', packetsDispatched: 50
+      });
+      await approveDispatchByMpin('NK-1', '1234');
+      
+      // Verify notification fallback to 'goods'
+      expect(createAppNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('goods')
+        })
+      );
     });
   });
 
@@ -219,6 +246,25 @@ describe('dispatch.service', () => {
       createAppNotification.mockRejectedValue(new Error('down'));
       const result = await markDispatchDelivered('NK-1');
       expect(result.status).toBe('DISPATCHED');
+    });
+
+    test('delivery succeeds even when notification cleanup fails', async () => {
+      dispatchRepo.deleteNotification.mockRejectedValue(new Error('cleanup down'));
+      const result = await markDispatchDelivered('NK-1');
+      expect(result.status).toBe('DISPATCHED');
+    });
+
+    test('uses fallback strings when dispatch lacks remarkEnglish', async () => {
+      dispatchRepo.updateDispatchStatus.mockResolvedValue({
+        id: 'NK-1', farmerId: 'F1', packetsDispatched: 50, status: 'DISPATCHED'
+      });
+      await markDispatchDelivered('NK-1');
+      
+      expect(createAppNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('goods')
+        })
+      );
     });
   });
 });

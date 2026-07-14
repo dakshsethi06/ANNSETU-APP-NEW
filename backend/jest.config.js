@@ -1,7 +1,7 @@
 module.exports = {
   testEnvironment: 'node',
   setupFiles: ['./jest.setup.js'],
-  testMatch: ['**/tests/**/*.test.js'],
+  testMatch: ['**/tests/**/*.test.js', '**/modules/**/*.test.js'],
   collectCoverageFrom: [
     'modules/**/*.js',
     'shared/**/*.js',

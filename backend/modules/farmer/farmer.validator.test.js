@@ -2,7 +2,7 @@ const {
   validateRegisterFarmer,
   validateLoginMpin,
   validateResetMpin,
-} = require('../modules/farmer/farmer.validator');
+} = require('./farmer.validator');
 
 const mockRes = () => ({ status: jest.fn().mockReturnThis(), json: jest.fn() });
 

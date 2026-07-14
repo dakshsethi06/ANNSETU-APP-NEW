@@ -1,12 +1,12 @@
 jest.mock('axios');
-jest.mock('../config', () => ({
+jest.mock('../../config', () => ({
   supabaseUrl: 'https://test.supabase.co',
   supabaseAnonKey: 'test-anon-key',
 }));
 
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
-const authMiddleware = require('../shared/middleware/auth.middleware');
+const authMiddleware = require('./auth.middleware');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'annsetu_jwt_secret_key';
 

@@ -21,7 +21,7 @@ const loadService = (env = {}) => {
   delete process.env.RAZORPAY_KEY_SECRET;
   delete process.env.RAZORPAY_WEBHOOK_SECRET;
   Object.assign(process.env, env);
-  return require('../modules/payment/razorpay.service');
+  return require('./razorpay.service');
 };
 
 describe('razorpay.service', () => {

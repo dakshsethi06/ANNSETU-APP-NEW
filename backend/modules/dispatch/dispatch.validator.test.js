@@ -2,7 +2,7 @@ const {
   validateCreateDispatch,
   validateApproveDispatch,
   validateGetDispatches,
-} = require('../modules/dispatch/dispatch.validator');
+} = require('./dispatch.validator');
 
 const mockRes = () => ({ status: jest.fn().mockReturnThis(), json: jest.fn() });
 

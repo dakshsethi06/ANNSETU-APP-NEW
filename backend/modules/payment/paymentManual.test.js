@@ -1,12 +1,12 @@
-const db = require('../config/database');
-const { verifyManualPayment } = require('../modules/payment/payment.manual.controller');
+const db = require('../../config/database');
+const { verifyManualPayment } = require('./payment.manual.controller');
 
-jest.mock('../config/database', () => ({
+jest.mock('../../config/database', () => ({
   connect: jest.fn(),
   query: jest.fn().mockResolvedValue({ rows: [] })
 }));
 
-jest.mock('../shared/notifications/notifications', () => ({
+jest.mock('../../shared/notifications/notifications', () => ({
   createAppNotification: jest.fn()
 }));
 

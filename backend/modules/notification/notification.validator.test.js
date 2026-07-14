@@ -1,7 +1,7 @@
 const {
   validateGetNotifications,
   validateRegisterPushToken,
-} = require('../modules/notification/notification.validator');
+} = require('./notification.validator');
 
 const mockRes = () => ({ status: jest.fn().mockReturnThis(), json: jest.fn() });
 

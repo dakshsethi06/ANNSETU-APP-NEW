@@ -1,4 +1,4 @@
-const { validateUserRole } = require('../modules/user-role/user-role.validator');
+const { validateUserRole } = require('./user-role.validator');
 
 const mockRes = () => ({ status: jest.fn().mockReturnThis(), json: jest.fn() });
 

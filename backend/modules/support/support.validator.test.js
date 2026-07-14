@@ -1,7 +1,7 @@
 const {
   validateCreateSupportTicket,
   validateGetTickets,
-} = require('../modules/support/support.validator');
+} = require('./support.validator');
 
 const mockRes = () => ({ status: jest.fn().mockReturnThis(), json: jest.fn() });
 

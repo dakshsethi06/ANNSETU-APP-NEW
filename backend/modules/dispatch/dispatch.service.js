@@ -87,8 +87,13 @@ async function approveDispatchByMpin(id, mpin) {
     throw err;
   }
 
-  const farmerMpin = farmer.mpin || '1234';
-  if (!verifyMpin(mpin, farmerMpin)) {
+  if (!farmer.mpin) {
+    const err = new Error('MPIN not set. Please set up your MPIN first before approving dispatches.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (!verifyMpin(mpin, farmer.mpin)) {
     const err = new Error('Invalid MPIN. Please try again.');
     err.statusCode = 401;
     throw err;

@@ -1,12 +1,12 @@
-const db = require('../config/database');
-const paymentRepository = require('../modules/payment/payment.repository');
-const { renderMockCheckout, renderSuccessPage } = require('../modules/payment/payment.views.controller');
+const db = require('../../config/database');
+const paymentRepository = require('./payment.repository');
+const { renderMockCheckout, renderSuccessPage } = require('./payment.views.controller');
 
-jest.mock('../config/database', () => ({
+jest.mock('../../config/database', () => ({
   query: jest.fn()
 }));
 
-jest.mock('../modules/payment/payment.repository', () => ({
+jest.mock('./payment.repository', () => ({
   updatePaymentStatus: jest.fn(),
   getPaymentById: jest.fn()
 }));

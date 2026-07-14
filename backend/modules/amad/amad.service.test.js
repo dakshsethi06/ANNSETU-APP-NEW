@@ -1,16 +1,16 @@
 // Mock the two dependencies BEFORE requiring the service
-jest.mock('../modules/amad/amad.repository');
-jest.mock('../shared/notifications/notifications', () => ({
+jest.mock('./amad.repository');
+jest.mock('../../shared/notifications/notifications', () => ({
   logOutboundNotification: jest.fn().mockResolvedValue({}),
   createAppNotification: jest.fn().mockResolvedValue({}),
 }));
 
-const amadRepository = require('../modules/amad/amad.repository');
+const amadRepository = require('./amad.repository');
 const {
   logOutboundNotification,
   createAppNotification,
-} = require('../shared/notifications/notifications');
-const { createNewAmadLot, fetchHoldings } = require('../modules/amad/amad.service');
+} = require('../../shared/notifications/notifications');
+const { createNewAmadLot, fetchHoldings } = require('./amad.service');
 
 describe('amad.service', () => {
   beforeEach(() => {

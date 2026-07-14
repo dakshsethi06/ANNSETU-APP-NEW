@@ -1,4 +1,4 @@
-const { validateRegisterColdStorage } = require('../modules/storage/storage.validator');
+const { validateRegisterColdStorage } = require('./storage.validator');
 
 const mockRes = () => ({ status: jest.fn().mockReturnThis(), json: jest.fn() });
 

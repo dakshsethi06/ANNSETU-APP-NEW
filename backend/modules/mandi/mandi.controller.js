@@ -1,12 +1,12 @@
 const mandiService = require('./mandi.service');
 
 async function getMandiPrices(req, res) {
+  const state = req.query.state || 'Uttar Pradesh';
+  const commodity = req.query.commodity || 'All';
+  const market = req.query.market || '';
+
   try {
     const apiKey = process.env.MANDI_API_KEY;
-    const state = req.query.state || 'Uttar Pradesh';
-    const commodity = req.query.commodity || 'All';
-    const market = req.query.market || '';
-    
     const page = Number.parseInt(req.query.page, 10) || 1;
     const limit = Number.parseInt(req.query.limit, 10) || 10;
     const offset = (page - 1) * limit;

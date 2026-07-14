@@ -1,12 +1,12 @@
-jest.mock('../modules/dispatch/dispatch.service', () => ({
+jest.mock('./dispatch.service', () => ({
   fetchDispatches: jest.fn(),
   createNewDispatch: jest.fn(),
   approveDispatchByMpin: jest.fn(),
   markDispatchDelivered: jest.fn(),
 }));
 
-const dispatchService = require('../modules/dispatch/dispatch.service');
-const controller = require('../modules/dispatch/dispatch.controller');
+const dispatchService = require('./dispatch.service');
+const controller = require('./dispatch.controller');
 
 const mockRes = () => ({
   status: jest.fn().mockReturnThis(),
@@ -95,6 +95,15 @@ describe('dispatch.controller', () => {
       await controller.approveDispatch(req, res);
       expect(res.status).toHaveBeenCalledWith(401);
     });
+
+    test('defaults to 500 when error has no statusCode', async () => {
+      dispatchService.approveDispatchByMpin.mockRejectedValue(new Error('db down'));
+      req.params = { id: 'N1' };
+      req.body = { mpin: '1234' };
+      
+      await controller.approveDispatch(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+    });
   });
 
   describe('deliverDispatch', () => {
@@ -116,6 +125,14 @@ describe('dispatch.controller', () => {
 
       await controller.deliverDispatch(req, res);
       expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    test('defaults to 500 when error has no statusCode', async () => {
+      dispatchService.markDispatchDelivered.mockRejectedValue(new Error('db down'));
+      req.params = { id: 'N1' };
+      
+      await controller.deliverDispatch(req, res);
+      expect(res.status).toHaveBeenCalledWith(500);
     });
   });
 });

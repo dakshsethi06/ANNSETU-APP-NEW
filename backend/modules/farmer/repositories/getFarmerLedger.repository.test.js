@@ -1,7 +1,7 @@
-const db = require('../config/database');
-const { getFarmerLedger } = require('../modules/farmer/repositories/getFarmerLedger.repository');
+const db = require('../../../config/database');
+const { getFarmerLedger } = require('./getFarmerLedger.repository');
 
-jest.mock('../config/database', () => ({
+jest.mock('../../../config/database', () => ({
   query: jest.fn()
 }));
 

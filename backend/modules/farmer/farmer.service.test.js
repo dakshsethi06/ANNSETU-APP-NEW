@@ -1,26 +1,26 @@
-jest.mock('../modules/farmer/farmer.repository');
-jest.mock('../modules/farmer/farmer.helpers', () => ({
+jest.mock('./farmer.repository');
+jest.mock('./farmer.helpers', () => ({
   buildCsvStatement: jest.fn().mockReturnValue('csv,content'),
   buildPdfStatement: jest.fn(),
 }));
-jest.mock('../shared/notifications/notifications', () => ({
+jest.mock('../../shared/notifications/notifications', () => ({
   logOutboundNotification: jest.fn().mockResolvedValue({}),
   createAppNotification: jest.fn().mockResolvedValue({}),
 }));
-jest.mock('../shared/utils/otpUtils', () => ({
+jest.mock('../../shared/utils/otpUtils', () => ({
   verifySupabaseOtp: jest.fn(),
 }));
 
-const farmerRepository = require('../modules/farmer/farmer.repository');
-const farmerHelpers = require('../modules/farmer/farmer.helpers');
-const farmerConstants = require('../modules/farmer/farmer.constants');
-const { verifySupabaseOtp } = require('../shared/utils/otpUtils');
+const farmerRepository = require('./farmer.repository');
+const farmerHelpers = require('./farmer.helpers');
+const farmerConstants = require('./farmer.constants');
+const { verifySupabaseOtp } = require('../../shared/utils/otpUtils');
 const {
   logOutboundNotification,
   createAppNotification,
-} = require('../shared/notifications/notifications');
-const { hashMpin } = require('../shared/utils/mpinUtils');
-const service = require('../modules/farmer/farmer.service');
+} = require('../../shared/notifications/notifications');
+const { hashMpin } = require('../../shared/utils/mpinUtils');
+const service = require('./farmer.service');
 
 describe('farmer.service', () => {
   beforeEach(() => {

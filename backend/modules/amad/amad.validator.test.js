@@ -1,4 +1,4 @@
-const { validateCreateAmad } = require('../modules/amad/amad.validator');
+const { validateCreateAmad } = require('./amad.validator');
 
 describe('validateCreateAmad', () => {
   let req, res, next;

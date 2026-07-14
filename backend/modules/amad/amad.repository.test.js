@@ -1,13 +1,13 @@
-jest.mock('../config/database', () => ({
+jest.mock('../../config/database', () => ({
   query: jest.fn(),
 }));
 
-const db = require('../config/database');
+const db = require('../../config/database');
 const {
   createAmadLot,
   getFarmer,
   getHoldingsData,
-} = require('../modules/amad/amad.repository');
+} = require('./amad.repository');
 
 describe('amad.repository', () => {
   beforeEach(() => {

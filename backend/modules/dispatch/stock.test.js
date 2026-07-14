@@ -1,14 +1,14 @@
-const dispatchRepo = require('../modules/dispatch/dispatch.repository');
-const { createNewDispatch } = require('../modules/dispatch/dispatch.service');
+const dispatchRepo = require('./dispatch.repository');
+const { createNewDispatch } = require('./dispatch.service');
 
-jest.mock('../modules/dispatch/dispatch.repository', () => ({
+jest.mock('./dispatch.repository', () => ({
   getActiveLotForDispatch: jest.fn(),
   verifyColdStorage: jest.fn(),
   getColdStorageName: jest.fn(),
   insertDispatch: jest.fn()
 }));
 
-jest.mock('../shared/notifications/notifications', () => ({
+jest.mock('../../shared/notifications/notifications', () => ({
   createAppNotification: jest.fn()
 }));
 

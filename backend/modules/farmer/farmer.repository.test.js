@@ -1,7 +1,7 @@
-jest.mock('../config/database', () => ({ query: jest.fn() }));
+jest.mock('../../config/database', () => ({ query: jest.fn() }));
 
-const db = require('../config/database');
-const repo = require('../modules/farmer/farmer.repository');
+const db = require('../../config/database');
+const repo = require('./farmer.repository');
 
 describe('farmer.repository (main)', () => {
   beforeEach(() => jest.clearAllMocks());

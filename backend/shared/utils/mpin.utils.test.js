@@ -1,4 +1,4 @@
-const { hashMpin, verifyMpin } = require('../shared/utils/mpinUtils');
+const { hashMpin, verifyMpin } = require('./mpinUtils');
 
 describe('mpinUtils', () => {
   describe('hashMpin', () => {

@@ -1,18 +1,18 @@
-const db = require('../config/database');
-const paymentRepository = require('../modules/payment/payment.repository');
-const razorpayService = require('../modules/payment/razorpay.service');
-const createOrder = require('../modules/payment/payment.create.controller');
+const db = require('../../config/database');
+const paymentRepository = require('./payment.repository');
+const razorpayService = require('./razorpay.service');
+const createOrder = require('./payment.create.controller');
 
-jest.mock('../config/database', () => ({
+jest.mock('../../config/database', () => ({
   query: jest.fn()
 }));
 
-jest.mock('../modules/payment/payment.repository', () => ({
+jest.mock('./payment.repository', () => ({
   getFarmerPendingRent: jest.fn(),
   createPendingPayment: jest.fn()
 }));
 
-jest.mock('../modules/payment/razorpay.service', () => ({
+jest.mock('./razorpay.service', () => ({
   isMockMode: jest.fn(),
   createOrder: jest.fn(),
   createPaymentLink: jest.fn(),

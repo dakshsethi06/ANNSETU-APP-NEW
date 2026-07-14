@@ -2,7 +2,7 @@ const {
   validateCreateOrder,
   validateInitiatePayment,
   validateGetPaymentDetails,
-} = require('../modules/payment/payment.validator');
+} = require('./payment.validator');
 
 const mockRes = () => ({ status: jest.fn().mockReturnThis(), json: jest.fn() });
 

@@ -1,11 +1,11 @@
 jest.mock('axios');
-jest.mock('../config', () => ({
+jest.mock('../../config', () => ({
   supabaseUrl: 'https://test.supabase.co',
   supabaseAnonKey: 'test-anon-key',
 }));
 
 const axios = require('axios');
-const { verifySupabaseOtp } = require('../shared/utils/otpUtils');
+const { verifySupabaseOtp } = require('./otpUtils');
 
 describe('verifySupabaseOtp', () => {
   beforeEach(() => {

@@ -1,10 +1,10 @@
-jest.mock('../config/database', () => ({ query: jest.fn() }));
+jest.mock('../../config/database', () => ({ query: jest.fn() }));
 
-const db = require('../config/database');
-const { getFarmersData } = require('../modules/farmer/repositories/getFarmersData.repository');
-const { getFarmerByPhone } = require('../modules/farmer/repositories/getFarmerByPhone.repository');
-const { getFarmerLedger } = require('../modules/farmer/repositories/getFarmerLedger.repository');
-const { createFarmerRecord } = require('../modules/farmer/repositories/createFarmerRecord.repository');
+const db = require('../../config/database');
+const { getFarmersData } = require('./repositories/getFarmersData.repository');
+const { getFarmerByPhone } = require('./repositories/getFarmerByPhone.repository');
+const { getFarmerLedger } = require('./repositories/getFarmerLedger.repository');
+const { createFarmerRecord } = require('./repositories/createFarmerRecord.repository');
 
 describe('farmer sub-repositories', () => {
   beforeEach(() => jest.clearAllMocks());
