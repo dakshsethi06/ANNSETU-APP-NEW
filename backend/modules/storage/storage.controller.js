@@ -24,6 +24,9 @@ async function registerColdStorage(req, res) {
 
 async function getSummary(req, res) {
   try {
+    if (!req.query.coldStorageId) {
+      return res.status(400).json({ success: false, error: 'coldStorageId query parameter is required.' });
+    }
     const summary = await storageService.fetchStorageSummary(req.query.coldStorageId);
     if (!summary) {
       return res.status(404).json({ success: false, error: 'Cold storage not found.' });

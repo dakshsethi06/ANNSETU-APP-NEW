@@ -90,6 +90,15 @@ describe('storage.controller unit tests', () => {
   });
 
   describe('getSummary', () => {
+    test('returns 400 if coldStorageId is missing', async () => {
+      req = { query: {} };
+      
+      await storageController.getSummary(req, res);
+      
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ success: false, error: 'coldStorageId query parameter is required.' });
+    });
+
     test('returns 200 and summary on success', async () => {
       req = { query: { coldStorageId: 'cs1' } };
       const mockSummary = { coldStorage: { id: 'cs1' } };

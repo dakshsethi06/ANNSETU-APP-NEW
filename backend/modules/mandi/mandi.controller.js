@@ -23,8 +23,10 @@ async function getMandiPrices(req, res) {
       return res.status(404).json({ success: false, error: 'Price data could not be parsed from API response.' });
     }
 
-    const overallMin = Math.min(...prices.map((p) => p.minPrice).filter((v) => v > 0));
-    const overallMax = Math.max(...prices.map((p) => p.maxPrice).filter((v) => v > 0));
+    const validMinPrices = prices.map((p) => p.minPrice).filter((v) => v > 0);
+    const validMaxPrices = prices.map((p) => p.maxPrice).filter((v) => v > 0);
+    const overallMin = validMinPrices.length > 0 ? Math.min(...validMinPrices) : 0;
+    const overallMax = validMaxPrices.length > 0 ? Math.max(...validMaxPrices) : 0;
 
     const paginatedRecords = prices.slice(offset, offset + limit);
 

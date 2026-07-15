@@ -6,13 +6,36 @@ const path = require('path');
 // Track tickets that have already triggered a closure notification to prevent duplicates
 const notifiedClosedTickets = new Set();
 
+async function verifyTicketOwnership(req, res, ticketId) {
+  if (!req.user || !req.user.phone) return true; // Skip if no user phone
+  try {
+    const result = await supportService.getChatMessages(ticketId);
+    if (result.contactPhone) {
+      const cleanTicketPhone = result.contactPhone.replace(/[^0-9]/g, '');
+      const cleanUserPhone = req.user.phone.replace(/[^0-9]/g, '');
+      if (cleanTicketPhone && !cleanTicketPhone.includes(cleanUserPhone) && !cleanUserPhone.includes(cleanTicketPhone)) {
+        res.status(403).json({ success: false, message: 'Forbidden: Ticket belongs to another user.' });
+        return false;
+      }
+    }
+  } catch (error) {
+    // Ignore errors for ownership check, let the main controller handle missing tickets
+  }
+  return true;
+}
+
 /**
  * Start a new live chat session.
  * Creates a Zoho Desk ticket and returns the ticket ID.
  */
 async function startChat(req, res) {
   try {
-    const { name, phone, subject, description } = req.body;
+    let { name, phone, subject, description } = req.body;
+    
+    // Force phone to user's phone if authenticated
+    if (req.user && req.user.phone) {
+      phone = req.user.phone;
+    }
 
     // Operational hours validation (9:00 AM to 10:00 PM IST, Monday - Friday)
     const now = new Date();
@@ -58,6 +81,8 @@ async function sendChatMessage(req, res) {
   try {
     const { ticketId } = req.params;
     const { message, senderName, attachment } = req.body;
+
+    if (!(await verifyTicketOwnership(req, res, ticketId))) return;
 
     let finalMessage = message || '';
 
@@ -109,6 +134,8 @@ async function sendChatMessage(req, res) {
 async function getChatMessages(req, res) {
   try {
     const { ticketId } = req.params;
+
+    if (!(await verifyTicketOwnership(req, res, ticketId))) return;
 
     const result = await supportService.getChatMessages(ticketId);
     
@@ -163,6 +190,7 @@ async function getChatMessages(req, res) {
 async function closeChatSession(req, res) {
   try {
     const { ticketId } = req.params;
+    if (!(await verifyTicketOwnership(req, res, ticketId))) return;
     await supportService.closeTicket(ticketId);
     return res.status(200).json({
       success: true,
@@ -185,6 +213,10 @@ async function getActiveChatSession(req, res) {
     const { phone } = req.query;
     if (!phone) {
       return res.status(400).json({ success: false, message: 'Phone number is required.' });
+    }
+
+    if (req.user && req.user.phone && req.user.phone !== phone) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Cannot access chat sessions of another user.' });
     }
 
     const tickets = await supportService.listTickets(phone);
@@ -222,6 +254,7 @@ async function submitChatFeedback(req, res) {
   try {
     const { ticketId } = req.params;
     const { rating, senderName } = req.body;
+    if (!(await verifyTicketOwnership(req, res, ticketId))) return;
     if (!rating) {
       return res.status(400).json({ success: false, message: 'Rating is required.' });
     }

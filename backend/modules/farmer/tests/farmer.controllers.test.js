@@ -610,8 +610,14 @@ describe('Farmer Controllers', () => {
   });
 
   describe('updateFarmer controller', () => {
+    it('returns 403 if user tries to update another profile', async () => {
+      req = { params: { id: 'F1' }, user: { id: 'F2' }, body: {} };
+      await updateFarmer(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
     it('returns 404 if farmer is not found', async () => {
-      req = { params: { id: 'F1' }, body: {} };
+      req = { params: { id: 'F1' }, user: { id: 'F1' }, body: {} };
       farmerRepository.getFarmerBasicDetails.mockResolvedValue(null);
       await updateFarmer(req, res);
       expect(res.status).toHaveBeenCalledWith(404);

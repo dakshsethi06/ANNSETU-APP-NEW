@@ -3,6 +3,12 @@ const farmerConstants = require('../farmer.constants');
 
 async function updateFarmer(req, res) {
   const { id } = req.params;
+  
+  // Ensure the user is only updating their own profile
+  if (req.user && String(req.user.id) !== String(id)) {
+    return res.status(403).json({ success: false, error: 'Forbidden: Cannot update another user\'s profile.' });
+  }
+
   const { name, phone, email, aadhaarNumber, panNumber } = req.body;
 
   try {

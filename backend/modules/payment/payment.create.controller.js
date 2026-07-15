@@ -1,12 +1,19 @@
 const farmerRepository = require('../farmer/farmer.repository');
 const paymentRepository = require('./payment.repository');
 const razorpayService = require('./razorpay.service');
+const db = require('../../config/database');
 
 async function createOrder(req, res) {
   console.log('[Create Order API] Incoming body received');
-  const { farmerId, amount } = req.body;
+  let { farmerId, amount } = req.body;
+  
+  if (req.user && req.user.id) {
+    farmerId = req.user.id;
+  }
 
+  const client = await db.connect();
   try {
+    await client.query('BEGIN');
     let farmerName = 'Farmer Partner';
     let farmerPhone = '9876543210';
     let resolvedColdStorageId = null;
@@ -34,13 +41,19 @@ async function createOrder(req, res) {
 
     let finalAmount = amount ? parseFloat(amount) : 0;
     console.log('[Create Order API] parsed finalAmount:', finalAmount);
+    
+    // Acquire a lock on the farmer's pending transactions to prevent race conditions
+    const lockRes = await client.query(
+      `SELECT COALESCE(SUM("balanceDueAmount"), 0) AS "pendingRent" FROM "NikasiTransaction" WHERE "farmerId" = $1 FOR UPDATE`,
+      [farmerId]
+    );
+    const pendingDues = parseFloat(lockRes.rows[0]?.pendingRent || 0);
+    
     if (!finalAmount) {
-      finalAmount = await paymentRepository.getFarmerPendingRent(farmerId);
+      finalAmount = pendingDues;
       console.log('[Create Order API] fallback to pending rent:', finalAmount);
     }
     
-    // Capping logic check: if partial payment amount is greater than pending dues, cap it to pending dues
-    const pendingDues = await paymentRepository.getFarmerPendingRent(farmerId);
     console.log('[Create Order API] farmer pendingDues:', pendingDues);
     if (finalAmount > pendingDues) {
       console.log('[Create Order API] Capping payment amount from:', finalAmount, 'to pendingDues:', pendingDues);
@@ -48,6 +61,8 @@ async function createOrder(req, res) {
     }
 
     if (finalAmount <= 0) {
+      await client.query('ROLLBACK');
+      client.release();
       return res.status(400).json({ success: false, error: 'No pending rent balance to pay.' });
     }
 
@@ -103,6 +118,9 @@ async function createOrder(req, res) {
       coldStorageId: resolvedColdStorageId
     });
 
+    await client.query('COMMIT');
+    client.release();
+
     return res.json({
       success: true,
       order_id: orderId,
@@ -112,6 +130,8 @@ async function createOrder(req, res) {
       payment_link_url: paymentLinkUrl
     });
   } catch (error) {
+    await client.query('ROLLBACK');
+    client.release();
     console.error('Razorpay createOrder error');
     return res.status(500).json({ success: false, error: error.message || 'Failed to create payment order.' });
   }

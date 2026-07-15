@@ -4,7 +4,18 @@ const razorpayService = require('../razorpay.service');
 const createOrder = require('../payment.create.controller');
 
 jest.mock('../../../config/database', () => ({
-  query: jest.fn()
+  query: jest.fn(),
+  connect: jest.fn().mockImplementation(() => Promise.resolve({
+    query: jest.fn().mockImplementation((queryStr) => {
+      if (queryStr.includes('FOR UPDATE')) {
+        // Just return a mock value that can be overridden in tests, or we can look up the mock of getFarmerPendingRent
+        const paymentRepo = require('../payment.repository');
+        return paymentRepo.getFarmerPendingRent().then(val => ({ rows: [{ pendingRent: val }] }));
+      }
+      return Promise.resolve({ rows: [] });
+    }),
+    release: jest.fn()
+  }))
 }));
 
 jest.mock('../payment.repository', () => ({
@@ -251,5 +262,21 @@ describe('Payment Checkout Capping Unit Tests', () => {
 
     // Should return 400 because coldStorageId will be missing
     expect(mockRes.status).toHaveBeenCalledWith(400);
+  });
+
+  test('should use req.user.id as farmerId if present', async () => {
+    mockReq.user = { id: 'farmer_user_123' };
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
+    farmerRepository.getFarmerBasicDetails.mockResolvedValue({ name: 'Farmer Ram', coldStorageId: 'CS1' });
+    razorpayService.isMockMode.mockReturnValue(true);
+    razorpayService.createOrder.mockResolvedValue({ id: 'order_mock123' });
+
+    await createOrder(mockReq, mockRes);
+
+    // Verify it used req.user.id to query and save
+    expect(farmerRepository.getFarmerBasicDetails).toHaveBeenCalledWith('farmer_user_123');
+    expect(paymentRepository.createPendingPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ farmerId: 'farmer_user_123' })
+    );
   });
 });

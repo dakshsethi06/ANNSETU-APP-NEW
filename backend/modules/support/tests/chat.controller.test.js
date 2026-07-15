@@ -65,6 +65,17 @@ describe('chat.controller unit tests', () => {
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
+    test('forces user phone if authenticated', async () => {
+      req = { body: { name: 'Ram', phone: '9876543210' }, user: { phone: '1111111111' } };
+      supportService.createTicket.mockResolvedValueOnce({ zohoId: 'zoho_123' });
+
+      await chatController.startChat(req, res);
+
+      expect(supportService.createTicket).toHaveBeenCalledWith(expect.objectContaining({
+        phone: '1111111111'
+      }));
+    });
+
     test('succeeds and creates ticket during working hours', async () => {
       req = { body: { name: 'Ram', phone: '9876543210', subject: 'Login problem', description: 'Cannot log in' } };
       supportService.createTicket.mockResolvedValueOnce({ zohoId: 'zoho_123', ticketId: '9988' });
@@ -129,6 +140,43 @@ describe('chat.controller unit tests', () => {
   });
 
   describe('sendChatMessage', () => {
+    test('ignores errors in verifyTicketOwnership and proceeds', async () => {
+      req = { params: { ticketId: 't-error' }, user: { phone: '1111111111' }, body: { message: 'hello', senderName: 'Farmer' } };
+      supportService.getChatMessages.mockRejectedValueOnce(new Error('Ignore this error'));
+      await chatController.sendChatMessage(req, res);
+      
+      expect(supportService.addChatMessage).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    test('returns 403 if ticket belongs to another user', async () => {
+      req = { params: { ticketId: 't1' }, user: { phone: '1111111111' }, body: {} };
+      supportService.getChatMessages.mockResolvedValueOnce({ contactPhone: '2222222222' });
+      await chatController.sendChatMessage(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    test('allows access if ticket has no contactPhone', async () => {
+      req = { params: { ticketId: 't-no-phone' }, user: { phone: '1111111111' }, body: { message: 'hello' } };
+      supportService.getChatMessages.mockResolvedValueOnce({ contactPhone: null });
+      await chatController.sendChatMessage(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    test('allows access if ticket contactPhone has no numbers', async () => {
+      req = { params: { ticketId: 't-letters' }, user: { phone: '1111111111' }, body: { message: 'hello' } };
+      supportService.getChatMessages.mockResolvedValueOnce({ contactPhone: 'abc' });
+      await chatController.sendChatMessage(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    test('allows access if user phone matches ticket phone', async () => {
+      req = { params: { ticketId: 't-match' }, user: { phone: '1111111111' }, body: { message: 'hello' } };
+      supportService.getChatMessages.mockResolvedValueOnce({ contactPhone: '+91 1111 111 111' });
+      await chatController.sendChatMessage(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
     test('returns 400 if message and attachment are missing', async () => {
       req = { params: { ticketId: 't1' }, body: {} };
 
@@ -218,6 +266,13 @@ describe('chat.controller unit tests', () => {
   });
 
   describe('getChatMessages', () => {
+    test('returns 403 if ticket belongs to another user', async () => {
+      req = { params: { ticketId: 't1' }, user: { phone: '1111111111' } };
+      supportService.getChatMessages.mockResolvedValueOnce({ contactPhone: '2222222222' });
+      await chatController.getChatMessages(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
     test('returns chat messages successfully with user and agent name fallbacks', async () => {
       req = { params: { ticketId: 't1' } };
       supportService.getChatMessages.mockResolvedValueOnce({
@@ -359,6 +414,13 @@ describe('chat.controller unit tests', () => {
   });
 
   describe('closeChatSession', () => {
+    test('returns 403 if ticket belongs to another user', async () => {
+      req = { params: { ticketId: 't1' }, user: { phone: '1111111111' } };
+      supportService.getChatMessages.mockResolvedValueOnce({ contactPhone: '2222222222' });
+      await chatController.closeChatSession(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
     test('closes session and returns 200', async () => {
       req = { params: { ticketId: 't1' } };
 
@@ -395,6 +457,12 @@ describe('chat.controller unit tests', () => {
       await chatController.getActiveChatSession(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    test('returns 403 when user.phone does not match query phone', async () => {
+      req = { query: { phone: '9876543210' }, user: { phone: '1111111111' } };
+      await chatController.getActiveChatSession(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
     });
 
     test('returns active true when active chat ticket is found', async () => {
@@ -449,6 +517,13 @@ describe('chat.controller unit tests', () => {
   });
 
   describe('submitChatFeedback', () => {
+    test('returns 403 if ticket belongs to another user', async () => {
+      req = { params: { ticketId: 't1' }, user: { phone: '1111111111' }, body: {} };
+      supportService.getChatMessages.mockResolvedValueOnce({ contactPhone: '2222222222' });
+      await chatController.submitChatFeedback(req, res);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
     test('returns 400 when rating is missing', async () => {
       req = { params: { ticketId: 't1' }, body: {} };
 

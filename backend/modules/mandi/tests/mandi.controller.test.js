@@ -68,6 +68,24 @@ describe('Mandi Controller', () => {
     );
   });
 
+  it('should successfully return 0 for minPrice and maxPrice when all prices are 0 or less', async () => {
+    const mockPrices = [
+      { minPrice: 0, maxPrice: 0 },
+      { minPrice: -50, maxPrice: -100 }
+    ];
+    mandiService.fetchMandiPrices.mockResolvedValue(mockPrices);
+
+    await getMandiPrices(req, res);
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        summary: { minPrice: 0, maxPrice: 0, totalRecords: 2 },
+        records: mockPrices
+      })
+    );
+  });
+
   it('should return 404 if no prices found', async () => {
     mandiService.fetchMandiPrices.mockResolvedValue(null);
 
