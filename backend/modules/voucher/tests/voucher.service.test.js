@@ -33,7 +33,7 @@ describe('Voucher Service Tests', () => {
       expect(result.voucher).toEqual(mockVoucher);
     });
 
-    test('caps flat discount to order amount if amount is less than discount value', async () => {
+    test('throws error if flat discount value is greater than payment amount', async () => {
       const mockVoucher = {
         code: 'FLAT200',
         type: 'FLAT',
@@ -46,9 +46,9 @@ describe('Voucher Service Tests', () => {
       };
       voucherRepository.getVoucherByCode.mockResolvedValueOnce(mockVoucher);
 
-      const result = await voucherService.validateAndCalculateDiscount('FLAT200', 'F1', 120);
-      expect(result.discountAmount).toBe(120);
-      expect(result.netAmount).toBe(0);
+      await expect(
+        voucherService.validateAndCalculateDiscount('FLAT200', 'F1', 120)
+      ).rejects.toThrow('Minimum payment amount of Rs. 200 is required to use this voucher.');
     });
 
     test('calculates percentage discount correctly', async () => {

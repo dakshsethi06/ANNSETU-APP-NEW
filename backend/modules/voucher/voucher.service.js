@@ -32,6 +32,12 @@ async function validateAndCalculateDiscount(code, farmerId, amount, coldStorageI
     throw new Error(`Order amount is below the minimum required amount of Rs. ${minOrderAmount}.`);
   }
 
+  // Value check: payment amount must be at least the flat voucher value
+  const value = parseFloat(voucher.value || 0);
+  if ((voucher.type === 'FLAT' || voucher.type === 'CREDIT_NOTE') && parsedAmount < value) {
+    throw new Error(`Minimum payment amount of Rs. ${value} is required to use this voucher.`);
+  }
+
   // 5. Validate cold storage specific constraint
   if (voucher.coldStorageId && coldStorageId && voucher.coldStorageId !== coldStorageId) {
     throw new Error('Voucher is not valid for this cold storage.');
@@ -43,7 +49,6 @@ async function validateAndCalculateDiscount(code, farmerId, amount, coldStorageI
   }
 
   // Calculate discount amount
-  const value = parseFloat(voucher.value || 0);
   let discountAmount = 0;
 
   if (voucher.type === 'FLAT' || voucher.type === 'CREDIT_NOTE') {
@@ -100,9 +105,11 @@ async function redeemVoucherTransaction(code, farmerId, amount, orderId, client)
     throw new Error('Voucher usage limit has been reached.');
   }
 
-  // Recalculate discount
   const parsedAmount = parseFloat(amount || 0);
   const value = parseFloat(voucher.value || 0);
+  if ((voucher.type === 'FLAT' || voucher.type === 'CREDIT_NOTE') && parsedAmount < value) {
+    throw new Error(`Minimum payment amount of Rs. ${value} is required to use this voucher.`);
+  }
   let discountAmount = 0;
 
   if (voucher.type === 'FLAT' || voucher.type === 'CREDIT_NOTE') {

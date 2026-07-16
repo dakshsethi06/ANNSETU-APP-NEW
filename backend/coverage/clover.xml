@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1784212952031" clover="3.2.0">
-  <project timestamp="1784212952031" name="All files">
-    <metrics statements="2765" coveredstatements="2765" conditionals="1916" coveredconditionals="1914" methods="298" coveredmethods="298" elements="4979" coveredelements="4977" complexity="0" loc="2765" ncloc="2765" packages="20" files="102" classes="102"/>
+<coverage generated="1784213300392" clover="3.2.0">
+  <project timestamp="1784213300392" name="All files">
+    <metrics statements="2769" coveredstatements="2768" conditionals="1926" coveredconditionals="1923" methods="298" coveredmethods="298" elements="4993" coveredelements="4989" complexity="0" loc="2769" ncloc="2769" packages="20" files="102" classes="102"/>
     <package name="modules.amad">
       <metrics statements="58" coveredstatements="58" conditionals="32" coveredconditionals="32" methods="9" coveredmethods="9"/>
       <file name="amad.controller.js" path="D:\DAKSH\neww-app\backend\modules\amad\amad.controller.js">
@@ -2639,7 +2639,7 @@
       </file>
     </package>
     <package name="modules.voucher">
-      <metrics statements="149" coveredstatements="149" conditionals="107" coveredconditionals="105" methods="11" coveredmethods="11"/>
+      <metrics statements="153" coveredstatements="152" conditionals="117" coveredconditionals="114" methods="11" coveredmethods="11"/>
       <file name="voucher.controller.js" path="D:\DAKSH\neww-app\backend\modules\voucher\voucher.controller.js">
         <metrics statements="44" coveredstatements="44" conditionals="10" coveredconditionals="9" methods="2" coveredmethods="2"/>
         <line num="1" count="2" type="stmt"/>
@@ -2720,7 +2720,7 @@
         <line num="10" count="1" type="stmt"/>
       </file>
       <file name="voucher.service.js" path="D:\DAKSH\neww-app\backend\modules\voucher\voucher.service.js">
-        <metrics statements="70" coveredstatements="70" conditionals="73" coveredconditionals="73" methods="2" coveredmethods="2"/>
+        <metrics statements="74" coveredstatements="73" conditionals="83" coveredconditionals="82" methods="2" coveredmethods="2"/>
         <line num="1" count="8" type="stmt"/>
         <line num="4" count="15" type="stmt"/>
         <line num="5" count="15" type="cond" truecount="2" falsecount="0"/>
@@ -2739,58 +2739,62 @@
         <line num="30" count="11" type="cond" truecount="2" falsecount="0"/>
         <line num="31" count="11" type="cond" truecount="2" falsecount="0"/>
         <line num="32" count="1" type="stmt"/>
-        <line num="36" count="10" type="cond" truecount="5" falsecount="0"/>
-        <line num="37" count="1" type="stmt"/>
-        <line num="41" count="9" type="cond" truecount="5" falsecount="0"/>
-        <line num="42" count="1" type="stmt"/>
-        <line num="46" count="8" type="cond" truecount="2" falsecount="0"/>
-        <line num="47" count="8" type="stmt"/>
-        <line num="49" count="8" type="cond" truecount="4" falsecount="0"/>
-        <line num="50" count="4" type="stmt"/>
-        <line num="51" count="4" type="cond" truecount="2" falsecount="0"/>
-        <line num="52" count="3" type="stmt"/>
-        <line num="53" count="3" type="cond" truecount="2" falsecount="0"/>
-        <line num="54" count="2" type="stmt"/>
-        <line num="55" count="2" type="stmt"/>
-        <line num="57" count="1" type="stmt"/>
-        <line num="59" count="3" type="stmt"/>
-        <line num="61" count="1" type="stmt"/>
-        <line num="65" count="7" type="stmt"/>
-        <line num="66" count="7" type="stmt"/>
-        <line num="68" count="7" type="stmt"/>
-        <line num="76" count="10" type="cond" truecount="2" falsecount="0"/>
-        <line num="77" count="1" type="stmt"/>
-        <line num="81" count="9" type="stmt"/>
-        <line num="82" count="9" type="cond" truecount="2" falsecount="0"/>
-        <line num="83" count="1" type="stmt"/>
-        <line num="87" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="36" count="10" type="cond" truecount="2" falsecount="0"/>
+        <line num="37" count="10" type="cond" truecount="5" falsecount="0"/>
+        <line num="38" count="1" type="stmt"/>
+        <line num="42" count="9" type="cond" truecount="5" falsecount="0"/>
+        <line num="43" count="1" type="stmt"/>
+        <line num="47" count="8" type="cond" truecount="5" falsecount="0"/>
+        <line num="48" count="1" type="stmt"/>
+        <line num="52" count="7" type="stmt"/>
+        <line num="54" count="7" type="cond" truecount="4" falsecount="0"/>
+        <line num="55" count="3" type="stmt"/>
+        <line num="56" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="57" count="3" type="stmt"/>
+        <line num="58" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="59" count="2" type="stmt"/>
+        <line num="60" count="2" type="stmt"/>
+        <line num="62" count="1" type="stmt"/>
+        <line num="64" count="3" type="stmt"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="70" count="6" type="stmt"/>
+        <line num="71" count="6" type="stmt"/>
+        <line num="73" count="6" type="stmt"/>
+        <line num="81" count="10" type="cond" truecount="2" falsecount="0"/>
+        <line num="82" count="1" type="stmt"/>
+        <line num="86" count="9" type="stmt"/>
+        <line num="87" count="9" type="cond" truecount="2" falsecount="0"/>
         <line num="88" count="1" type="stmt"/>
-        <line num="91" count="7" type="stmt"/>
-        <line num="92" count="7" type="stmt"/>
-        <line num="93" count="7" type="cond" truecount="2" falsecount="0"/>
-        <line num="94" count="1" type="stmt"/>
-        <line num="97" count="6" type="cond" truecount="4" falsecount="0"/>
-        <line num="98" count="6" type="cond" truecount="4" falsecount="0"/>
-        <line num="99" count="6" type="cond" truecount="2" falsecount="0"/>
-        <line num="100" count="1" type="stmt"/>
-        <line num="104" count="5" type="cond" truecount="2" falsecount="0"/>
-        <line num="105" count="5" type="cond" truecount="2" falsecount="0"/>
-        <line num="106" count="5" type="stmt"/>
-        <line num="108" count="5" type="cond" truecount="4" falsecount="0"/>
-        <line num="109" count="2" type="stmt"/>
-        <line num="110" count="3" type="cond" truecount="2" falsecount="0"/>
-        <line num="111" count="2" type="stmt"/>
-        <line num="112" count="2" type="cond" truecount="2" falsecount="0"/>
-        <line num="113" count="1" type="stmt"/>
-        <line num="114" count="1" type="stmt"/>
-        <line num="116" count="1" type="stmt"/>
+        <line num="92" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="93" count="1" type="stmt"/>
+        <line num="96" count="7" type="stmt"/>
+        <line num="97" count="7" type="stmt"/>
+        <line num="98" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="99" count="1" type="stmt"/>
+        <line num="102" count="6" type="cond" truecount="4" falsecount="0"/>
+        <line num="103" count="6" type="cond" truecount="4" falsecount="0"/>
+        <line num="104" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="105" count="1" type="stmt"/>
+        <line num="108" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="109" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="110" count="5" type="cond" truecount="4" falsecount="1"/>
+        <line num="111" count="0" type="stmt"/>
+        <line num="113" count="5" type="stmt"/>
+        <line num="115" count="5" type="cond" truecount="4" falsecount="0"/>
+        <line num="116" count="2" type="stmt"/>
+        <line num="117" count="3" type="cond" truecount="2" falsecount="0"/>
         <line num="118" count="2" type="stmt"/>
+        <line num="119" count="2" type="cond" truecount="2" falsecount="0"/>
         <line num="120" count="1" type="stmt"/>
-        <line num="123" count="4" type="stmt"/>
-        <line num="126" count="4" type="stmt"/>
-        <line num="129" count="4" type="stmt"/>
+        <line num="121" count="1" type="stmt"/>
+        <line num="123" count="1" type="stmt"/>
+        <line num="125" count="2" type="stmt"/>
+        <line num="127" count="1" type="stmt"/>
+        <line num="130" count="4" type="stmt"/>
+        <line num="133" count="4" type="stmt"/>
         <line num="136" count="4" type="stmt"/>
-        <line num="139" count="8" type="stmt"/>
+        <line num="143" count="4" type="stmt"/>
+        <line num="146" count="8" type="stmt"/>
       </file>
       <file name="voucher.validator.js" path="D:\DAKSH\neww-app\backend\modules\voucher\voucher.validator.js">
         <metrics statements="9" coveredstatements="9" conditionals="2" coveredconditionals="2" methods="2" coveredmethods="2"/>
