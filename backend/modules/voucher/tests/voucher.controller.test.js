@@ -175,5 +175,28 @@ describe('Voucher Controller Tests', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Redemption error' });
     });
+
+    // Covers line 144 — the inner catch block that runs when the ROLLBACK query
+    // itself throws (e.g. the DB connection is already dead when the outer catch fires).
+    // The controller must still return the original error and release the pool connection.
+    test('still returns 400 and releases client if ROLLBACK itself throws', async () => {
+      req.body = { voucherCode: 'SAVE100', amount: 100, farmerId: 'F1' };
+      farmerRepository.getFarmerBasicDetails.mockResolvedValueOnce({ id: 'F1', coldStorageId: 'CS1' });
+      voucherService.validateAndCalculateDiscount.mockResolvedValueOnce({ netAmount: 0 });
+      voucherService.redeemVoucherTransaction.mockRejectedValueOnce(new Error('DB write failed'));
+
+      // BEGIN succeeds, but ROLLBACK throws (dead connection scenario)
+      mockClient.query
+        .mockResolvedValueOnce({ rows: [] })         // BEGIN
+        .mockRejectedValueOnce(new Error('Connection terminated')); // ROLLBACK throws
+
+      await voucherController.redeemVoucher(req, res);
+
+      // Original error is still returned, not the ROLLBACK error
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ success: false, error: 'DB write failed' });
+      // Pool connection must still be released even when ROLLBACK fails
+      expect(mockClient.release).toHaveBeenCalled();
+    });
   });
 });

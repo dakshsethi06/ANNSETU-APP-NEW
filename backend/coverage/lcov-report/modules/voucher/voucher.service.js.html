@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">98.64% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>73/74</span>
+                <span class='fraction'>70/70</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">98.79% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>82/83</span>
+                <span class='fraction'>73/73</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">98.64% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>73/74</span>
+                <span class='fraction'>70/70</span>
             </div>
         
             
@@ -205,14 +205,7 @@
 <a name='L140'></a><a href='#L140'>140</a>
 <a name='L141'></a><a href='#L141'>141</a>
 <a name='L142'></a><a href='#L142'>142</a>
-<a name='L143'></a><a href='#L143'>143</a>
-<a name='L144'></a><a href='#L144'>144</a>
-<a name='L145'></a><a href='#L145'>145</a>
-<a name='L146'></a><a href='#L146'>146</a>
-<a name='L147'></a><a href='#L147'>147</a>
-<a name='L148'></a><a href='#L148'>148</a>
-<a name='L149'></a><a href='#L149'>149</a>
-<a name='L150'></a><a href='#L150'>150</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">8x</span>
+<a name='L143'></a><a href='#L143'>143</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">15x</span>
@@ -248,7 +241,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">10x</span>
-<span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -259,14 +251,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
@@ -281,10 +269,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -319,11 +307,9 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
@@ -395,12 +381,6 @@ async function validateAndCalculateDiscount(code, farmerId, amount, coldStorageI
     throw new Error(`Order amount is below the minimum required amount of Rs. ${minOrderAmount}.`);
   }
 &nbsp;
-  // Value check: payment amount must be at least the flat voucher value
-  const value = parseFloat(voucher.value || 0);
-  if ((voucher.type === 'FLAT' || voucher.type === 'CREDIT_NOTE') &amp;&amp; parsedAmount &lt; value) {
-    throw new Error(`Minimum payment amount of Rs. ${value} is required to use this voucher.`);
-  }
-&nbsp;
   // 5. Validate cold storage specific constraint
   if (voucher.coldStorageId &amp;&amp; coldStorageId &amp;&amp; voucher.coldStorageId !== coldStorageId) {
     throw new Error('Voucher is not valid for this cold storage.');
@@ -412,6 +392,7 @@ async function validateAndCalculateDiscount(code, farmerId, amount, coldStorageI
   }
 &nbsp;
   // Calculate discount amount
+  const value = parseFloat(voucher.value || 0);
   let discountAmount = 0;
 &nbsp;
   if (voucher.type === 'FLAT' || voucher.type === 'CREDIT_NOTE') {
@@ -468,11 +449,9 @@ async function redeemVoucherTransaction(code, farmerId, amount, orderId, client)
     throw new Error('Voucher usage limit has been reached.');
   }
 &nbsp;
+  // Recalculate discount
   const parsedAmount = parseFloat(amount || 0);
   const value = parseFloat(voucher.value || 0);
-  <span class="missing-if-branch" title="if path not taken" >I</span>if ((voucher.type === 'FLAT' || voucher.type === 'CREDIT_NOTE') &amp;&amp; parsedAmount &lt; value) {
-<span class="cstat-no" title="statement not covered" >    throw new Error(`Minimum payment amount of Rs. ${value} is required to use this voucher.`);</span>
-  }
   let discountAmount = 0;
 &nbsp;
   if (voucher.type === 'FLAT' || voucher.type === 'CREDIT_NOTE') {
@@ -517,7 +496,7 @@ module.exports = {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-16T14:48:20.241Z
+                at 2026-07-16T14:47:23.127Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

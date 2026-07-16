@@ -32,17 +32,25 @@ async function applyVoucher(req, res) {
 }
 
 async function redeemVoucher(req, res) {
-  const { voucherCode, amount, farmerId } = req.body;
+  const { voucherCode, amount, farmerId, orderId } = req.body;
 
   const client = await db.connect();
+  let released = false;
+
+  const release = () => {
+    if (!released) {
+      released = true;
+      client.release();
+    }
+  };
+
   try {
     const farmer = await farmerRepository.getFarmerBasicDetails(farmerId);
     if (!farmer) {
-      client.release();
       return res.status(404).json({ success: false, error: 'Farmer not found.' });
     }
 
-    // Validate and preview first
+    // Validate and preview first (outside transaction — read-only check)
     const preview = await voucherService.validateAndCalculateDiscount(
       voucherCode,
       farmerId,
@@ -50,9 +58,8 @@ async function redeemVoucher(req, res) {
       farmer.coldStorageId
     );
 
-    // Enforce that it covers the full amount for direct ₹0 checkouts
+    // Enforce that the voucher covers the full amount for direct Rs.0 checkouts
     if (preview.netAmount > 0) {
-      client.release();
       return res.status(400).json({
         success: false,
         error: 'Voucher does not cover the full payment amount. Please initiate an online payment instead.'
@@ -61,10 +68,14 @@ async function redeemVoucher(req, res) {
 
     await client.query('BEGIN');
 
-    // Generate unique payment ID
-    const paymentId = 'pay_vchr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    // Use the validated orderId from the request body as the payment anchor.
+    // Falls back to a generated ID only if orderId was not provided (should not
+    // happen given the updated Zod schema, but kept as a safety net).
+    const paymentId = orderId || ('pay_vchr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
 
-    // Redeem the voucher transactionally (locks PromoVoucher, increments usage, inserts PromoVoucherLedger)
+    // Redeem the voucher transactionally (locks PromoVoucher row via FOR UPDATE,
+    // increments usageCount, updates status to EXHAUSTED if limit hit,
+    // and inserts an immutable PromoVoucherLedger row)
     const discountApplied = await voucherService.redeemVoucherTransaction(
       voucherCode,
       farmerId,
@@ -73,7 +84,7 @@ async function redeemVoucher(req, res) {
       client
     );
 
-    // Fetch all pending dues for this farmer and allocate discount
+    // Fetch all pending dues for this farmer (oldest first) and allocate discount
     const txRes = await client.query(
       `SELECT id, "balanceDueAmount", "paidAmount" 
        FROM "NikasiTransaction" 
@@ -121,7 +132,6 @@ async function redeemVoucher(req, res) {
     );
 
     await client.query('COMMIT');
-    client.release();
 
     return res.json({
       success: true,
@@ -129,9 +139,17 @@ async function redeemVoucher(req, res) {
       paymentId: paymentId
     });
   } catch (error) {
-    await client.query('ROLLBACK');
-    client.release();
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackErr) {
+      console.error('[redeemVoucher] ROLLBACK failed:', rollbackErr.message);
+    }
     return res.status(400).json({ success: false, error: error.message });
+  } finally {
+    // Guaranteed to run regardless of success, early return, or exception.
+    // This is the single source of truth for releasing the connection back
+    // to the pool — prevents connection leaks under all code paths.
+    release();
   }
 }
 

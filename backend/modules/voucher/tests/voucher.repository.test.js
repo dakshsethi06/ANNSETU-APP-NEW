@@ -43,6 +43,13 @@ describe('Voucher Repository Tests', () => {
       expect(result).toEqual({ code: 'SAVE50' });
       expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FOR UPDATE'), ['SAVE50']);
     });
+
+    // Covers the `|| null` branch on line 11 — when FOR UPDATE finds no matching row
+    test('returns null if no voucher found for update', async () => {
+      const mockClient = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+      const result = await voucherRepository.getVoucherByCodeForUpdate('NONEXISTENT', mockClient);
+      expect(result).toBeNull();
+    });
   });
 
   describe('incrementVoucherUsage', () => {
