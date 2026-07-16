@@ -10,7 +10,7 @@ jest.mock('../../../config/database', () => ({
       if (queryStr.includes('FOR UPDATE')) {
         // Just return a mock value that can be overridden in tests, or we can look up the mock of getFarmerPendingRent
         const paymentRepo = require('../payment.repository');
-        return paymentRepo.getFarmerPendingRent().then(val => ({ rows: [{ pendingRent: val }] }));
+        return paymentRepo.getFarmerPendingRent().then(val => ({ rows: [{ balanceDueAmount: val }] }));
       }
       return Promise.resolve({ rows: [] });
     }),
@@ -32,6 +32,11 @@ jest.mock('../razorpay.service', () => ({
 
 const farmerRepository = require('../../farmer/farmer.repository');
 jest.mock('../../farmer/farmer.repository');
+
+const voucherService = require('../../voucher/voucher.service');
+jest.mock('../../voucher/voucher.service', () => ({
+  validateAndCalculateDiscount: jest.fn()
+}));
 
 describe('Payment Checkout Capping Unit Tests', () => {
   let mockReq;
@@ -128,6 +133,65 @@ describe('Payment Checkout Capping Unit Tests', () => {
 
     expect(mockRes.status).toHaveBeenCalledWith(400);
     expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'No pending rent balance to pay.' }));
+  });
+
+  test('should apply voucher discount successfully', async () => {
+    mockReq.body.voucherCode = 'SAVE20';
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
+    farmerRepository.getFarmerBasicDetails.mockResolvedValue({ name: 'Farmer Partner', coldStorageId: 'CS1' });
+    voucherService.validateAndCalculateDiscount.mockResolvedValueOnce({
+      discountAmount: 200,
+      netAmount: 800
+    });
+    razorpayService.isMockMode.mockReturnValue(true);
+    razorpayService.createOrder.mockResolvedValue({ id: 'order_mock123' });
+
+    await createOrder(mockReq, mockRes);
+
+    expect(voucherService.validateAndCalculateDiscount).toHaveBeenCalledWith(
+      'SAVE20', 'farmer_123', 1000, 'CS1'
+    );
+    expect(paymentRepository.createPendingPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 800,
+        voucherCode: 'SAVE20',
+        discountAmount: 200
+      })
+    );
+    expect(mockRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 800, success: true })
+    );
+  });
+
+  test('should return 400 if voucher covers the full payment amount', async () => {
+    mockReq.body.voucherCode = 'SAVE1000';
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
+    farmerRepository.getFarmerBasicDetails.mockResolvedValue({ name: 'Farmer Partner', coldStorageId: 'CS1' });
+    voucherService.validateAndCalculateDiscount.mockResolvedValueOnce({
+      discountAmount: 1000,
+      netAmount: 0
+    });
+
+    await createOrder(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Voucher covers the full payment amount. Please redeem it directly.' })
+    );
+  });
+
+  test('should return 400 if voucher validation throws error', async () => {
+    mockReq.body.voucherCode = 'EXPIRED';
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
+    farmerRepository.getFarmerBasicDetails.mockResolvedValue({ name: 'Farmer Partner', coldStorageId: 'CS1' });
+    voucherService.validateAndCalculateDiscount.mockRejectedValueOnce(new Error('Voucher has expired.'));
+
+    await createOrder(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'Voucher has expired.' })
+    );
   });
 
   test('real mode: should create payment link successfully with host routing', async () => {

@@ -2,10 +2,11 @@ const farmerRepository = require('../farmer/farmer.repository');
 const paymentRepository = require('./payment.repository');
 const razorpayService = require('./razorpay.service');
 const db = require('../../config/database');
+const voucherService = require('../voucher/voucher.service');
 
 async function createOrder(req, res) {
   console.log('[Create Order API] Incoming body received');
-  let { farmerId, amount } = req.body;
+  let { farmerId, amount, voucherCode } = req.body;
   
   if (req.user && req.user.id) {
     farmerId = req.user.id;
@@ -36,6 +37,8 @@ async function createOrder(req, res) {
     }
 
     if (!resolvedColdStorageId) {
+      await client.query('ROLLBACK');
+      client.release();
       return res.status(400).json({ success: false, error: 'coldStorageId is required.' });
     }
 
@@ -44,10 +47,10 @@ async function createOrder(req, res) {
     
     // Acquire a lock on the farmer's pending transactions to prevent race conditions
     const lockRes = await client.query(
-      `SELECT COALESCE(SUM("balanceDueAmount"), 0) AS "pendingRent" FROM "NikasiTransaction" WHERE "farmerId" = $1 FOR UPDATE`,
+      `SELECT "balanceDueAmount" FROM "NikasiTransaction" WHERE "farmerId" = $1 FOR UPDATE`,
       [farmerId]
     );
-    const pendingDues = parseFloat(lockRes.rows[0]?.pendingRent || 0);
+    const pendingDues = lockRes.rows.reduce((sum, row) => sum + parseFloat(row.balanceDueAmount || 0), 0);
     
     if (!finalAmount) {
       finalAmount = pendingDues;
@@ -64,6 +67,32 @@ async function createOrder(req, res) {
       await client.query('ROLLBACK');
       client.release();
       return res.status(400).json({ success: false, error: 'No pending rent balance to pay.' });
+    }
+
+    let discountAmount = 0;
+    if (voucherCode) {
+      try {
+        const vResult = await voucherService.validateAndCalculateDiscount(
+          voucherCode,
+          farmerId,
+          finalAmount,
+          resolvedColdStorageId
+        );
+        discountAmount = vResult.discountAmount;
+        finalAmount = vResult.netAmount;
+        if (finalAmount <= 0) {
+          await client.query('ROLLBACK');
+          client.release();
+          return res.status(400).json({
+            success: false,
+            error: 'Voucher covers the full payment amount. Please redeem it directly.'
+          });
+        }
+      } catch (vErr) {
+        await client.query('ROLLBACK');
+        client.release();
+        return res.status(400).json({ success: false, error: vErr.message });
+      }
     }
 
     const amountPaise = Math.round(finalAmount * 100);
@@ -115,7 +144,9 @@ async function createOrder(req, res) {
       farmerId: farmerId,
       amount: finalAmount,
       note: `Online Rent Payment via App for account ${farmerId}`,
-      coldStorageId: resolvedColdStorageId
+      coldStorageId: resolvedColdStorageId,
+      voucherCode: voucherCode || null,
+      discountAmount: discountAmount
     });
 
     await client.query('COMMIT');

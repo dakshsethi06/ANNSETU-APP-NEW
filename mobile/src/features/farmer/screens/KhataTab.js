@@ -31,8 +31,9 @@ export default function KhataTab({ farmerData, holdingsList = [], onPaymentSucce
   const [fullImageUrl, setFullImageUrl] = React.useState('');
   const [imageLoading, setImageLoading] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
+  let childContent;
   if (state.showVerificationForm) {
-    return (
+    childContent = (
       <KhataVerificationView
         lang={state.lang} pendingRent={state.pendingRent} holdingsList={holdingsList}
         utrNumber={state.utrNumber} setUtrNumber={state.setUtrNumber}
@@ -41,38 +42,56 @@ export default function KhataTab({ farmerData, holdingsList = [], onPaymentSucce
         onSubmit={handlers.handleFormSubmit} onBackPress={() => state.setShowVerificationForm(false)}
       />
     );
-  }
-  if (state.showSummary) {
+  } else if (state.showSummary) {
     const displayPaymentAmount = state.razorpayOrderData?.amount ?? (parseFloat(state.paymentAmount) || state.pendingRent);
-    return (
+    childContent = (
       <KhataSummaryView
-        lang={state.lang} pendingRent={displayPaymentAmount} farmerData={farmerData} holdingsList={holdingsList} formatDate={formatDate}
-        onBackPress={() => state.setShowSummary(false)} onPayNow={handlers.handleOnlineCheckout}
+        lang={state.lang}
+        pendingRent={displayPaymentAmount}
+        farmerData={farmerData}
+        holdingsList={holdingsList}
+        formatDate={formatDate}
+        onBackPress={() => state.setShowSummary(false)}
+        onPayNow={handlers.handleOnlineCheckout}
         onAlreadyPaid={() => { state.setShowSummary(false); state.setShowVerificationForm(true); }}
+        voucherCode={state.voucherCode}
+        voucherError={state.voucherError}
+        discountAmount={state.discountAmount}
+        netAmount={state.netAmount}
+        isApplying={state.isApplying}
+        onApplyVoucher={handlers.handleApplyVoucher}
+        onResetVoucher={handlers.handleResetVoucher}
+        onRedeemFullVoucher={handlers.handleRedeemFullVoucher}
       />
     );
-  }
-  if (selectedEntry) {
-    return (
+  } else if (selectedEntry) {
+    childContent = (
       <KhataDetailsView
         lang={state.lang} selectedEntry={selectedEntry} setSelectedEntry={setSelectedEntry} farmerData={farmerData} state={state} BACKEND_URL={BACKEND_URL}
         imageModalVisible={imageModalVisible} setImageModalVisible={setImageModalVisible} fullImageUrl={fullImageUrl} setFullImageUrl={setFullImageUrl}
         imageLoading={imageLoading} setImageLoading={setImageLoading} imageError={imageError} setImageError={setImageError} receiptDownloading={receiptDownloading}
       />
     );
+  } else {
+    childContent = (
+      <View style={{ flex: 1 }}>
+        <KhataHeader lang={state.lang} setLang={state.setLang} />
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <KhataBalanceCard lang={state.lang} pendingRent={state.pendingRent} setDateModalVisible={setDateModalVisible} handlePayPress={handlers.handlePayPress} />
+          <KhataPartialPayCard lang={state.lang} pendingRent={state.pendingRent} paymentAmount={state.paymentAmount} setPaymentAmount={state.setPaymentAmount} handlePayPress={handlers.handlePayPress} />
+          <KhataSummaryRow lang={state.lang} totalCharged={totalCharged} totalPaid={totalPaid} />
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>{state.lang === 'en' ? 'Ledger Entries' : 'खाता विवरण'}</Text>
+          </View>
+          <KhataLedgerBlock lang={state.lang} ledgerList={ledgerList} farmerData={farmerData} setSelectedEntry={setSelectedEntry} />
+        </ScrollView>
+      </View>
+    );
   }
+
   return (
     <View style={styles.container}>
-      <KhataHeader lang={state.lang} setLang={state.setLang} />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <KhataBalanceCard lang={state.lang} pendingRent={state.pendingRent} setDateModalVisible={setDateModalVisible} handlePayPress={handlers.handlePayPress} />
-        <KhataPartialPayCard lang={state.lang} pendingRent={state.pendingRent} paymentAmount={state.paymentAmount} setPaymentAmount={state.setPaymentAmount} handlePayPress={handlers.handlePayPress} />
-        <KhataSummaryRow lang={state.lang} totalCharged={totalCharged} totalPaid={totalPaid} />
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>{state.lang === 'en' ? 'Ledger Entries' : 'खाता विवरण'}</Text>
-        </View>
-        <KhataLedgerBlock lang={state.lang} ledgerList={ledgerList} farmerData={farmerData} setSelectedEntry={setSelectedEntry} />
-      </ScrollView>
+      {childContent}
       <KhataTimelineModal
         lang={state.lang} visible={dateModalVisible} onClose={() => setDateModalVisible(false)}
         timelineOption={timelineOption} setTimelineOption={setTimelineOption}

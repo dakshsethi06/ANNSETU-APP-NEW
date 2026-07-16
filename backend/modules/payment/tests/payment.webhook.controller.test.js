@@ -4,6 +4,11 @@ const handleWebhook = require('../payment.webhook.controller');
 
 jest.mock('../payment.repository');
 jest.mock('../razorpay.service');
+jest.mock('../../../shared/notifications/pushNotifications', () => ({
+  sendPushNotification: jest.fn()
+}));
+
+const pushNotifications = require('../../../shared/notifications/pushNotifications');
 
 describe('payment.webhook.controller', () => {
   let req, res;
@@ -43,10 +48,16 @@ describe('payment.webhook.controller', () => {
       }
     };
     razorpayService.verifyWebhookSignature.mockReturnValueOnce(true);
+    paymentRepository.getPaymentById.mockResolvedValueOnce({ farmerId: 'farmer123', amount: 100 });
 
     await handleWebhook(req, res);
 
     expect(paymentRepository.updatePaymentStatus).toHaveBeenCalledWith('ord1', 'PAID', 'pay1');
+    expect(pushNotifications.sendPushNotification).toHaveBeenCalledWith(
+      'farmer123',
+      'Payment Successful',
+      'Your payment of Rs. 100 has been successfully processed.'
+    );
     expect(res.json).toHaveBeenCalledWith({ received: true });
   });
 
@@ -63,11 +74,36 @@ describe('payment.webhook.controller', () => {
       }
     };
     razorpayService.verifyWebhookSignature.mockReturnValueOnce(true);
+    paymentRepository.getPaymentById.mockResolvedValueOnce({ farmerId: 'farmer123', amount: 100 });
 
     await handleWebhook(req, res);
 
     expect(paymentRepository.updatePaymentStatus).toHaveBeenCalledWith('ord1', 'PAID', 'pay1');
     expect(res.json).toHaveBeenCalledWith({ received: true });
+  });
+
+  test('handles push notification error on payment capture gracefully', async () => {
+    req = {
+      headers: { 'x-razorpay-signature': 'sig1' },
+      body: {
+        event: 'payment.captured',
+        payload: {
+          payment: {
+            entity: { order_id: 'ord1', id: 'pay1' }
+          }
+        }
+      }
+    };
+    razorpayService.verifyWebhookSignature.mockReturnValueOnce(true);
+    paymentRepository.getPaymentById.mockResolvedValueOnce({ farmerId: 'farmer123', amount: 100 });
+    pushNotifications.sendPushNotification.mockRejectedValueOnce(new Error('Push fail'));
+    const spyWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await handleWebhook(req, res);
+
+    expect(spyWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to send success push notification'), 'Push fail');
+    expect(res.json).toHaveBeenCalledWith({ received: true });
+    spyWarn.mockRestore();
   });
 
   test('processes payment.failed event and updates status to CANCELLED', async () => {
@@ -83,10 +119,82 @@ describe('payment.webhook.controller', () => {
       }
     };
     razorpayService.verifyWebhookSignature.mockReturnValueOnce(true);
+    paymentRepository.getPaymentById.mockResolvedValueOnce({ farmerId: 'farmer123', amount: 100 });
 
     await handleWebhook(req, res);
 
     expect(paymentRepository.updatePaymentStatus).toHaveBeenCalledWith('ord1', 'CANCELLED');
+    expect(pushNotifications.sendPushNotification).toHaveBeenCalledWith(
+      'farmer123',
+      'Payment Failed',
+      'Your payment of Rs. 100 has failed.'
+    );
+    expect(res.json).toHaveBeenCalledWith({ received: true });
+  });
+
+  test('handles push notification error on payment failure gracefully', async () => {
+    req = {
+      headers: { 'x-razorpay-signature': 'sig1' },
+      body: {
+        event: 'payment.failed',
+        payload: {
+          payment: {
+            entity: { order_id: 'ord1' }
+          }
+        }
+      }
+    };
+    razorpayService.verifyWebhookSignature.mockReturnValueOnce(true);
+    paymentRepository.getPaymentById.mockResolvedValueOnce({ farmerId: 'farmer123', amount: 100 });
+    pushNotifications.sendPushNotification.mockRejectedValueOnce(new Error('Push fail failed'));
+    const spyWarn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await handleWebhook(req, res);
+
+    expect(spyWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to send failure push notification'), 'Push fail failed');
+    expect(res.json).toHaveBeenCalledWith({ received: true });
+    spyWarn.mockRestore();
+  });
+
+  test('processes payment.captured event but skips push notification if payment details not found or missing farmerId', async () => {
+    req = {
+      headers: { 'x-razorpay-signature': 'sig1' },
+      body: {
+        event: 'payment.captured',
+        payload: {
+          payment: {
+            entity: { order_id: 'ord1', id: 'pay1' }
+          }
+        }
+      }
+    };
+    razorpayService.verifyWebhookSignature.mockReturnValueOnce(true);
+    paymentRepository.getPaymentById.mockResolvedValueOnce(null);
+
+    await handleWebhook(req, res);
+
+    expect(pushNotifications.sendPushNotification).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ received: true });
+  });
+
+  test('processes payment.failed event but skips push notification if payment details not found or missing farmerId', async () => {
+    req = {
+      headers: { 'x-razorpay-signature': 'sig1' },
+      body: {
+        event: 'payment.failed',
+        payload: {
+          payment: {
+            entity: { order_id: 'ord1' }
+          }
+        }
+      }
+    };
+    razorpayService.verifyWebhookSignature.mockReturnValueOnce(true);
+    paymentRepository.getPaymentById.mockResolvedValueOnce({ farmerId: null });
+
+    await handleWebhook(req, res);
+
+    expect(pushNotifications.sendPushNotification).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({ received: true });
   });
 
