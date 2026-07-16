@@ -21,6 +21,9 @@ import styles from '../styles/khataTabStyles';
 export default function KhataTab({ farmerData, holdingsList = [], onPaymentSuccess, ledgerList = [], totalCharged = 0, totalPaid = 0 }) {
   const { state, handlers } = useKhataPayment(farmerData, holdingsList, onPaymentSuccess);
 
+  const calculatedCharged = (ledgerList || []).reduce((sum, entry) => entry.amount < 0 ? sum + Math.abs(entry.amount) : sum, 0);
+  const calculatedPaid = (ledgerList || []).reduce((sum, entry) => entry.amount > 0 ? sum + entry.amount : sum, 0);
+
   const { pdfDownloading, receiptDownloading, handleConfirmTimeline } = useKhataDownloads(farmerData, state.lang);
   const [selectedEntry, setSelectedEntry] = React.useState(null);
   const [dateModalVisible, setDateModalVisible] = React.useState(false);
@@ -79,7 +82,7 @@ export default function KhataTab({ farmerData, holdingsList = [], onPaymentSucce
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <KhataBalanceCard lang={state.lang} pendingRent={state.pendingRent} setDateModalVisible={setDateModalVisible} handlePayPress={handlers.handlePayPress} />
           <KhataPartialPayCard lang={state.lang} pendingRent={state.pendingRent} paymentAmount={state.paymentAmount} setPaymentAmount={state.setPaymentAmount} handlePayPress={handlers.handlePayPress} />
-          <KhataSummaryRow lang={state.lang} totalCharged={totalCharged} totalPaid={totalPaid} />
+          <KhataSummaryRow lang={state.lang} totalCharged={calculatedCharged} totalPaid={calculatedPaid} />
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>{state.lang === 'en' ? 'Ledger Entries' : 'खाता विवरण'}</Text>
           </View>

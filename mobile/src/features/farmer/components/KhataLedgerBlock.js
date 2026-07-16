@@ -49,7 +49,6 @@ export function KhataLedgerBlock({ lang, ledgerList, farmerData, setSelectedEntr
           <View key={monthKey}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FAFAFA', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderTopWidth: 1, borderColor: '#E4E4E7' }}>
               <Text style={{ fontSize: 13, fontWeight: '800', color: '#1B4332', textTransform: 'capitalize' }}>{monthKey}</Text>
-              <Text style={{ fontSize: 13, fontWeight: '800', color: '#1B4332' }}>₹{monthTotal.toLocaleString('en-IN')}</Text>
             </View>
 
             {items.map((item, idx) => {

@@ -343,11 +343,15 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     }
 
     const amountVal = parseFloat(paymentAmount) || pendingRent;
+    const idempotencyKey = `vchr_redeem_${farmerId}_${voucher.voucherCode}_${originalOrderData?.order_id || Date.now()}`;
 
     try {
       const response = await fetch(`${BACKEND_URL}/api/vouchers/redeem`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'idempotency-key': idempotencyKey
+        },
         body: JSON.stringify({
           voucherCode: voucher.voucherCode,
           farmerId,

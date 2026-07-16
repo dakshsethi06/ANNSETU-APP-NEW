@@ -108,13 +108,14 @@ async function redeemVoucher(req, res) {
         "id", "farmerId", "vendorId", "direction", "status", "amount", 
         "paymentMode", "reference", "note", "createdByUserId", "createdAt", 
         "coldStorageId", "voucherCode", "discountAmount"
-      ) VALUES ($1, $2, NULL, 'INBOUND', 'PAID', 0.00, 'VOUCHER', $3, $4, 'FARMER_APP', NOW(), $5, $3, $6)`,
+      ) VALUES ($1, $2, NULL, 'INBOUND', 'PAID', 0.00, 'VOUCHER', $3, $4, 'FARMER_APP', NOW(), $5, $6, $7)`,
       [
         paymentId,
         farmerId,
         voucherCode,
         `Rent payment cleared entirely via voucher: ${voucherCode}`,
         farmer.coldStorageId,
+        voucherCode,
         discountApplied
       ]
     );
