@@ -4,13 +4,9 @@ import * as DocumentPicker from 'expo-document-picker';
 import RazorpayCheckout from 'react-native-razorpay';
 import { BACKEND_URL } from '../../../core/network/config';
 import { useTranslation } from 'react-i18next';
-import { useVoucher } from './useVoucher';
 
 export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   const { t, i18n } = useTranslation();
-
-  const voucher = useVoucher();
-  const [originalOrderData, setOriginalOrderData] = useState(null);
 
   const [showSummary, setShowSummary] = useState(false);
   const [showVerificationForm, setShowVerificationForm] = useState(false);
@@ -99,9 +95,7 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   };
 
   const handlePayPress = async (customAmount) => {
-    voucher.resetVoucher();
-    setRazorpayOrderData(null);
-    setOriginalOrderData(null);
+    setRazorpayOrderData(null); // Clear old order data before fetch
 
     console.log('[handlePayPress] Received customAmount:', customAmount);
     console.log('[handlePayPress] Current state paymentAmount:', paymentAmount);
@@ -152,7 +146,6 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
 
       setPaymentId(orderData.order_id);
       setRazorpayOrderData(orderData);
-      setOriginalOrderData(orderData);
       setShowSummary(true);
     } catch (err) {
       Alert.alert(t('khata.error_title'), err.message || t('khata.initiate_failed_error'));
@@ -288,104 +281,6 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     }
   };
 
-  const handleApplyVoucher = async (code) => {
-    const farmerId = farmerData?.id || farmerData?.serial_number;
-    if (!farmerId) {
-      Alert.alert(t('khata.error_title'), 'Farmer identifier not found.');
-      return;
-    }
-
-    const amountVal = parseFloat(paymentAmount) || pendingRent;
-
-    try {
-      const vResult = await voucher.applyVoucher(code, amountVal, farmerId);
-
-      if (vResult && vResult.netAmount > 0) {
-        const response = await fetch(`${BACKEND_URL}/api/payments/order`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            farmerId,
-            amount: amountVal,
-            voucherCode: code
-          })
-        });
-
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.error || 'Failed to update payment order with voucher.');
-        }
-
-        const orderData = await response.json();
-        if (!orderData.success) throw new Error(orderData.error || 'Order regeneration failed.');
-
-        setPaymentId(orderData.order_id);
-        setRazorpayOrderData(orderData);
-      }
-    } catch (err) {
-      Alert.alert(t('khata.error_title'), err.message || 'Failed to apply voucher.');
-    }
-  };
-
-  const handleResetVoucher = () => {
-    voucher.resetVoucher();
-    if (originalOrderData) {
-      setPaymentId(originalOrderData.order_id);
-      setRazorpayOrderData(originalOrderData);
-    }
-  };
-
-  const handleRedeemFullVoucher = async () => {
-    const farmerId = farmerData?.id || farmerData?.serial_number;
-    if (!farmerId) {
-      Alert.alert(t('khata.error_title'), 'Farmer identifier not found.');
-      return;
-    }
-
-    const amountVal = parseFloat(paymentAmount) || pendingRent;
-    const idempotencyKey = `vchr_redeem_${farmerId}_${voucher.voucherCode}_${originalOrderData?.order_id || Date.now()}`;
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/vouchers/redeem`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'idempotency-key': idempotencyKey
-        },
-        body: JSON.stringify({
-          voucherCode: voucher.voucherCode,
-          farmerId,
-          amount: amountVal,
-          paymentId: originalOrderData?.order_id
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Voucher redemption failed.');
-      }
-
-      Alert.alert(
-        lang === 'en' ? 'Success' : 'सफलता',
-        lang === 'en' 
-          ? `Voucher ${voucher.voucherCode} redeemed successfully! rent balance cleared.`
-          : `वाउचर ${voucher.voucherCode} सफलतापूर्वक भुनाया गया! किराया शेष राशि का भुगतान हो गया।`,
-        [
-          {
-            text: t('khata.confirm'),
-            onPress: () => {
-              handleResetVoucher();
-              setShowSummary(false);
-              if (onPaymentSuccess) onPaymentSuccess();
-            }
-          }
-        ]
-      );
-    } catch (err) {
-      Alert.alert(t('khata.error_title'), err.message || 'Redemption failed.');
-    }
-  };
-
   const handleResetAll = () => {
     setUtrNumber('');
     setReceiptFile('');
@@ -418,20 +313,13 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       razorpayOrderData, setRazorpayOrderData,
       isOnlineSuccess, setIsOnlineSuccess,
       pendingRent,
-      paymentAmount, setPaymentAmount,
-      voucherCode: voucher.voucherCode,
-      voucherError: voucher.voucherError,
-      discountAmount: voucher.discountAmount,
-      netAmount: voucher.netAmount,
-      isApplying: voucher.isApplying
+      paymentAmount, setPaymentAmount
     },
     handlers: {
       adjustDay, adjustMonth, adjustYear,
       handleConfirmDate, handleUploadReceipt,
       handlePayPress, handleOnlineCheckout,
-      handleFormSubmit, handleResetAll,
-      handleApplyVoucher, handleResetVoucher,
-      handleRedeemFullVoucher
+      handleFormSubmit, handleResetAll
     }
   };
 }

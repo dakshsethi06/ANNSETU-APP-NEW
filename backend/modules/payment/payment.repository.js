@@ -1,6 +1,5 @@
 const db = require('../../config/database');
 const { extractBankNameAndTransactionId } = require('./payment.helpers');
-const voucherService = require('../voucher/voucher.service');
 
 async function getFarmerPendingRent(farmerId) {
   const result = await db.query(
@@ -12,24 +11,22 @@ async function getFarmerPendingRent(farmerId) {
   return parseFloat(result.rows[0]?.pendingRent || 0);
 }
 
-async function createPendingPayment({ orderId, farmerId, amount, note, createdByUserId, coldStorageId, voucherCode = null, discountAmount = 0 }) {
+async function createPendingPayment({ orderId, farmerId, amount, note, createdByUserId, coldStorageId }) {
   if (!coldStorageId) {
     throw new Error('coldStorageId is required for creating a pending payment.');
   }
   await db.query(
     `INSERT INTO "Payment" (
       "id", "farmerId", "vendorId", "direction", "status", "amount", 
-      "paymentMode", "reference", "note", "createdByUserId", "createdAt", "coldStorageId", "voucherCode", "discountAmount"
-    ) VALUES ($1, $2, NULL, 'INBOUND', 'PENDING', $3, 'UPI', $1, $4, $5, NOW(), $6, $7, $8)`,
+      "paymentMode", "reference", "note", "createdByUserId", "createdAt", "coldStorageId"
+    ) VALUES ($1, $2, NULL, 'INBOUND', 'PENDING', $3, 'UPI', $1, $4, $5, NOW(), $6)`,
     [
       orderId,
       farmerId,
       amount,
       note || 'Online payment via App',
       createdByUserId || 'FARMER_APP',
-      coldStorageId,
-      voucherCode,
-      discountAmount
+      coldStorageId
     ]
   );
 }
@@ -87,22 +84,8 @@ async function updatePaymentStatus(orderId, status, paymentId = null) {
     if (status === 'PAID' && oldStatus !== 'PAID') {
       const farmerId = payment.farmerId;
       const amount = parseFloat(payment.amount);
-      const voucherCode = payment.voucherCode;
-      const discountAmount = payment.discountAmount ? parseFloat(payment.discountAmount) : 0;
 
-      // Redeem voucher transactionally if associated
-      if (voucherCode) {
-        await voucherService.redeemVoucherTransaction(
-          voucherCode,
-          farmerId,
-          amount + discountAmount,
-          orderId,
-          client
-        );
-      }
-
-      let remainingPaid = amount + discountAmount;
-      if (remainingPaid > 0) {
+      if (amount > 0) {
         // Fetch all transactions with pending dues for this farmer
         const txRes = await client.query(
           `SELECT id, "balanceDueAmount", "paidAmount" 
@@ -112,6 +95,7 @@ async function updatePaymentStatus(orderId, status, paymentId = null) {
           [farmerId]
         );
 
+        let remainingPaid = amount;
         for (const tx of txRes.rows) {
           if (remainingPaid <= 0) break;
           const balanceDue = parseFloat(tx.balanceDueAmount);

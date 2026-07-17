@@ -10,7 +10,7 @@ async function getFarmersData(state, serial_number) {
         COALESCE(f."openingBalance", 0)
         + COALESCE((SELECT SUM("totalBillAmount") FROM "NikasiTransaction" WHERE "farmerId" = f.id), 0)
         + COALESCE((SELECT SUM("amount") FROM "BillingEntry" WHERE "farmerId" = f.id), 0)
-        - COALESCE((SELECT SUM(COALESCE("amount", 0) + COALESCE("discountAmount", 0)) FROM "Payment" WHERE "farmerId" = f.id AND "status" IN ('APPROVED', 'PAID')), 0)
+        - COALESCE((SELECT SUM("amount") FROM "Payment" WHERE "farmerId" = f.id AND "status" IN ('APPROVED', 'PAID')), 0)
       ) AS "pendingRent"
     FROM "Farmer" f
     WHERE 1=1

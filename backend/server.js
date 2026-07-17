@@ -44,7 +44,6 @@ app.use('/api', require('./modules/dispatch'));
 app.use('/api', require('./modules/payment'));
 app.use('/api', require('./modules/user-role'));
 app.use('/api', require('./modules/support'));
-app.use('/api', require('./modules/voucher'));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'Annsetu Backend' }));

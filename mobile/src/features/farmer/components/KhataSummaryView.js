@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, Text, TextInput, ActivityIndicator } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Text } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
@@ -13,22 +13,9 @@ export default function KhataSummaryView({
   formatDate,
   onBackPress,
   onPayNow,
-  onAlreadyPaid,
-  voucherCode,
-  voucherError,
-  discountAmount = 0,
-  netAmount,
-  isApplying,
-  onApplyVoucher,
-  onResetVoucher,
-  onRedeemFullVoucher
+  onAlreadyPaid
 }) {
   const { t } = useTranslation();
-  const [localCode, setLocalCode] = React.useState(voucherCode || '');
-
-  React.useEffect(() => {
-    setLocalCode(voucherCode || '');
-  }, [voucherCode]);
   const holding = holdingsList && holdingsList.length > 0 ? holdingsList[0] : null;
   const csName = holding?.cold_storage || 'Annsetu Storage Center';
   const bookingId = holding?.lot_id || 'BK-99210';
@@ -108,96 +95,10 @@ export default function KhataSummaryView({
             <Text style={styles.detailValue}>{storageDuration}</Text>
           </View>
 
-          <View style={{ borderBottomWidth: 1, borderBottomColor: '#E5E7EB', paddingVertical: 12 }}>
-            <Text style={{ fontSize: 13, fontWeight: '500', color: '#4B5563', marginBottom: 8 }}>
-              {lang === 'en' ? 'Have a Promo Voucher?' : 'प्रोमो वाउचर है?'}
-            </Text>
-            {!voucherCode ? (
-              <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      borderWidth: 1,
-                      borderColor: '#D1D5DB',
-                      borderRadius: 6,
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      fontSize: 14,
-                      backgroundColor: '#F9FAFB',
-                      color: '#1F2937'
-                    }}
-                    placeholder={lang === 'en' ? 'Enter voucher code' : 'वाउचर कोड दर्ज करें'}
-                    placeholderTextColor="#9CA3AF"
-                    value={localCode}
-                    onChangeText={setLocalCode}
-                    autoCapitalize="characters"
-                  />
-                  <TouchableOpacity
-                    style={{
-                      marginLeft: 8,
-                      backgroundColor: '#2D6A4F',
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
-                      borderRadius: 6,
-                      justifyContent: 'center',
-                      alignItems: 'center'
-                    }}
-                    onPress={() => onApplyVoucher(localCode)}
-                    disabled={isApplying}
-                  >
-                    {isApplying ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 13 }}>
-                        {lang === 'en' ? 'Apply' : 'लागू करें'}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-                {voucherError && (
-                  <Text style={{ color: '#DC2626', fontSize: 12, marginTop: 4 }}>
-                    {voucherError}
-                  </Text>
-                )}
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ECFDF5', padding: 10, borderRadius: 6 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Feather name="check-circle" size={16} color="#059669" style={{ marginRight: 6 }} />
-                  <Text style={{ color: '#065F46', fontWeight: '600', fontSize: 13 }}>
-                    {voucherCode} {lang === 'en' ? 'Applied' : 'लागू किया गया'}
-                  </Text>
-                </View>
-                <TouchableOpacity onPress={onResetVoucher}>
-                  <Text style={{ color: '#DC2626', fontWeight: 'bold', fontSize: 13 }}>
-                    {lang === 'en' ? 'Remove' : 'हटाएं'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.summaryDetailItem}>
-            <Text style={styles.detailLabel}>{lang === 'en' ? 'Subtotal Amount' : 'कुल राशि'}</Text>
-            <Text style={styles.detailValue}>
-              ₹{Number(pendingRent || 0).toLocaleString('en-IN')}
-            </Text>
-          </View>
-
-          {discountAmount > 0 && (
-            <View style={styles.summaryDetailItem}>
-              <Text style={styles.detailLabel}>{lang === 'en' ? 'Discount Applied' : 'छूट लागू की गई'}</Text>
-              <Text style={[styles.detailValue, { color: '#059669' }]}>
-                -₹{Number(discountAmount).toLocaleString('en-IN')}
-              </Text>
-            </View>
-          )}
-
           <View style={[styles.summaryDetailItem, { borderBottomWidth: 0 }]}>
-            <Text style={styles.detailLabel}>{lang === 'en' ? 'Net Payable Amount' : 'देय राशि'}</Text>
-            <Text style={[styles.detailValue, { color: '#DC2626', fontWeight: 'bold', fontSize: 16 }]}>
-              ₹{Number(netAmount !== null ? netAmount : pendingRent).toLocaleString('en-IN')}
+            <Text style={styles.detailLabel}>{lang === 'en' ? 'Payment Amount' : 'भुगतान राशि'}</Text>
+            <Text style={[styles.detailValue, { color: '#DC2626' }]}>
+              ₹{Number(pendingRent || 0).toLocaleString('en-IN')}
             </Text>
           </View>
         </View>
@@ -205,13 +106,10 @@ export default function KhataSummaryView({
         <TouchableOpacity
           style={styles.doneBtn}
           activeOpacity={0.8}
-          onPress={netAmount === 0 ? onRedeemFullVoucher : onPayNow}
-          disabled={isApplying}
+          onPress={onPayNow}
         >
           <Text style={styles.doneBtnText}>
-            {netAmount === 0 
-              ? (lang === 'en' ? 'Redeem Voucher' : 'वाउचर भुनाएं') 
-              : t('khata.pay_now')}
+            {t('khata.pay_now')}
           </Text>
         </TouchableOpacity>
 

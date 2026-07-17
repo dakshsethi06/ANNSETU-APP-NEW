@@ -11,11 +11,6 @@ jest.mock('../razorpay.service', () => ({
   fetchPaymentDetails: jest.fn()
 }));
 
-const voucherService = require('../../voucher/voucher.service');
-jest.mock('../../voucher/voucher.service', () => ({
-  redeemVoucherTransaction: jest.fn()
-}));
-
 describe('payment.repository', () => {
   let mockClient;
 
@@ -70,9 +65,7 @@ describe('payment.repository', () => {
         100,
         'My Note',
         'USER_1',
-        'CS_1',
-        null,
-        0
+        'CS_1'
       ]);
     });
 
@@ -90,31 +83,7 @@ describe('payment.repository', () => {
         100,
         'Online payment via App',
         'FARMER_APP',
-        'CS_1',
-        null,
-        0
-      ]);
-    });
-
-    test('performs insert query with custom voucher fields', async () => {
-      db.query.mockResolvedValueOnce({});
-      await paymentRepository.createPendingPayment({
-        orderId: 'ord_1',
-        farmerId: 'farmer_1',
-        amount: 80,
-        coldStorageId: 'CS_1',
-        voucherCode: 'SAVE20',
-        discountAmount: 20
-      });
-      expect(db.query).toHaveBeenCalledWith(expect.any(String), [
-        'ord_1',
-        'farmer_1',
-        80,
-        'Online payment via App',
-        'FARMER_APP',
-        'CS_1',
-        'SAVE20',
-        20
+        'CS_1'
       ]);
     });
   });
@@ -175,48 +144,6 @@ describe('payment.repository', () => {
       expect(spyWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch payment details'), 'Razorpay failure');
       expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
       spyWarn.mockRestore();
-    });
-
-    test('redeems voucher and updates NikasiTransaction with discount + amount', async () => {
-      const payment = { 
-        id: 'ord_1', 
-        farmerId: 'farmer_1', 
-        amount: '80.00', 
-        status: 'PENDING', 
-        voucherCode: 'SAVE20', 
-        discountAmount: '20.00' 
-      };
-      
-      const bills = {
-        rows: [
-          { id: 'bill_1', balanceDueAmount: '150.00', paidAmount: '0.00' }
-        ]
-      };
-
-      mockClient.query
-        .mockResolvedValueOnce({ rows: [] }) // BEGIN
-        .mockResolvedValueOnce({ rows: [payment] }) // FOR UPDATE
-        .mockResolvedValueOnce({ rows: [] }) // UPDATE Payment
-        .mockResolvedValueOnce(bills) // SELECT NikasiTransaction
-        .mockResolvedValueOnce({ rows: [] }); // UPDATE NikasiTransaction
-
-      voucherService.redeemVoucherTransaction.mockResolvedValueOnce(20);
-
-      await paymentRepository.updatePaymentStatus('ord_1', 'PAID');
-
-      expect(voucherService.redeemVoucherTransaction).toHaveBeenCalledWith(
-        'SAVE20',
-        'farmer_1',
-        100,
-        'ord_1',
-        mockClient
-      );
-
-      expect(mockClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE "NikasiTransaction"'),
-        [50, 100, 'bill_1']
-      );
-      expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
     });
 
     test('allocates PAID amount to NikasiTransaction balances sequentially and handles null paidAmount', async () => {
