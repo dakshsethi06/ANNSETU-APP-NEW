@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1784098440305" clover="3.2.0">
-  <project timestamp="1784098440305" name="All files">
+<coverage generated="1784298320993" clover="3.2.0">
+  <project timestamp="1784298320994" name="All files">
     <metrics statements="2563" coveredstatements="2563" conditionals="1781" coveredconditionals="1781" methods="283" coveredmethods="283" elements="4627" coveredelements="4627" complexity="0" loc="2563" ncloc="2563" packages="19" files="96" classes="96"/>
     <package name="modules.amad">
       <metrics statements="58" coveredstatements="58" conditionals="32" coveredconditionals="32" methods="9" coveredmethods="9"/>
