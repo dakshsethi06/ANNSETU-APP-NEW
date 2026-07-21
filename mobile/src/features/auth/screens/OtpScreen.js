@@ -19,6 +19,7 @@ const PROTO = {
 
 export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
     const { t } = useTranslation();
+    const cleanPhone = phone.replace(/^(\+?91\s*)+/, '').trim();
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [verified, setVerified] = useState(false);
@@ -50,14 +51,26 @@ export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
         }
 
         setLoading(true);
+
+
         try {
-            const { data, error } = await supabase.auth.verifyOtp({
-                phone: '+91' + phone,
-                token: otpCode,
-                type: 'sms',
+            const { BACKEND_URL } = require('../../../core/network/config');
+            const response = await fetch(`${BACKEND_URL}/api/farmers/register/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: cleanPhone, otp: otpCode }),
             });
-            if (error) {
-                throw error;
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                // Secondary fallback: Try Supabase verifyOtp
+                const { error: supabaseErr } = await supabase.auth.verifyOtp({
+                    phone: '+91' + cleanPhone,
+                    token: otpCode,
+                    type: 'sms',
+                });
+                if (supabaseErr) {
+                    throw new Error(data.error || supabaseErr.message || 'Invalid OTP');
+                }
             }
 
             // Visual verified success state
@@ -66,7 +79,7 @@ export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
 
             setTimeout(async () => {
                 if (onVerifySuccess) {
-                    await onVerifySuccess(phone);
+                    await onVerifySuccess(cleanPhone);
                 }
             }, 800);
         } catch (error) {
@@ -100,7 +113,7 @@ export default function OTPScreen({ phone, onBack, onVerifySuccess }) {
                 <View style={{ marginTop: 24, marginBottom: 32 }}>
                     <Text style={localStyles.headerTitle}>{t('otp.verification_code_title')}</Text>
                     <Text style={localStyles.headerSubtitle}>
-                        {t('otp.otp_sent_to')} <Text style={{ color: PROTO.foreground, fontWeight: '500' }}>+91 {phone}</Text>
+                        {t('otp.otp_sent_to')} <Text style={{ color: PROTO.foreground, fontWeight: '500' }}>{cleanPhone}</Text>
                     </Text>
                 </View>
 

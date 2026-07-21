@@ -45,18 +45,19 @@ async function createNewDispatch(data) {
     lotId, bags, weightQtl, commodity, vehicleNumber
   });
 
-  // Integrated notification — farmer must authorize via MPIN
+  // Integrated notification — sent to Cold Storage when dispatch is requested
   try {
-    const csName = await dispatchRepo.getColdStorageName(verifiedColdStorageId);
+    const farmer = await dispatchRepo.getFarmerWithMpin(farmerId);
+    const farmerName = farmer?.name || 'Farmer';
     await createAppNotification({
       coldStorageId: verifiedColdStorageId,
-      userId: farmerId,
-      lotId: null,
+      userId: verifiedColdStorageId,
+      lotId: dispatch.id,
       type: 'warning',
-      title: 'Dispatch Approval Required',
-      message: `Request to dispatch ${bags} bags of ${commodity} from ${csName} is pending. Please authorize via MPIN.`,
-      icon: 'lock',
-      actionUrl: '/dispatch'
+      title: 'New Dispatch Request',
+      message: `Farmer ${farmerName} requested a dispatch of ${bags} bags of ${commodity}. Please authorize via MPIN.`,
+      icon: 'truck',
+      actionUrl: `/dispatch/${dispatch.id}`
     });
   } catch (notifErr) {
     console.warn('Failed to create dispatch notification:', notifErr.message);
@@ -66,9 +67,9 @@ async function createNewDispatch(data) {
 }
 
 /**
- * Approve a dispatch via farmer MPIN authorization.
- * Verifies MPIN, updates status to IN_TRANSIT, cleans up old notification,
- * and creates new approval notifications.
+ * Approve a dispatch via MPIN authorization.
+ * Verifies MPIN (Cold Storage or Farmer), updates status to IN_TRANSIT, cleans up old notification,
+ * and creates approval notification for the farmer.
  */
 async function approveDispatchByMpin(id, mpin) {
   // 1. Get the dispatch
@@ -79,21 +80,23 @@ async function approveDispatchByMpin(id, mpin) {
     throw err;
   }
 
-  // 2. Fetch farmer and verify MPIN
+  // 2. Fetch profiles & verify MPIN (Cold Storage preferred, fallback to Farmer)
+  let authorized = false;
+  const coldStorage = await dispatchRepo.getColdStorageWithMpin(dispatchData.coldStorageId);
+  if (coldStorage && coldStorage.mpin) {
+    if (verifyMpin(mpin, coldStorage.mpin)) {
+      authorized = true;
+    }
+  }
+
   const farmer = await dispatchRepo.getFarmerWithMpin(dispatchData.farmerId);
-  if (!farmer) {
-    const err = new Error('Associated farmer profile not found.');
-    err.statusCode = 404;
-    throw err;
+  if (!authorized && farmer && farmer.mpin) {
+    if (verifyMpin(mpin, farmer.mpin)) {
+      authorized = true;
+    }
   }
 
-  if (!farmer.mpin) {
-    const err = new Error('MPIN not set. Please set up your MPIN first before approving dispatches.');
-    err.statusCode = 403;
-    throw err;
-  }
-
-  if (!verifyMpin(mpin, farmer.mpin)) {
+  if (!authorized) {
     const err = new Error('Invalid MPIN. Please try again.');
     err.statusCode = 401;
     throw err;
@@ -105,42 +108,34 @@ async function approveDispatchByMpin(id, mpin) {
   // 4. Clean up the pending approval notification
   try {
     await dispatchRepo.deleteNotification(
+      dispatchData.coldStorageId,
+      'New Dispatch Request',
+      `%${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish}%`
+    );
+    await dispatchRepo.deleteNotification(
       dispatchData.farmerId,
       'Dispatch Approval Required',
       `%dispatch ${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish}%`
     );
-    console.log(`[Notification Cleanup] Deleted pending dispatch notification for farmer ${dispatchData.farmerId}`);
+    console.log(`[Notification Cleanup] Deleted pending dispatch notification for dispatch ${id}`);
   } catch (cleanErr) {
     console.warn('Failed to delete pending dispatch notification:', cleanErr.message);
   }
 
-  // 5. Create approval notifications (vendor + cold storage)
+  // 5. Create approval notification for the farmer
   try {
-    const farmerName = farmer.name || 'Farmer';
     const csId = dispatchData.coldStorageId || DEFAULT_COLD_STORAGE_ID;
 
-    // Notification to vendor
+    // Notification to farmer
     await createAppNotification({
       coldStorageId: csId,
-      userId: 'default_vendor',
+      userId: dispatchData.farmerId,
       lotId: null,
       type: 'info',
-      title: 'Dispatch Approved by Farmer',
-      message: `${farmerName} authorized dispatch of ${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish || 'goods'} via MPIN.`,
+      title: 'Dispatch Approved',
+      message: `Your dispatch request of ${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish || 'goods'} has been approved by Cold Storage.`,
       icon: 'check',
-      actionUrl: null
-    });
-
-    // Notification to cold storage
-    await createAppNotification({
-      coldStorageId: csId,
-      userId: csId,
-      lotId: null,
-      type: 'info',
-      title: 'Dispatch Approved by Farmer',
-      message: `${farmerName} authorized dispatch of ${dispatchData.packetsDispatched} bags of ${dispatchData.remarkEnglish || 'goods'} via MPIN. Ready for transport/delivery.`,
-      icon: 'check',
-      actionUrl: null
+      actionUrl: '/dispatch'
     });
   } catch (notifErr) {
     console.warn('Failed to create approval notifications:', notifErr.message);

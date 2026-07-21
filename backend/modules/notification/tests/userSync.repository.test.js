@@ -62,7 +62,7 @@ describe('userSync.repository unit tests', () => {
       ]);
     });
 
-    test('farmer branch: uses fallback password "1234" if mpin is null', async () => {
+    test('farmer branch: uses empty fallback password if mpin is null', async () => {
       db.query
         .mockResolvedValueOnce({
           rows: [{ name: 'Ram Singh', mpin: null, coldStorageId: 'CS_REAL' }]
@@ -75,7 +75,7 @@ describe('userSync.repository unit tests', () => {
         'farmer1',
         'Ram Singh',
         'ram@mail.com',
-        '1234',
+        '',
         'CS_REAL',
         'push_token_123'
       ]);
@@ -103,7 +103,7 @@ describe('userSync.repository unit tests', () => {
       ]);
     });
 
-    test('cold storage branch: uses fallback hashed "1234" if mpin is null', async () => {
+    test('cold storage branch: uses empty fallback if mpin is null', async () => {
       db.query
         .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({
@@ -117,7 +117,7 @@ describe('userSync.repository unit tests', () => {
         'cs123',
         'Sharma CS',
         'cs@mail.com',
-        hashMpin('1234'),
+        '',
         'cs123',
         'push_token_123'
       ]);

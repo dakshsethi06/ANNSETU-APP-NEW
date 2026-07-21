@@ -2,7 +2,8 @@ const farmerRepository = require('../farmer.repository');
 const farmerConstants = require('../farmer.constants');
 const db = require('../../../config/database');
 const { hashMpin } = require('./mpinHelpers');
-const { verifySupabaseOtp } = require('../../../shared/utils/otpUtils');
+const otpStore = require('./otpStore');
+const config = require('../../../config');
 
 async function resetMpin(req, res) {
   const { phone, otp, newMpin } = req.body;
@@ -13,15 +14,21 @@ async function resetMpin(req, res) {
     return res.status(400).json({ success: false, error: 'New MPIN must be at least 4 digits.' });
   }
 
-  try {
-    await verifySupabaseOtp(phone, otp);
-  } catch (otpErr) {
-    return res.status(400).json({ success: false, error: otpErr.message || 'Invalid verification OTP.' });
+  const cleanPhone = phone.replace(/\+91/g, '').replace(/\s+/g, '').trim();
+
+  // Validate OTP from in-memory cache
+  const cached = otpStore.get(cleanPhone);
+  
+  if (!cached || cached.expiresAt < Date.now() || cached.code !== otp.trim()) {
+    return res.status(400).json({ success: false, error: 'Invalid or expired verification OTP.' });
+  }
+
+  // Clear OTP from cache if verified
+  if (cached) {
+    otpStore.delete(cleanPhone);
   }
 
   try {
-    const cleanPhone = phone.replace('+91', '').trim();
-
     const cs = await farmerRepository.getColdStorageByPhone(cleanPhone);
     if (cs) {
       const hashedMpin = hashMpin(newMpin);

@@ -35,19 +35,28 @@ async function createOrder(req, res) {
       console.warn('Failed to fetch farmer profile for payment checkout:', dbErr.message);
     }
 
-    if (!resolvedColdStorageId) {
-      return res.status(400).json({ success: false, error: 'coldStorageId is required.' });
-    }
+    const { DEFAULT_COLD_STORAGE_ID } = require('../../config/constants');
+    resolvedColdStorageId = resolvedColdStorageId || DEFAULT_COLD_STORAGE_ID;
 
     let finalAmount = amount ? parseFloat(amount) : 0;
     console.log('[Create Order API] parsed finalAmount:', finalAmount);
     
     // Acquire a lock on the farmer's pending transactions to prevent race conditions
+    await client.query(
+      `SELECT id FROM "NikasiTransaction" WHERE "farmerId" = $1 AND "balanceDueAmount" > 0 FOR UPDATE`,
+      [farmerId]
+    );
     const lockRes = await client.query(
-      `SELECT COALESCE(SUM("balanceDueAmount"), 0) AS "pendingRent" FROM "NikasiTransaction" WHERE "farmerId" = $1 FOR UPDATE`,
+      `SELECT COALESCE(SUM("balanceDueAmount"), 0) AS "pendingRent" FROM "NikasiTransaction" WHERE "farmerId" = $1`,
       [farmerId]
     );
     const pendingDues = parseFloat(lockRes.rows[0]?.pendingRent || 0);
+
+    if (pendingDues <= 0) {
+      await client.query('ROLLBACK');
+      client.release();
+      return res.status(400).json({ success: false, error: 'No dues left to pay.' });
+    }
     
     if (!finalAmount) {
       finalAmount = pendingDues;
@@ -58,12 +67,6 @@ async function createOrder(req, res) {
     if (finalAmount > pendingDues) {
       console.log('[Create Order API] Capping payment amount from:', finalAmount, 'to pendingDues:', pendingDues);
       finalAmount = pendingDues;
-    }
-
-    if (finalAmount <= 0) {
-      await client.query('ROLLBACK');
-      client.release();
-      return res.status(400).json({ success: false, error: 'No pending rent balance to pay.' });
     }
 
     const amountPaise = Math.round(finalAmount * 100);

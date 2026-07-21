@@ -19,7 +19,7 @@ describe('amad.repository', () => {
       const fakeRow = { id: 'AM-1', commodity: 'Potato' };
       db.query.mockResolvedValue({ rows: [fakeRow] });
 
-      const params = ['AM-1', 'F1', 'CS1', 'Potato', null, null, null, 100, 50, 100, 50, 'Fresh', new Date()];
+      const params = ['AM-1', 'AMAD-123456', 'M-F1', 'F1', 'CS1', 'Potato', null, 'R1', null, 100, 50, 100, 50, 'Fresh', new Date(), new Date(), new Date()];
       const result = await createAmadLot(params);
 
       expect(result).toEqual(fakeRow);

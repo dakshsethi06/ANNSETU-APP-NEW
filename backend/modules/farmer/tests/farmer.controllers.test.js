@@ -28,10 +28,12 @@ const { loginMpin } = require('../controllers/loginMpin.controller');
 const { resetMpin } = require('../controllers/resetMpin.controller');
 const { downloadStatement } = require('../controllers/downloadStatement.controller');
 const { downloadStatementPdf } = require('../controllers/downloadStatementPdf.controller');
+const otpStore = require('../controllers/otpStore');
 const { downloadReceiptPdf } = require('../controllers/downloadReceiptPdf.controller');
 const { updateFarmer } = require('../controllers/updateFarmer.controller');
 const { sendProfileOtp } = require('../controllers/sendProfileOtp.controller');
 const { verifyAndUpdateProfile } = require('../controllers/verifyAndUpdateProfile.controller');
+const { sendResetOtp } = require('../controllers/sendResetOtp.controller');
 
 const dateHelpers = require('../controllers/dateHelpers');
 const mpinHelpers = require('../controllers/mpinHelpers');
@@ -188,6 +190,11 @@ describe('Farmer Controllers', () => {
   });
 
   describe('loginMpin controller', () => {
+    beforeEach(() => {
+      farmerRepository.getColdStorageByPhone.mockReset();
+      farmerRepository.getFarmerByPhone.mockReset();
+    });
+
     it('returns 400 if phone or mpin is missing', async () => {
       req = { body: { phone: '123' } };
       await loginMpin(req, res);
@@ -303,20 +310,14 @@ describe('Farmer Controllers', () => {
       }));
     });
 
-    it('authenticates farmer role with fallback mpin when mpin is null', async () => {
+    it('returns 401 if farmer mpin is null', async () => {
       req = { body: { phone: '123', mpin: '1234', role: 'farmer' } };
-      // Fallback mpin is '1234'
       const mockFarmer = { id: 'F1', name: 'Ram', phone: '123', state: 'UP', mpin: null, account_status: 'ACTIVE' };
       farmerRepository.getFarmerByPhone.mockResolvedValue(mockFarmer);
 
       await loginMpin(req, res);
-      // verifyMpin compares '1234' with fallback '1234'. 
-      // Since it's not 64 chars, it does a plain-text comparison which succeeds.
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: true,
-        role: 'ColdStorage',
-        token: expect.any(String)
-      }));
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid phone number or MPIN. Please try again.' });
     });
 
     it('returns 403 if farmer is suspended', async () => {
@@ -356,6 +357,10 @@ describe('Farmer Controllers', () => {
   });
 
   describe('resetMpin controller', () => {
+    beforeEach(() => {
+      otpStore.clear();
+    });
+
     it('returns 400 if params are missing or newMpin is too short', async () => {
       req = { body: { phone: '123', otp: '111' } };
       await resetMpin(req, res);
@@ -368,26 +373,22 @@ describe('Farmer Controllers', () => {
 
     it('returns 400 if OTP verification fails', async () => {
       req = { body: { phone: '123', otp: 'wrong', newMpin: '1234' } };
-      verifySupabaseOtp.mockRejectedValue(new Error('Invalid OTP'));
-
+      // No OTP seeded in otpStore, so it will fail
       await resetMpin(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it('uses fallback error message when OTP verification fails without error message', async () => {
       req = { body: { phone: '123', otp: 'wrong', newMpin: '1234' } };
-      const err = new Error();
-      err.message = '';
-      verifySupabaseOtp.mockRejectedValue(err);
-
+      // No OTP seeded, fails with generic invalid verification OTP error
       await resetMpin(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid verification OTP.' });
+      expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid or expired verification OTP.' });
     });
 
     it('resets Cold Storage mpin if CS account exists', async () => {
       req = { body: { phone: '123', otp: '111111', newMpin: '1234' } };
-      verifySupabaseOtp.mockResolvedValue({});
+      otpStore.set('123', { code: '111111', expiresAt: Date.now() + 5 * 60 * 1000 });
       farmerRepository.getColdStorageByPhone.mockResolvedValue({ id: 'CS1' });
 
       await resetMpin(req, res);
@@ -397,7 +398,7 @@ describe('Farmer Controllers', () => {
 
     it('resets Farmer mpin if Farmer account exists and CS does not', async () => {
       req = { body: { phone: '123', otp: '111111', newMpin: '1234' } };
-      verifySupabaseOtp.mockResolvedValue({});
+      otpStore.set('123', { code: '111111', expiresAt: Date.now() + 5 * 60 * 1000 });
       farmerRepository.getColdStorageByPhone.mockResolvedValue(null);
       farmerRepository.getFarmerByPhone.mockResolvedValue({ id: 'F1' });
 
@@ -408,7 +409,7 @@ describe('Farmer Controllers', () => {
 
     it('returns 404 if farmer is not found during reset', async () => {
       req = { body: { phone: '123', otp: '111111', newMpin: '1234' } };
-      verifySupabaseOtp.mockResolvedValue({});
+      otpStore.set('123', { code: '111111', expiresAt: Date.now() + 5 * 60 * 1000 });
       farmerRepository.getColdStorageByPhone.mockResolvedValue(null);
       farmerRepository.getFarmerByPhone.mockResolvedValue(null);
 
@@ -418,7 +419,7 @@ describe('Farmer Controllers', () => {
 
     it('returns 500 on repository fail', async () => {
       req = { body: { phone: '123', otp: '111111', newMpin: '1234' } };
-      verifySupabaseOtp.mockResolvedValue({});
+      otpStore.set('123', { code: '111111', expiresAt: Date.now() + 5 * 60 * 1000 });
       farmerRepository.getColdStorageByPhone.mockRejectedValue(new Error('Fail'));
       const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
       await resetMpin(req, res);
@@ -674,41 +675,38 @@ describe('Farmer Controllers', () => {
       expect(res.status).toHaveBeenCalledWith(404);
     });
 
-    it('sends SMS and email successfully if targets are present', async () => {
+    it('sends SMS successfully if targetType is phone', async () => {
       req = { body: { id: 'F1', targetType: 'phone', targetValue: '9876543210' } };
       farmerRepository.getFarmerBasicDetails.mockResolvedValue({ id: 'F1', phone: '9876543210', email: 'test@email.com' });
 
       await sendProfileOtp(req, res);
-      expect(sendSMS).toHaveBeenCalled();
-      expect(sendEmail).toHaveBeenCalled();
+      expect(sendSMS).toHaveBeenCalledWith(expect.objectContaining({ to: '9876543210' }));
       expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Verification OTP sent successfully.' });
     });
 
-    it('sends OTP when targetType is email and handles missing phone/email', async () => {
-      req = { body: { id: 'F1', targetType: 'email', targetValue: ' NEW@test.com ' } };
-      farmerRepository.getFarmerBasicDetails.mockResolvedValue({ id: 'F1' }); // no phone, no email
+    it('sends OTP when targetType is email and targets new email successfully', async () => {
+      req = { body: { id: 'F1', targetType: 'email', targetValue: 'NEW@test.com' } };
+      farmerRepository.getFarmerBasicDetails.mockResolvedValue({ id: 'F1' });
 
-      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
       await sendProfileOtp(req, res);
-      expect(res.status).toHaveBeenCalledWith(500); // Because !smsSent && !emailSent -> throws error
-      spy.mockRestore();
+      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'new@test.com' }));
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Verification OTP sent successfully.' });
     });
 
-    it('handles invalid phone and email gracefully', async () => {
-      req = { body: { id: 'F1', targetType: 'phone', targetValue: '+919876543210' } };
-      farmerRepository.getFarmerBasicDetails.mockResolvedValue({ id: 'F1', phone: 'invalid', email: 'invalid' });
+    it('handles invalid targets gracefully', async () => {
+      req = { body: { id: 'F1', targetType: 'phone', targetValue: 'invalid-phone' } };
+      farmerRepository.getFarmerBasicDetails.mockResolvedValue({ id: 'F1', phone: '111' });
       
       const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
       await sendProfileOtp(req, res);
-      expect(res.status).toHaveBeenCalledWith(500); // fails validation of targets
+      expect(res.status).toHaveBeenCalledWith(500); // fails validation of new phone
       spy.mockRestore();
     });
 
-    it('throws error and returns 500 if both SMS and email delivery fail', async () => {
+    it('throws error and returns 500 if target delivery fails', async () => {
       req = { body: { id: 'F1', targetType: 'phone', targetValue: '9876543210' } };
       farmerRepository.getFarmerBasicDetails.mockResolvedValue({ id: 'F1', phone: '9876543210', email: 'test@email.com' });
       sendSMS.mockRejectedValue(new Error('SMS fail'));
-      sendEmail.mockRejectedValue(new Error('Email fail'));
 
       const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
       await sendProfileOtp(req, res);
@@ -786,6 +784,59 @@ describe('Farmer Controllers', () => {
       await verifyAndUpdateProfile(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
       spy.mockRestore();
+    });
+  });
+
+  describe('sendResetOtp controller', () => {
+    beforeEach(() => {
+      otpStore.clear();
+      jest.clearAllMocks();
+    });
+
+    it('returns 400 if phone is missing', async () => {
+      req = { body: {} };
+      await sendResetOtp(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it('returns 404 if phone is not registered as farmer or cold storage', async () => {
+      req = { body: { phone: '9999999999' } };
+      farmerRepository.getFarmerByPhone.mockResolvedValue(null);
+      db.query.mockResolvedValue({ rows: [] }); // ColdStorage check
+
+      await sendResetOtp(req, res);
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'This phone number is not registered.' }));
+    });
+
+    it('sends OTP via SMS and Email to registered Farmer', async () => {
+      req = { body: { phone: '9876543210' } };
+      farmerRepository.getFarmerByPhone.mockResolvedValue({ id: 'F1', phone: '9876543210', email: 'farmer@mail.com' });
+
+      await sendResetOtp(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+      expect(sendSMS).toHaveBeenCalledWith(expect.objectContaining({ to: '9876543210', message: expect.stringContaining('verification code') }));
+      expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'farmer@mail.com', text: expect.stringContaining('verification code') }));
+
+      const cached = otpStore.get('9876543210');
+      expect(cached).toBeDefined();
+      expect(cached.code).toHaveLength(6);
+    });
+
+    it('sends OTP to registered Cold Storage and handles sending failures gracefully', async () => {
+      req = { body: { phone: '8744014520' } };
+      farmerRepository.getFarmerByPhone.mockResolvedValue(null);
+      db.query.mockResolvedValue({ rows: [{ id: 'CS1', displayName: 'CS Name', phone: '8744014520', email: 'cs@mail.com' }] });
+
+      sendSMS.mockRejectedValueOnce(new Error('SMS network fail'));
+      sendEmail.mockRejectedValueOnce(new Error('SMTP network fail'));
+
+      await sendResetOtp(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+      const cached = otpStore.get('8744014520');
+      expect(cached).toBeDefined();
     });
   });
 });

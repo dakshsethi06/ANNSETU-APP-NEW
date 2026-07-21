@@ -52,7 +52,7 @@ export default function CreateRequestTab({ onBackPress, coldStorageId }) {
   const loadHistory = async () => {
     setHistoryLoading(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/dispatches?coldStorageId=${encodeURIComponent(coldStorageId || 'cmmp9txv0000ai3t4wush9trs')}`);
+      const response = await fetch(`${BACKEND_URL}/api/dispatches?coldStorageId=${encodeURIComponent(coldStorageId || '7895544442')}`);
       if (!response.ok) throw new Error(`HTTP status ${response.status}`);
       const data = await response.json();
       if (!data.success) throw new Error(data.error || 'Failed to fetch history');
@@ -112,7 +112,7 @@ export default function CreateRequestTab({ onBackPress, coldStorageId }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           farmerId: farmerId,
-          coldStorageId: coldStorageId || 'cmmp9txv0000ai3t4wush9trs',
+          coldStorageId: coldStorageId || '7895544442',
           commodity: commodity,
           bags: numBags,
         })

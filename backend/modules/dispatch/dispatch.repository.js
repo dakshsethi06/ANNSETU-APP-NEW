@@ -151,6 +151,16 @@ async function getColdStorageName(coldStorageId) {
 }
 
 /**
+ * Fetch cold storage's MPIN and display name.
+ * @param {string} coldStorageId
+ * @returns {Promise<Object|null>}
+ */
+async function getColdStorageWithMpin(coldStorageId) {
+  const res = await db.query('SELECT id, "displayName", mpin FROM "ColdStorageOnboarding" WHERE id = $1', [coldStorageId]);
+  return res.rows[0] || null;
+}
+
+/**
  * Delete matching AppNotification rows.
  * @param {string} userId
  * @param {string} title
@@ -175,5 +185,7 @@ module.exports = {
   verifyColdStorage,
   getFarmerWithMpin,
   getColdStorageName,
+  getColdStorageWithMpin,
   deleteNotification
 };
+

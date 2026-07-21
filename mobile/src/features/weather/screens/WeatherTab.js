@@ -14,6 +14,7 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
   
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
   const [currentCity, setCurrentCity] = useState(farmerCity);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
@@ -29,6 +30,7 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
 
   const loadWeatherData = async (cityToQuery) => {
     setLoading(true);
+    setErrorMsg(null);
     try {
       const data = await fetchWeather(cityToQuery);
       setWeatherData(data);
@@ -76,24 +78,8 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
         Alert.alert('Search Failed', 'Could not fetch weather data for this location.');
       }
 
-      // Final fallback to mock structures if still empty
-      if (!weatherData) {
-        setWeatherData({
-          temp: 32,
-          description: 'Clear Sky',
-          mainCondition: 'Clear',
-          humidity: 62,
-          windSpeed: 12,
-          location: `${cityToQuery}, Firozabad`,
-          forecast: [
-            { date: 'Today', maxTemp: 32, minTemp: 24, conditionText: 'Sunny', humidity: 5 },
-            { date: 'Tomorrow', maxTemp: 30, minTemp: 22, conditionText: 'Cloudy', humidity: 20 },
-            { date: 'Wed', maxTemp: 27, minTemp: 21, conditionText: 'Rainy', humidity: 70 },
-            { date: 'Thu', maxTemp: 28, minTemp: 22, conditionText: 'Rainy', humidity: 55 },
-            { date: 'Fri', maxTemp: 30, minTemp: 23, conditionText: 'Cloudy', humidity: 15 }
-          ]
-        });
-      }
+      setErrorMsg(err.message || 'Weather Forecast Unavailable');
+      setWeatherData(null);
     } finally {
       setLoading(false);
     }
@@ -157,9 +143,18 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
       )}
 
       <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
-        {loading || !weatherData ? (
+        {loading ? (
           <ActivityIndicator size="large" color="#1E5C2E" style={{ marginTop: 60 }} />
-        ) : (
+        ) : errorMsg ? (
+          <View style={s.errorContainer}>
+            <Feather name="cloud-off" size={48} color="#9CA3AF" style={{ marginBottom: 16 }} />
+            <Text style={s.errorText}>{t('weather.forecast_unavailable')}</Text>
+            <Text style={s.errorSubText}>{errorMsg}</Text>
+            <TouchableOpacity style={s.retryBtn} onPress={() => loadWeatherData(currentCity)} activeOpacity={0.8}>
+              <Text style={s.retryBtnText}>{t('weather.retry_btn')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : weatherData ? (
           <View>
             {/* ─── Weather Hero Card ─── */}
             <LinearGradient
@@ -272,7 +267,7 @@ export default function WeatherTab({ farmerData = {}, onBackPress }) {
               </Text>
             </View>
           </View>
-        )}
+        ) : null}
       </ScrollView>
     </View>
   );

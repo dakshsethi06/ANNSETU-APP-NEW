@@ -3,10 +3,17 @@ import { BACKEND_URL } from '../../../core/network/config';
 /**
  * Fetches cold storage summary metrics and recent activity.
  */
-export async function fetchColdStorageSummary(coldStorageId = 'cmmp9txv0000ai3t4wush9trs') {
+export async function fetchColdStorageSummary(coldStorageId = '7895544442') {
   try {
     const url = `${BACKEND_URL}/api/cold-storage/summary?coldStorageId=${encodeURIComponent(coldStorageId)}&t=${Date.now()}`;
-    const response = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } });
+    const { useAuthStore } = require('../../auth/store/useAuthStore');
+    const token = useAuthStore.getState().session?.access_token;
+    const response = await fetch(url, {
+      headers: { 
+        'Cache-Control': 'no-cache',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    });
     if (!response.ok) {
       throw new Error(`Server returned status ${response.status}`);
     }

@@ -84,7 +84,7 @@ export default function MandiTab({ defaultState = 'Uttar Pradesh' }) {
       const data = await fetchMandiPrices(state, commodityToFetch, city);
       
       let fetchedRecords = data.records || [];
-      if (city) {
+      if (city && city !== 'All') {
         fetchedRecords = fetchedRecords.filter(r => r.market.toLowerCase().includes(city.toLowerCase()));
       }
       

@@ -69,12 +69,6 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
       icon: 'user',
     },
     {
-      id: '2',
-      title: t('profile.settings_menu_contact'),
-      subtitle: t('profile.settings_menu_contact_sub'),
-      icon: 'phone',
-    },
-    {
       id: '3',
       title: t('profile.settings_menu_security'),
       subtitle: t('profile.settings_menu_security_sub'),
@@ -347,7 +341,7 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
                 style={s.menuItem}
                 activeOpacity={0.7}
                 onPress={() => {
-                  if (item.id === '1' || item.id === '2') {
+                  if (item.id === '1') {
                     handleOpenEditModal();
                   } else if (item.id === '3') {
                     setKycAadhaar(farmerData?.aadhaarNumber || '');
@@ -422,11 +416,11 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
             borderBottomWidth: 1,
             borderBottomColor: '#E5E2D9'
           }}>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => {
                 setEditModalVisible(false);
                 setIsVerifyingOtp(false);
-              }} 
+              }}
               style={{ padding: 4 }}
             >
               <Feather name="arrow-left" size={24} color="#1E5C2E" />
@@ -437,7 +431,7 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
             <View style={{ width: 24 }} />
           </View>
 
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={{ padding: 20 }}
             showsVerticalScrollIndicator={false}
           >

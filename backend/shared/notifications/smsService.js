@@ -37,10 +37,19 @@ Message: ${message}
 
     if (isTwilioConfigured) {
         try {
+            let twilioTo = to.trim();
+            if (!twilioTo.startsWith('+')) {
+                if (twilioTo.length === 10) {
+                    twilioTo = '+91' + twilioTo;
+                } else {
+                    twilioTo = '+' + twilioTo;
+                }
+            }
+
             const url = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
             const auth = Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64');
             const params = new URLSearchParams();
-            params.append('To', to);
+            params.append('To', twilioTo);
             params.append('From', twilioFromNumber);
             params.append('Body', message);
 

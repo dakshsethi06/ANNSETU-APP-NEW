@@ -26,7 +26,7 @@ async function registerNewFarmer(data) {
   const finalState = state || farmerConstants.DEFAULT_STATE;
   const finalCommodity = commodity || farmerConstants.DEFAULT_COMMODITY;
   const now = new Date();
-  const hashedMpin = hashMpin(mpin || farmerConstants.DEFAULT_MPIN);
+  const hashedMpin = hashMpin(mpin || '');
 
   const params = [
     serial_number, 'CS-' + serial_number, name, finalState, finalCommodity,
@@ -97,7 +97,7 @@ async function loginWithMpin(phone, mpin) {
     throw err;
   }
 
-  const farmerMpin = farmer.mpin || farmerConstants.DEFAULT_MPIN;
+  const farmerMpin = farmer.mpin;
   if (!verifyMpin(mpin, farmerMpin)) {
     const err = new Error(farmerConstants.ERROR_MESSAGES.INVALID_MPIN_FARMER);
     err.statusCode = 401;

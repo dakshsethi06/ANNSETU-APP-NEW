@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform, KeyboardAvoidingView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { addAmad } from '../../mandi/services/amadService';
 import { fetchColdStorages } from '../../cold-storage/services/storageService';
@@ -31,8 +31,8 @@ export default function BookStorageTab({ farmerData = {}, onBackPress, onBooking
       const mapped = (list || []).map(item => ({
         id: item.id,
         name: item.name || 'Unnamed Cold Storage',
-        available: 1000,
-        rate: 135,
+        available: item.available !== undefined ? item.available : 1000,
+        rate: item.rate !== undefined ? item.rate : 135,
         location: `${item.city || 'Tundla'}, ${item.district || 'Firozabad'}`
       }));
       setColdStorages(mapped);
@@ -88,10 +88,10 @@ export default function BookStorageTab({ farmerData = {}, onBackPress, onBooking
       };
 
       await addAmad(amadData);
-      
+
       Alert.alert(
-        'Booking Confirmed', 
-        'Your booking request has been successfully registered in the database.',
+        'Booking Confirmed',
+        'Your booking request has been successfully sent to the cold storage.',
         [{ text: 'OK', onPress: onBookingSuccess }]
       );
     } catch (err) {
@@ -113,19 +113,24 @@ export default function BookStorageTab({ farmerData = {}, onBackPress, onBooking
   };
 
   // Calculations for step 3 review card
-  const estimatedCost = selectedStorage 
-    ? (parseInt(bags || 0) * selectedStorage.rate) 
+  const estimatedCost = selectedStorage
+    ? (parseInt(bags || 0) * selectedStorage.rate)
     : 0;
 
   return (
-    <View style={s.container}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 30}
+    >
+      <View style={s.container}>
       {/* ─── Header Row ─── */}
       <View style={s.topHeader}>
         <TouchableOpacity style={s.backBtn} onPress={onBackPress} activeOpacity={0.8}>
           <Feather name="arrow-left" size={20} color="#1E5C2E" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Book Storage</Text>
-        <View style={{ width: 40 }} /> 
+        <View style={{ width: 40 }} />
       </View>
 
       {/* ─── Stepper Progress Row ─── */}
@@ -134,7 +139,7 @@ export default function BookStorageTab({ farmerData = {}, onBackPress, onBooking
         <View style={[s.stepCircle, s.stepCircleActive]}>
           <Text style={[s.stepNumber, s.stepNumberActive]}>1</Text>
         </View>
-        
+
         {/* Connecting line 1 */}
         <View style={[s.stepLine, step > 1 && s.stepLineActive]} />
 
@@ -261,7 +266,7 @@ export default function BookStorageTab({ farmerData = {}, onBackPress, onBooking
             <View style={s.reviewCard}>
               <View style={s.reviewRow}>
                 <Text style={s.reviewLabel}>Storage</Text>
-                <Text style={s.reviewValue}>{selectedStorage?.displayNameShort}</Text>
+                <Text style={s.reviewValue}>{selectedStorage?.name}</Text>
               </View>
 
               <View style={s.reviewRow}>
@@ -309,7 +314,8 @@ export default function BookStorageTab({ farmerData = {}, onBackPress, onBooking
           </View>
         )}
       </ScrollView>
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 

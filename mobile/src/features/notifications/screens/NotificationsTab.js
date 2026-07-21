@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, Platform, StatusBar, ActivityIndicator, Alert, Modal, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, Platform, StatusBar, ActivityIndicator, Alert, Modal, ScrollView, Image, TextInput, KeyboardAvoidingView } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { FONTS } from '../../../core/theme/theme';
@@ -7,7 +7,7 @@ import s from '../styles/notificationsTabStyles';
 import { fetchNotifications, markNotificationRead } from '../services/notificationService';
 import { fetchFarmers, BACKEND_URL } from '../../../core/network/api';
 
-export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) {
+export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, onMarkRead }) {
   const { t } = useTranslation();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +19,96 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
   const [fullImageUrl, setFullImageUrl] = useState('');
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  // MPIN Authorization Modal states
+  const [mpinModalVisible, setMpinModalVisible] = useState(false);
+  const [selectedRequestNotif, setSelectedRequestNotif] = useState(null);
+  const [mpinText, setMpinText] = useState('');
+  const [submittingMpin, setSubmittingMpin] = useState(false);
+
+  const handleOpenMpinModal = (item) => {
+    setSelectedRequestNotif(item);
+    setMpinText('');
+    setMpinModalVisible(true);
+  };
+
+  const handleAuthorizeRequest = async () => {
+    if (!mpinText || mpinText.length < 4) {
+      Alert.alert('Invalid MPIN', 'Please enter your complete 4-digit security MPIN.');
+      return;
+    }
+
+    setSubmittingMpin(true);
+    try {
+      if (!selectedRequestNotif) return;
+      const notif = selectedRequestNotif;
+
+      let amadLotId = notif.lotId;
+      if (!amadLotId && notif.actionUrl && notif.actionUrl.includes('/amad/')) {
+        amadLotId = notif.actionUrl.split('/amad/')[1];
+      }
+
+      let dispatchId = notif.lotId;
+      if (!dispatchId && notif.actionUrl && notif.actionUrl.includes('/dispatch/')) {
+        dispatchId = notif.actionUrl.split('/dispatch/')[1];
+      }
+
+      const isAmadRequest = 
+        amadLotId || 
+        notif.title.toLowerCase().includes('inward') ||
+        notif.title.toLowerCase().includes('stock') ||
+        notif.title.toLowerCase().includes('booking');
+
+      if (isAmadRequest) {
+        const targetLotId = amadLotId || notif.id;
+        console.log('[handleAuthorizeRequest] Approving Amad lot:', targetLotId);
+        const response = await fetch(`${BACKEND_URL}/api/amad/${encodeURIComponent(targetLotId)}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ coldStorageId: '7895544442', mpin: mpinText }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'MPIN authorization failed.');
+        }
+      } else if (dispatchId || notif.title.toLowerCase().includes('dispatch')) {
+        const targetId = dispatchId || notif.id;
+        const response = await fetch(`${BACKEND_URL}/api/dispatches/${encodeURIComponent(targetId)}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mpin: mpinText }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'MPIN authorization failed.');
+        }
+      } else {
+        throw new Error('Could not identify request target to approve.');
+      }
+
+      Alert.alert('Success', 'Request accepted and authorized successfully!');
+
+      try {
+        await markNotificationRead(notif.id);
+      } catch (mErr) {
+        // Notification row may have already been cleaned up by backend approval
+      }
+
+      setNotifications(prev => prev.filter(n => n.id !== notif.id));
+      if (typeof onMarkRead === 'function') {
+        onMarkRead();
+      }
+
+      setMpinModalVisible(false);
+      setSelectedRequestNotif(null);
+      setMpinText('');
+    } catch (err) {
+      console.warn('Authorization error:', err.message);
+      Alert.alert('Authorization Failed', err.message || 'Invalid MPIN. Please try again.');
+    } finally {
+      setSubmittingMpin(false);
+    }
+  };
 
   const loadNotifications = async () => {
     setLoading(true);
@@ -137,6 +227,13 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
 
     const isUnread = !item.isRead;
     const isPaymentVerification = item.title === 'Payment Verification Required';
+    const isRequestNotification = 
+      item.title.toLowerCase().includes('request') ||
+      item.title.toLowerCase().includes('approval') ||
+      item.title.toLowerCase().includes('authorize') ||
+      item.title.toLowerCase().includes('inward') ||
+      item.title.toLowerCase().includes('dispatch') ||
+      item.type === 'warning';
 
     const handlePressNotification = async () => {
       if (isPaymentVerification) {
@@ -144,19 +241,15 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
         return;
       }
 
-      setNotifications(prev => prev.filter(n => n.id !== item.id));
-      await markNotificationRead(item.id);
-      if (onMarkRead) {
-        onMarkRead();
+      if (isRequestNotification) {
+        handleOpenMpinModal(item);
+        return;
       }
 
-      if (onNavigateToTab && (
-        item.title.toLowerCase().includes('approval') ||
-        item.title.toLowerCase().includes('authorize') ||
-        item.title.toLowerCase().includes('delivered') ||
-        item.title.toLowerCase().includes('dispatch')
-      )) {
-        onNavigateToTab('dispatch');
+      setNotifications(prev => prev.filter(n => n.id !== item.id));
+      await markNotificationRead(item.id);
+      if (typeof onMarkRead === 'function') {
+        onMarkRead();
       }
     };
 
@@ -428,6 +521,136 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab }) 
             </View>
           ) : null}
         </View>
+      </Modal>
+
+      {/* ─── MPIN Authorization & Acceptance Modal ─── */}
+      <Modal
+        visible={mpinModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setMpinModalVisible(false);
+          setSelectedRequestNotif(null);
+          setMpinText('');
+        }}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
+          onPress={() => setMpinModalVisible(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ width: '100%' }}
+          >
+            <View
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+              }}
+              onStartShouldSetResponder={() => true}
+            >
+              <View
+                style={{
+                  backgroundColor: '#1E5C2E',
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  paddingHorizontal: 20,
+                  paddingTop: 18,
+                  paddingBottom: 14,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#FFFFFF', fontFamily: FONTS.bold }}>
+                  Authorize & Accept Request
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setMpinModalVisible(false)}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Feather name="x" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ padding: 20 }}>
+                {selectedRequestNotif && (
+                  <View
+                    style={{
+                      backgroundColor: '#FFFBEB',
+                      borderColor: '#FDE68A',
+                      borderWidth: 1,
+                      borderRadius: 14,
+                      padding: 14,
+                      marginBottom: 18,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                      <Feather name="bell" size={16} color="#B45309" style={{ marginRight: 6 }} />
+                      <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#92400E', fontFamily: FONTS.bold }}>
+                        {selectedRequestNotif.title}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 13, color: '#B45309', fontFamily: FONTS.regular, lineHeight: 18 }}>
+                      {selectedRequestNotif.message}
+                    </Text>
+                  </View>
+                )}
+
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#71717A', marginBottom: 8, textTransform: 'uppercase', fontFamily: FONTS.bold }}>
+                  Enter 4-Digit Security MPIN
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E4E4E7', borderRadius: 12, paddingHorizontal: 16, height: 50, marginBottom: 20 }}>
+                  <Feather name="lock" size={16} color="#1E5C2E" style={{ marginRight: 10 }} />
+                  <TextInput
+                    style={{ flex: 1, height: '100%', fontSize: 16, color: '#1A2E1A', letterSpacing: 4, fontFamily: FONTS.bold }}
+                    placeholder="Enter 4-digit MPIN"
+                    placeholderTextColor="#A1A1AA"
+                    keyboardType="numeric"
+                    maxLength={4}
+                    secureTextEntry
+                    value={mpinText}
+                    onChangeText={(text) => setMpinText(text.replace(/[^0-9]/g, ''))}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: '#1E5C2E',
+                    borderRadius: 12,
+                    height: 48,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onPress={handleAuthorizeRequest}
+                  disabled={submittingMpin}
+                  activeOpacity={0.8}
+                >
+                  {submittingMpin ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Feather name="check-circle" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+                      <Text style={{ color: '#FFFFFF', fontFamily: FONTS.bold, fontSize: 14 }}>
+                        Accept & Authorize Request
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );

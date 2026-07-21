@@ -1,5 +1,6 @@
 const farmerRepository = require('../farmer.repository');
 const farmerConstants = require('../farmer.constants');
+const config = require('../../../config');
 
 async function verifyAndUpdateProfile(req, res) {
   const { id, targetType, targetValue, otpCode, name } = req.body;

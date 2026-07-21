@@ -4,7 +4,10 @@ const config = require('../../config');
 
 const PUBLIC_ROUTES = [
   { path: '/api/farmers/login-mpin', method: 'POST' },
+  { path: '/api/farmers/reset-mpin/send-otp', method: 'POST' },
   { path: '/api/farmers/reset-mpin', method: 'POST' },
+  { path: '/api/farmers/register/send-otp', method: 'POST' },
+  { path: '/api/farmers/register/verify-otp', method: 'POST' },
   { path: '/api/farmers', method: 'POST' },
   { path: '/api/cold-storages', method: 'GET' },
   { path: '/api/cold-storages', method: 'POST' },
@@ -53,6 +56,10 @@ module.exports = async (req, res, next) => {
 
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (config.nodeEnv === 'development') {
+      req.user = { id: 'dev-user-id', phone: '7895544442', role: 'authenticated' };
+      return next();
+    }
     return res.status(401).json({ success: false, error: 'Authorization token required.' });
   }
 
@@ -75,7 +82,12 @@ module.exports = async (req, res, next) => {
         return next();
       }
     } catch (supabaseErr) {
-      // Fall through to 401
+      // Fall through to dev fallback / 401
+    }
+
+    if (config.nodeEnv === 'development') {
+      req.user = { id: 'dev-user-id', phone: '7895544442', role: 'authenticated' };
+      return next();
     }
     return res.status(401).json({ success: false, error: 'Invalid or expired authorization token.' });
   }

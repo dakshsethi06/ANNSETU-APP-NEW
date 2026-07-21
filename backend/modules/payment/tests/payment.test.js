@@ -7,7 +7,7 @@ jest.mock('../../../config/database', () => ({
   query: jest.fn(),
   connect: jest.fn().mockImplementation(() => Promise.resolve({
     query: jest.fn().mockImplementation((queryStr) => {
-      if (queryStr.includes('FOR UPDATE')) {
+      if (queryStr.includes('FOR UPDATE') || queryStr.includes('SUM("balanceDueAmount")')) {
         // Just return a mock value that can be overridden in tests, or we can look up the mock of getFarmerPendingRent
         const paymentRepo = require('../payment.repository');
         return paymentRepo.getFarmerPendingRent().then(val => ({ rows: [{ pendingRent: val }] }));

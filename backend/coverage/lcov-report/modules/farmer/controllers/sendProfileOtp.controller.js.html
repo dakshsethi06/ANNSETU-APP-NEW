@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">94.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>50/50</span>
+                <span class='fraction'>50/53</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">94.73% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>36/36</span>
+                <span class='fraction'>36/38</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">94.33% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>50/50</span>
+                <span class='fraction'>50/53</span>
             </div>
         
             
@@ -155,7 +155,17 @@
 <a name='L90'></a><a href='#L90'>90</a>
 <a name='L91'></a><a href='#L91'>91</a>
 <a name='L92'></a><a href='#L92'>92</a>
-<a name='L93'></a><a href='#L93'>93</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
@@ -219,30 +229,40 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -277,9 +297,9 @@ async function sendProfileOtp(req, res) {
       return res.status(404).json({ success: false, error: 'Farmer profile not found.' });
     }
 &nbsp;
-    // Deliver the OTP ONLY to the already verified existing phone and email
-    const smsTarget = farmer.phone || '';
-    const emailTarget = farmer.email || '';
+    // Deliver the OTP to the new target phone/email being verified
+    const smsTarget = targetType === 'phone' ? cleanTargetValue : '';
+    const emailTarget = targetType === 'email' ? cleanTargetValue : '';
 &nbsp;
     // Delete existing OTPs for this farmer and target type
     await farmerRepository.deleteOtpVerification(id, targetType);
@@ -314,21 +334,31 @@ async function sendProfileOtp(req, res) {
       try {
         const cleanEmailTarget = emailTarget.trim().toLowerCase();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (cleanEmailTarget &amp;&amp; emailRegex.test(cleanEmailTarget)) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (cleanEmailTarget &amp;&amp; emailRegex.test(cleanEmailTarget)) {
           const subject = 'Annsetu Profile Verification';
           const text = `Your Annsetu verification code is: ${otpCode}. Valid for 5 minutes.`;
           await sendEmail({ to: cleanEmailTarget, subject, text });
           emailSent = true;
         }
       } catch (err) {
-        console.warn('sendEmail failed in sendProfileOtp:', err.message);
-        sendErrors.push(`Email: ${err.message}`);
+<span class="cstat-no" title="statement not covered" >        console.warn('sendEmail failed in sendProfileOtp:', err.message);</span>
+<span class="cstat-no" title="statement not covered" >        sendErrors.push(`Email: ${err.message}`);</span>
       }
     }
 &nbsp;
     // Ensure at least one notification channel was successfully used
     if (!smsSent &amp;&amp; !emailSent) {
-      throw new Error(`Failed to send verification code. Details: ${sendErrors.join(', ')}`);
+      const config = require('../../../config');
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (config.nodeEnv === 'development') {
+<span class="cstat-no" title="statement not covered" >        console.log(`</span>
+[MOCK PROFILE OTP FALLBACK]
+Farmer ID: ${id}
+OTP Code: ${otpCode}
+Reason: Delivery failed or unconfigured (${sendErrors.join(', ')})
+-----------------------------------------`);
+      } else {
+        throw new Error(`Failed to send verification code. Details: ${sendErrors.join(', ')}`);
+      }
     }
 &nbsp;
     return res.json({ success: true, message: 'Verification OTP sent successfully.' });
@@ -346,7 +376,7 @@ module.exports = { sendProfileOtp };
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-17T14:25:20.213Z
+                at 2026-07-19T21:04:31.356Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

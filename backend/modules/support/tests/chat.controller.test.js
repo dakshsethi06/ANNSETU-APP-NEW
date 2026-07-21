@@ -203,7 +203,7 @@ describe('chat.controller unit tests', () => {
       fs.existsSync.mockReturnValueOnce(false); // uploads directory does not exist
       req = {
         params: { ticketId: 't1' },
-        headers: { host: 'localhost:3002' },
+        headers: { host: 'localhost:3001' },
         body: {
           message: 'Check receipt',
           senderName: 'Farmer',
@@ -220,7 +220,7 @@ describe('chat.controller unit tests', () => {
       expect(fs.writeFileSync).toHaveBeenCalled();
       expect(supportService.addChatMessage).toHaveBeenCalledWith(
         't1',
-        expect.stringContaining('[Attachment: http://localhost:3002/uploads/'),
+        expect.stringContaining('[Attachment: http://localhost:3001/uploads/'),
         'Farmer'
       );
     });
@@ -228,7 +228,7 @@ describe('chat.controller unit tests', () => {
     test('handles attachment name and base64 parsing fallbacks when name is empty and base64 has no MIME prefix', async () => {
       req = {
         params: { ticketId: 't1' },
-        headers: { host: 'localhost:3002' },
+        headers: { host: 'localhost:3001' },
         body: {
           attachment: {
             base64: 'dGVzdA==' // raw base64 data without format prefix

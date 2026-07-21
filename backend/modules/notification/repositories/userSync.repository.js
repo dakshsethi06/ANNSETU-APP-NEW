@@ -36,13 +36,13 @@ async function upsertUserPushToken(userId, email, pushToken) {
   const farmerRes = await db.query('SELECT name, mpin, "coldStorageId" FROM "Farmer" WHERE id = $1', [userId]);
   if (farmerRes.rows.length > 0) {
     name = farmerRes.rows[0].name;
-    passwordHash = farmerRes.rows[0].mpin || '1234';
+    passwordHash = farmerRes.rows[0].mpin || '';
     coldStorageId = farmerRes.rows[0].coldStorageId;
   } else {
     const csRes = await db.query('SELECT "displayName", mpin FROM "ColdStorageOnboarding" WHERE id = $1', [userId]);
     if (csRes.rows.length > 0) {
       name = csRes.rows[0].displayName;
-      passwordHash = csRes.rows[0].mpin || hashMpin('1234');
+      passwordHash = csRes.rows[0].mpin || '';
       coldStorageId = userId;
     }
   }

@@ -5,20 +5,24 @@ const { getFarmerLedger } = require('./repositories/getFarmerLedger.repository')
 const db = require('../../config/database');
 
 async function getColdStorageByPhone(phone) {
-  const res = await db.query('SELECT id, "displayName", mpin, "account_status" FROM "ColdStorageOnboarding" WHERE phone = $1', [phone]);
+  const cleanPhone = (phone || '').toString().replace(/\+91/g, '').replace(/\D/g, '').trim();
+  const res = await db.query(
+    'SELECT id, "displayName", mpin, "account_status" FROM public."ColdStorageOnboarding" WHERE phone = $1 OR phone = $2 OR phone LIKE $3',
+    [phone, cleanPhone, `%${cleanPhone}`]
+  );
   return res.rows[0];
 }
 
 async function updateColdStorageMpin(id, hashedMpin) {
-  await db.query(`UPDATE "ColdStorageOnboarding" SET "mpin" = $1, "updatedAt" = NOW() WHERE "id" = $2`, [hashedMpin, id]);
+  await db.query(`UPDATE public."ColdStorageOnboarding" SET "mpin" = $1, "updatedAt" = NOW() WHERE "id" = $2`, [hashedMpin, id]);
 }
 
 async function updateFarmerMpin(id, hashedMpin) {
-  await db.query(`UPDATE "Farmer" SET "mpin" = $1, "updatedAt" = NOW() WHERE "id" = $2`, [hashedMpin, id]);
+  await db.query(`UPDATE public."Farmer" SET "mpin" = $1, "updatedAt" = NOW() WHERE "id" = $2`, [hashedMpin, id]);
 }
 
 async function getFarmerBasicDetails(farmerId) {
-  const res = await db.query('SELECT * FROM "Farmer" WHERE id = $1', [farmerId]);
+  const res = await db.query('SELECT * FROM public."Farmer" WHERE id = $1', [farmerId]);
   return res.rows[0];
 }
 

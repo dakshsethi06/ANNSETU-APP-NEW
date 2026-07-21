@@ -9,6 +9,9 @@ const { downloadReceiptPdf } = require('./controllers/downloadReceiptPdf.control
 const { updateFarmer } = require('./controllers/updateFarmer.controller');
 const { sendProfileOtp } = require('./controllers/sendProfileOtp.controller');
 const { verifyAndUpdateProfile } = require('./controllers/verifyAndUpdateProfile.controller');
+const { sendResetOtp } = require('./controllers/sendResetOtp.controller');
+const { sendRegistrationOtp } = require('./controllers/sendRegistrationOtp.controller');
+const { verifyRegistrationOtp } = require('./controllers/verifyRegistrationOtp.controller');
 
 module.exports = {
   getFarmers,
@@ -21,5 +24,9 @@ module.exports = {
   downloadReceiptPdf,
   updateFarmer,
   sendProfileOtp,
-  verifyAndUpdateProfile
+  verifyAndUpdateProfile,
+  sendResetOtp,
+  sendRegistrationOtp,
+  verifyRegistrationOtp
 };
+

@@ -11,7 +11,10 @@ router.get('/farmers/:id/statement/download', farmerController.downloadStatement
 router.get('/farmers/:id/statement/download-pdf', farmerController.downloadStatementPdf);
 router.get('/farmers/:id/statement/download-receipt-pdf', farmerController.downloadReceiptPdf);
 router.post('/farmers/login-mpin', validateLoginMpin, farmerController.loginMpin);
+router.post('/farmers/reset-mpin/send-otp', farmerController.sendResetOtp);
 router.post('/farmers/reset-mpin', validateResetMpin, farmerController.resetMpin);
+router.post('/farmers/register/send-otp', farmerController.sendRegistrationOtp);
+router.post('/farmers/register/verify-otp', farmerController.verifyRegistrationOtp);
 router.put('/farmers/:id', farmerController.updateFarmer);
 router.post('/otp/send-verification', farmerController.sendProfileOtp);
 router.post('/otp/verify-and-update', farmerController.verifyAndUpdateProfile);

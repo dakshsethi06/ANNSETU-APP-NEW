@@ -16,20 +16,95 @@ export default function DispatchTab({ farmerId, onBackPress }) {
   const [submittingOtp, setSubmittingOtp] = useState(false);
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  // Create Request states
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [createCommodity, setCreateCommodity] = useState('Potato');
+  const [createBags, setCreateBags] = useState('');
+  const [createVehicle, setCreateVehicle] = useState('');
+  const [submittingCreate, setSubmittingCreate] = useState(false);
+
   // Reset MPIN states
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resetPhone, setResetPhone] = useState('');
   const [resetOtp, setResetOtp] = useState('');
   const [resetNewMpin, setResetNewMpin] = useState('');
   const [resettingMpin, setResettingMpin] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+
+  const handleCreateDispatch = async () => {
+    if (!createCommodity.trim() || !createBags.trim()) {
+      Alert.alert('Missing Fields', 'Please enter commodity and number of bags.');
+      return;
+    }
+    const bagsNum = parseInt(createBags);
+    if (isNaN(bagsNum) || bagsNum <= 0) {
+      Alert.alert('Invalid Input', 'Please enter a valid number of bags.');
+      return;
+    }
+
+    setSubmittingCreate(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/dispatches`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          farmerId: farmerId,
+          coldStorageId: '7895544442',
+          commodity: createCommodity.trim(),
+          bags: bagsNum,
+          vehicleNumber: createVehicle.trim()
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to submit dispatch request.');
+      }
+
+      Alert.alert('Success', 'Dispatch request submitted successfully! Cold Storage will review and approve your request via MPIN.');
+      setCreateModalVisible(false);
+      setCreateBags('');
+      setCreateVehicle('');
+      loadDispatches();
+    } catch (err) {
+      console.warn('Dispatch request failed:', err.message);
+      Alert.alert('Error', err.message || 'Failed to create dispatch request.');
+    } finally {
+      setSubmittingCreate(false);
+    }
+  };
+
+  const handleSendResetOtp = async () => {
+    if (resetPhone.length < 10) {
+      Alert.alert('Error', 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    setSendingOtp(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/farmers/reset-mpin/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: resetPhone }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to send OTP.');
+      }
+      Alert.alert('Success', 'Verification OTP sent successfully!');
+    } catch (err) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setSendingOtp(false);
+    }
+  };
 
   const handleResetMpinSubmit = async () => {
     if (resetPhone.length < 10) {
       Alert.alert('Error', 'Please enter a valid 10-digit mobile number.');
       return;
     }
-    if (resetOtp !== '1234') {
-      Alert.alert('Error', 'Invalid verification OTP. Please use "1234" to verify.');
+    if (resetOtp.length < 6) {
+      Alert.alert('Error', 'Please enter a valid 6-digit verification OTP.');
       return;
     }
     if (resetNewMpin.length < 4) {
@@ -150,7 +225,21 @@ export default function DispatchTab({ farmerId, onBackPress }) {
           <Feather name="arrow-left" size={20} color="#1E5C2E" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('dispatch.dispatch_title')}</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#1E5C2E',
+            paddingHorizontal: 12,
+            paddingVertical: 7,
+            borderRadius: 8,
+            flexDirection: 'row',
+            alignItems: 'center'
+          }}
+          onPress={() => setCreateModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Feather name="plus" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+          <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold', fontFamily: FONTS.bold }}>+ Request</Text>
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -246,14 +335,12 @@ export default function DispatchTab({ farmerId, onBackPress }) {
                   )}
 
                   {item.status === 'CREATED' && (
-                    <TouchableOpacity
-                      style={s.approveBtn}
-                      onPress={() => handleApprovePress(item)}
-                      activeOpacity={0.8}
-                    >
-                      <Feather name="lock" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
-                      <Text style={s.approveBtnText}>Approve via MPIN</Text>
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFBEB', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 }}>
+                      <Feather name="clock" size={14} color="#B45309" style={{ marginRight: 6 }} />
+                      <Text style={{ color: '#B45309', fontSize: 12, fontWeight: 'bold', fontFamily: FONTS.bold }}>
+                        Pending Cold Storage Approval
+                      </Text>
+                    </View>
                   )}
 
                   {item.status === 'IN_TRANSIT' && (
@@ -394,6 +481,18 @@ export default function DispatchTab({ farmerId, onBackPress }) {
                 value={resetPhone}
                 onChangeText={setResetPhone}
               />
+              <TouchableOpacity
+                onPress={handleSendResetOtp}
+                disabled={sendingOtp}
+                style={{ backgroundColor: '#1E5C2E', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginLeft: 8 }}
+                activeOpacity={0.8}
+              >
+                {sendingOtp ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>Send OTP</Text>
+                )}
+              </TouchableOpacity>
             </View>
 
             <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8, fontFamily: FONTS.bold }}>
@@ -403,9 +502,9 @@ export default function DispatchTab({ farmerId, onBackPress }) {
               <Feather name="shield" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
               <TextInput
                 style={{ flex: 1, height: '100%', fontSize: 14, color: '#1A2E1A' }}
-                placeholder="Enter 1234 to verify"
+                placeholder="Enter 6-digit OTP"
                 keyboardType="numeric"
-                maxLength={4}
+                maxLength={6}
                 value={resetOtp}
                 onChangeText={setResetOtp}
               />
@@ -441,6 +540,129 @@ export default function DispatchTab({ farmerId, onBackPress }) {
             </TouchableOpacity>
           </View>
         </View>
+      </Modal>
+
+      {/* Create Dispatch Request Modal */}
+      <Modal
+        visible={createModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCreateModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
+          onPress={() => setCreateModalVisible(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ width: '100%' }}
+          >
+            <View
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+              }}
+              onStartShouldSetResponder={() => true}
+            >
+              <View
+                style={{
+                  backgroundColor: '#1E5C2E',
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  paddingHorizontal: 20,
+                  paddingTop: 18,
+                  paddingBottom: 14,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#FFFFFF', fontFamily: FONTS.bold }}>
+                  Request Stock Dispatch
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setCreateModalVisible(false)}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Feather name="x" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ padding: 20 }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 6, fontFamily: FONTS.bold }}>
+                  Commodity *
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E4E4E7', borderRadius: 12, paddingHorizontal: 16, height: 48, marginBottom: 14 }}>
+                  <Feather name="package" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={{ flex: 1, height: '100%', fontSize: 14, color: '#1A2E1A', fontFamily: FONTS.regular }}
+                    placeholder="e.g. Potato"
+                    value={createCommodity}
+                    onChangeText={setCreateCommodity}
+                  />
+                </View>
+
+                <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 6, fontFamily: FONTS.bold }}>
+                  Number of Bags (Packets) *
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E4E4E7', borderRadius: 12, paddingHorizontal: 16, height: 48, marginBottom: 14 }}>
+                  <Feather name="layers" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={{ flex: 1, height: '100%', fontSize: 14, color: '#1A2E1A', fontFamily: FONTS.regular }}
+                    placeholder="e.g. 100"
+                    keyboardType="numeric"
+                    value={createBags}
+                    onChangeText={setCreateBags}
+                  />
+                </View>
+
+                <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 6, fontFamily: FONTS.bold }}>
+                  Vehicle Number (Optional)
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: '#E4E4E7', borderRadius: 12, paddingHorizontal: 16, height: 48, marginBottom: 20 }}>
+                  <Feather name="truck" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={{ flex: 1, height: '100%', fontSize: 14, color: '#1A2E1A', fontFamily: FONTS.regular }}
+                    placeholder="e.g. RJ01AB1234"
+                    value={createVehicle}
+                    onChangeText={setCreateVehicle}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: '#1E5C2E',
+                    borderRadius: 12,
+                    height: 48,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onPress={handleCreateDispatch}
+                  disabled={submittingCreate}
+                  activeOpacity={0.8}
+                >
+                  {submittingCreate ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={{ color: '#FFFFFF', fontFamily: FONTS.bold, fontSize: 14 }}>
+                      Submit Dispatch Request
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </TouchableOpacity>
       </Modal>
     </View>
   );

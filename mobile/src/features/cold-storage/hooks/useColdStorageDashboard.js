@@ -5,7 +5,7 @@ import { fetchHoldings } from '../../mandi/services/amadService';
 import { fetchWeather } from '../../weather/services/weatherService';
 
 export function useColdStorageDashboard() {
-  const [selectedColdStorageId, setSelectedColdStorageId] = useState('cmmp9txv0000ai3t4wush9trs');
+  const [selectedColdStorageId, setSelectedColdStorageId] = useState('7895544442');
   const [csSummary, setCsSummary] = useState(null);
   const [csLoading, setCsLoading] = useState(false);
   const [csError, setCsError] = useState(null);

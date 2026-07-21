@@ -3,13 +3,21 @@ const db = require('../../config/database');
 async function createAmadLot(params) {
   const sql = `
     INSERT INTO "AmadLot" (
-      "id", "farmerId", "coldStorageId", "commodity", "kism", 
-      "roomId", "rackId", "packets", "weightQtl", "availablePackets", "availableWeightQtl", "goodsCondition", "amadDate"
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      "id", "amadNumber", "marka", "farmerId", "coldStorageId", "commodity", "kism", 
+      "roomId", "rackId", "packets", "weightQtl", "availablePackets", "availableWeightQtl", "goodsCondition", "amadDate",
+      "createdAt", "updatedAt"
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
     RETURNING *
   `;
   const result = await db.query(sql, params);
   return result.rows[0];
+}
+
+async function getFirstRoomForStorage(coldStorageId) {
+  const res = await db.query('SELECT id FROM "Room" WHERE "coldStorageId" = $1 LIMIT 1', [coldStorageId]);
+  if (res.rows.length > 0) return res.rows[0];
+  const fallbackRes = await db.query('SELECT id FROM "Room" LIMIT 1');
+  return fallbackRes.rows[0];
 }
 
 async function getFarmer(farmerId) {
@@ -38,8 +46,24 @@ async function getHoldingsData() {
   return result.rows;
 }
 
+async function getAmadLotById(lotId) {
+  const res = await db.query('SELECT * FROM "AmadLot" WHERE id = $1', [lotId]);
+  return res.rows[0];
+}
+
+async function updateAmadLotStatus(lotId, status) {
+  const res = await db.query(
+    'UPDATE "AmadLot" SET "goodsCondition" = $1, "updatedAt" = NOW() WHERE id = $2 RETURNING *',
+    [status, lotId]
+  );
+  return res.rows[0];
+}
+
 module.exports = {
   createAmadLot,
   getFarmer,
-  getHoldingsData
+  getHoldingsData,
+  getFirstRoomForStorage,
+  getAmadLotById,
+  updateAmadLotStatus
 };

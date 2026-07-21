@@ -27,6 +27,19 @@ export default function AuthNavigator({ onLoginSuccess }) {
         {({ navigation }) => (
           <RegisterScreen
             onBack={() => navigation.navigate('Login')}
+            onNext={async (phone, formData) => {
+              try {
+                const { BACKEND_URL } = require('../../core/network/config');
+                await fetch(`${BACKEND_URL}/api/farmers/register/send-otp`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ phone, email: formData?.email }),
+                });
+              } catch (err) {
+                console.warn('[Register onNext] send-otp error:', err.message);
+              }
+              navigation.navigate('Otp', { phone, registrationData: formData });
+            }}
           />
         )}
       </Stack.Screen>

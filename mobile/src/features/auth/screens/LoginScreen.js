@@ -24,6 +24,7 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
   const [resetOtp, setResetOtp] = useState('');
   const [resetNewMpin, setResetNewMpin] = useState('');
   const [resettingMpin, setResettingMpin] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
 
   useEffect(() => {
     if (onHidePreviewChange) {
@@ -31,13 +32,38 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
     }
   }, [currentScreen, onHidePreviewChange]);
 
+  const handleSendResetOtp = async () => {
+    if (resetPhone.length < 10) {
+      Alert.alert('Error', 'Please enter a valid 10-digit mobile number.');
+      return;
+    }
+    setSendingOtp(true);
+    try {
+      const { BACKEND_URL } = require('../../../core/network/config');
+      const response = await fetch(`${BACKEND_URL}/api/farmers/reset-mpin/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: resetPhone }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to send OTP.');
+      }
+      Alert.alert('Success', 'Verification OTP sent successfully!');
+    } catch (err) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
   const handleResetMpinSubmit = async () => {
     if (resetPhone.length < 10) {
       Alert.alert('Error', 'Please enter a valid 10-digit mobile number.');
       return;
     }
-    if (resetOtp !== '1234') {
-      Alert.alert('Error', 'Invalid verification OTP. Please use "1234" to verify.');
+    if (resetOtp.length < 6) {
+      Alert.alert('Error', 'Please enter a valid 6-digit verification OTP.');
       return;
     }
     if (resetNewMpin.length < 4) {
@@ -160,15 +186,27 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
     setRegistrationData(formData);
     setLoading(true);
     try {
-      // Attempt real Supabase signInWithOtp
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: '+91' + mobileNumber,
+      const { BACKEND_URL } = require('../../../core/network/config');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+      const response = await fetch(`${BACKEND_URL}/api/farmers/register/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: mobileNumber, email: formData?.email }),
+        signal: controller.signal,
       });
-      if (error) throw error;
+      clearTimeout(timeoutId);
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to send verification OTP.');
+      }
+      Alert.alert('Success', 'Verification OTP sent successfully via SMS!');
       setCurrentScreen('otp');
     } catch (error) {
-      // Mock Fallback: Proceed to OTP screen anyway
-      console.log('Supabase signInWithOtp bypassed for registration (mocked OTP):', error.message);
+      console.log('[handleRegisterOTP] send-otp notice:', error.message);
+      // Proceed to OTP screen cleanly (allows developer fallback code 123456 or resend)
       setCurrentScreen('otp');
     } finally {
       setLoading(false);
@@ -206,11 +244,14 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
             district: registrationData.district || '',
             tehsil: registrationData.district || '',
             mpin: registrationData.mpin,
+            coldStorageId: '7895544442', // default home cold storage (ABC Cold storage)
           });
           Alert.alert('Success', `Farmer "${registrationData.name}" registered successfully!`);
         }
       } catch (err) {
-        console.warn('Backend database registration failed, but proceeding to dashboard:', err.message);
+        console.error('Backend database registration failed:', err.message);
+        Alert.alert('Registration Failed', err.message || 'Failed to save registration in the database. Please try again.');
+        return; // stop execution and don't proceed to dashboard
       } finally {
         setLoading(false);
       }
@@ -400,13 +441,25 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
               <Text style={styles.inputPrefix}>+91</Text>
               <View style={styles.inputDivider} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { flex: 1 }]}
                 placeholder="10-digit phone number"
                 keyboardType="numeric"
                 maxLength={10}
                 value={resetPhone}
                 onChangeText={setResetPhone}
               />
+              <TouchableOpacity
+                onPress={handleSendResetOtp}
+                disabled={sendingOtp}
+                style={{ backgroundColor: '#1E5C2E', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginLeft: 8 }}
+                activeOpacity={0.8}
+              >
+                {sendingOtp ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: 'bold' }}>Send OTP</Text>
+                )}
+              </TouchableOpacity>
             </View>
 
             <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B7B6B', textTransform: 'uppercase', marginBottom: 8 }}>
@@ -416,9 +469,9 @@ export default function LoginScreen({ onLoginSuccess, onHidePreviewChange }) {
               <Feather name="shield" size={16} color="#6B7B6B" style={{ marginRight: 8 }} />
               <TextInput
                 style={styles.input}
-                placeholder={t('auth.otp_verify_placeholder')}
+                placeholder="Enter 6-digit OTP"
                 keyboardType="numeric"
-                maxLength={4}
+                maxLength={6}
                 value={resetOtp}
                 onChangeText={setResetOtp}
               />

@@ -408,7 +408,7 @@ describe('notifications core unit tests', () => {
       });
 
       expect(appNotificationRepository.insertShadowUser).toHaveBeenCalledWith([
-        'operator_123', 'Farmer', 'farmer_operator_123@annsetu.local', '1234', 'OPERATOR', true, expect.any(Date), expect.any(Date), 'cmmp9txv0000ai3t4wush9trs', 1
+        'operator_123', 'Farmer', 'farmer_operator_123@annsetu.local', '', 'OPERATOR', true, expect.any(Date), expect.any(Date), 'cmmp9txv0000ai3t4wush9trs', 1
       ]);
       expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM "ColdStorageOnboarding"'), ['operator_123']);
     });

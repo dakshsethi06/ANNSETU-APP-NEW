@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Image, Modal, FlatList, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Image, Modal, FlatList, StatusBar, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../../../core/network/supabase';
 import styles from '../styles/authStyles';
@@ -250,6 +250,8 @@ export default function RegisterScreen({ onBack, onNext }) {
         mpin: '',
     });
 
+    const [submitting, setSubmitting] = useState(false);
+
     const updateForm = (key, value) => setForm(f => ({ ...f, [key]: value }));
 
     const currentT = t('register', { returnObjects: true }) || {};
@@ -269,8 +271,16 @@ export default function RegisterScreen({ onBack, onNext }) {
 
     const handleAction = async () => {
         if (step === 5) {
-            // Trigger OTP flow for registration
-            onNext(form.phone, { ...form, role });
+            setSubmitting(true);
+            try {
+                if (onNext) {
+                    await onNext(form.phone, { ...form, role });
+                }
+            } catch (err) {
+                console.warn('[RegisterScreen] onNext error:', err.message);
+            } finally {
+                setSubmitting(false);
+            }
         } else {
             setStep(s => s + 1);
         }
@@ -520,11 +530,15 @@ export default function RegisterScreen({ onBack, onNext }) {
 
                     <View style={localStyles.footer}>
                         <TouchableOpacity
-                            style={[styles.primaryButton, canProceed() ? styles.primaryButtonActive : styles.primaryButtonDisabled]}
+                            style={[styles.primaryButton, canProceed() && !submitting ? styles.primaryButtonActive : styles.primaryButtonDisabled]}
                             onPress={handleAction}
-                            disabled={!canProceed()}
+                            disabled={!canProceed() || submitting}
                         >
-                            <Text style={styles.primaryButtonText}>{step === 5 ? currentT.verifyOtp : currentT.continue}</Text>
+                            {submitting ? (
+                                <ActivityIndicator color="#ffffff" size="small" />
+                            ) : (
+                                <Text style={styles.primaryButtonText}>{step === 5 ? currentT.verifyOtp : currentT.continue}</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 </View>

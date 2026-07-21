@@ -15,7 +15,7 @@ async function registerFarmer(req, res) {
     const finalCommodity = commodity || 'Potato';
     const now = new Date();
 
-    const hashedMpin = hashMpin(mpin || '1234');
+    const hashedMpin = hashMpin(mpin || '');
 
     const params = [
       serial_number, 'CS-' + serial_number, name, finalState, finalCommodity, true, 0.0, 10000.0, 0.0, false,

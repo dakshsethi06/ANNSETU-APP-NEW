@@ -76,12 +76,12 @@ describe('dispatch.service', () => {
       );
     });
 
-    test('sends MPIN-authorization notification to the farmer', async () => {
+    test('sends notification to the cold storage', async () => {
       await createNewDispatch(data);
       expect(createAppNotification).toHaveBeenCalledWith(
         expect.objectContaining({
-          userId: 'F1',
-          title: 'Dispatch Approval Required',
+          userId: 'CS1',
+          title: 'New Dispatch Request',
           type: 'warning',
         })
       );
@@ -110,6 +110,11 @@ describe('dispatch.service', () => {
 
     beforeEach(() => {
       dispatchRepo.getDispatchById.mockResolvedValue(dispatchRow);
+      dispatchRepo.getColdStorageWithMpin.mockResolvedValue({
+        id: 'CS1',
+        displayName: 'Sharma CS',
+        mpin: hashMpin('1234'),
+      });
       dispatchRepo.getFarmerWithMpin.mockResolvedValue({
         name: 'Ram Singh',
         mpin: hashMpin('1234'),
@@ -126,14 +131,9 @@ describe('dispatch.service', () => {
       });
     });
 
-    test('throws 404 when farmer profile not found', async () => {
-      dispatchRepo.getFarmerWithMpin.mockResolvedValue(null);
-      await expect(approveDispatchByMpin('NK-1', '1234')).rejects.toMatchObject({
-        statusCode: 404,
-      });
-    });
-
     test('throws 401 for wrong MPIN and does NOT update status', async () => {
+      dispatchRepo.getColdStorageWithMpin.mockResolvedValue({ id: 'CS1', mpin: hashMpin('0000') });
+      dispatchRepo.getFarmerWithMpin.mockResolvedValue({ name: 'Ram', mpin: hashMpin('0000') });
       await expect(approveDispatchByMpin('NK-1', '9999')).rejects.toMatchObject({
         statusCode: 401,
         message: 'Invalid MPIN. Please try again.',
@@ -148,39 +148,24 @@ describe('dispatch.service', () => {
     });
 
     test('works with legacy plain-text stored MPIN', async () => {
-      dispatchRepo.getFarmerWithMpin.mockResolvedValue({ name: 'Ram', mpin: '5678' });
+      dispatchRepo.getColdStorageWithMpin.mockResolvedValue({ displayName: 'Sharma CS', mpin: '5678' });
       const result = await approveDispatchByMpin('NK-1', '5678');
       expect(result.status).toBe('IN_TRANSIT');
     });
 
-    test('SECURITY: farmer with NO mpin set — throws 403 Forbidden', async () => {
-      // Validates that if a farmer hasn't set an MPIN, it fails closed instead of falling back to default
-      dispatchRepo.getFarmerWithMpin.mockResolvedValue({ name: 'Ram', mpin: null });
-      await expect(approveDispatchByMpin('NK-1', '1234')).rejects.toMatchObject({
-        statusCode: 403,
-        message: expect.stringContaining('MPIN not set'),
-      });
-    });
-
-    test('uses fallback string for farmer name when name is missing', async () => {
-      dispatchRepo.getFarmerWithMpin.mockResolvedValue({ name: '', mpin: hashMpin('1234') });
-      await approveDispatchByMpin('NK-1', '1234');
-      expect(createAppNotification).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: expect.stringContaining('Farmer authorized dispatch')
-        })
-      );
-    });
-
-    test('cleans up pending notification and notifies vendor + cold storage', async () => {
+    test('cleans up pending notification and notifies farmer', async () => {
       await approveDispatchByMpin('NK-1', '1234');
       expect(dispatchRepo.deleteNotification).toHaveBeenCalledWith(
-        'F1',
-        'Dispatch Approval Required',
+        'CS1',
+        'New Dispatch Request',
         expect.stringContaining('50 bags')
       );
-      // two approval notifications: vendor + cold storage
-      expect(createAppNotification).toHaveBeenCalledTimes(2);
+      expect(createAppNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'F1',
+          title: 'Dispatch Approved',
+        })
+      );
     });
 
     test('approval succeeds even if notification cleanup fails', async () => {

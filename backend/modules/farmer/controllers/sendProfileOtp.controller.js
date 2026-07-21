@@ -28,9 +28,9 @@ async function sendProfileOtp(req, res) {
       return res.status(404).json({ success: false, error: 'Farmer profile not found.' });
     }
 
-    // Deliver the OTP ONLY to the already verified existing phone and email
-    const smsTarget = farmer.phone || '';
-    const emailTarget = farmer.email || '';
+    // Deliver the OTP to the new target phone/email being verified
+    const smsTarget = targetType === 'phone' ? cleanTargetValue : '';
+    const emailTarget = targetType === 'email' ? cleanTargetValue : '';
 
     // Delete existing OTPs for this farmer and target type
     await farmerRepository.deleteOtpVerification(id, targetType);
@@ -79,7 +79,17 @@ async function sendProfileOtp(req, res) {
 
     // Ensure at least one notification channel was successfully used
     if (!smsSent && !emailSent) {
-      throw new Error(`Failed to send verification code. Details: ${sendErrors.join(', ')}`);
+      const config = require('../../../config');
+      if (config.nodeEnv === 'development') {
+        console.log(`
+[MOCK PROFILE OTP FALLBACK]
+Farmer ID: ${id}
+OTP Code: ${otpCode}
+Reason: Delivery failed or unconfigured (${sendErrors.join(', ')})
+-----------------------------------------`);
+      } else {
+        throw new Error(`Failed to send verification code. Details: ${sendErrors.join(', ')}`);
+      }
     }
 
     return res.json({ success: true, message: 'Verification OTP sent successfully.' });

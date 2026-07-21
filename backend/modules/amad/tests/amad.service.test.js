@@ -32,6 +32,7 @@ describe('amad.service', () => {
     beforeEach(() => {
       amadRepository.createAmadLot.mockResolvedValue(fakeLot);
       amadRepository.getFarmer.mockResolvedValue(fakeFarmer);
+      amadRepository.getFirstRoomForStorage = jest.fn().mockResolvedValue({ id: 'R1' });
     });
 
     test('throws 400 error when coldStorageId is missing', async () => {
@@ -49,12 +50,15 @@ describe('amad.service', () => {
 
       const params = amadRepository.createAmadLot.mock.calls[0][0];
       expect(params[0]).toMatch(/^AM-\d+$/);   // generated id
-      expect(params[1]).toBe('F1');            // farmerId
-      expect(params[2]).toBe('CS1');           // coldStorageId
-      expect(params[4]).toBeNull();            // kism defaults to null
-      expect(params[9]).toBe(100);             // availablePackets = packets
-      expect(params[10]).toBe(50);             // availableWeightQtl = weightQtl
-      expect(params[11]).toBe('Fresh');        // goodsCondition default
+      expect(params[1]).toMatch(/^AMAD-\d+$/); // generated amadNumber
+      expect(params[2]).toMatch(/^M-[A-Z0-9]+$/); // generated marka
+      expect(params[3]).toBe('F1');            // farmerId
+      expect(params[4]).toBe('CS1');           // coldStorageId
+      expect(params[6]).toBeNull();            // kism defaults to null
+      expect(params[7]).toBe('R1');            // resolved roomId
+      expect(params[11]).toBe(100);             // availablePackets = packets
+      expect(params[12]).toBe(50);             // availableWeightQtl = weightQtl
+      expect(params[13]).toBe('Fresh');        // goodsCondition default
     });
 
     test('passes through optional fields when provided', async () => {
@@ -65,9 +69,9 @@ describe('amad.service', () => {
         goodsCondition: 'Damaged',
       });
       const params = amadRepository.createAmadLot.mock.calls[0][0];
-      expect(params[4]).toBe('Jyoti');
-      expect(params[5]).toBe('R2');
-      expect(params[11]).toBe('Damaged');
+      expect(params[6]).toBe('Jyoti');
+      expect(params[7]).toBe('R2');
+      expect(params[13]).toBe('Damaged');
     });
 
     test('triggers SMS and app notifications with farmer details', async () => {
@@ -80,7 +84,7 @@ describe('amad.service', () => {
         })
       );
       expect(createAppNotification).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 'F1', lotId: 'AM-123' })
+        expect.objectContaining({ userId: 'CS1', lotId: 'AM-123' })
       );
     });
 

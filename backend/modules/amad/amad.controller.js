@@ -21,4 +21,17 @@ async function getHoldings(req, res) {
   }
 }
 
-module.exports = { createAmad, getHoldings };
+async function approveAmad(req, res) {
+  try {
+    const lotId = req.params.id;
+    const { coldStorageId, mpin } = req.body;
+    const lot = await amadService.approveAmadLot(lotId, coldStorageId, mpin);
+    return res.json({ success: true, message: 'Booking request approved successfully!', lot });
+  } catch (error) {
+    console.error('PostgreSQL Amad approve error:', error.message);
+    const status = error.statusCode || 400;
+    return res.status(status).json({ success: false, error: error.message || 'Failed to approve booking request' });
+  }
+}
+
+module.exports = { createAmad, getHoldings, approveAmad };

@@ -324,6 +324,8 @@
     "advisory2_title": "Rain expected Wednesday",
     "advisory2_text": "Plan dispatch before Wednesday. Rainfall of 15-20mm expected. Avoid field operations.",
     "advisory3_title": "Cold storage optimal",
-    "advisory3_text": "Ideal storage temperature inside facility rooms. Humidity is stable."
+    "advisory3_text": "Ideal storage temperature inside facility rooms. Humidity is stable.",
+    "forecast_unavailable": "Weather Forecast Unavailable",
+    "retry_btn": "Retry"
   }
 }

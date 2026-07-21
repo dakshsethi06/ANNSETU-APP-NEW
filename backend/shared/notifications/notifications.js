@@ -24,7 +24,7 @@ async function ensureUserForFarmer(farmerId) {
     const farmer = await appNotificationRepository.getFarmerDetails(farmerId);
     const name = farmer ? farmer.name : 'Farmer';
     const coldStorageId = farmer ? farmer.coldStorageId : DEFAULT_COLD_STORAGE_ID;
-    const mpin = (farmer && farmer.mpin) ? farmer.mpin : '1234';
+    const mpin = (farmer && farmer.mpin) ? farmer.mpin : '';
     const email = (farmer && farmer.email) ? farmer.email : `farmer_${farmerId}@annsetu.local`;
     const now = new Date();
     await appNotificationRepository.insertShadowUser([farmerId, name, email, mpin, 'OPERATOR', true, now, now, coldStorageId, 1]);

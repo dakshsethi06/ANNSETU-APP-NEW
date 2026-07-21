@@ -75,11 +75,11 @@ describe('farmer.service', () => {
       expect(params).not.toContain('5678'); // plain mpin never stored
     });
 
-    test('hashes the DEFAULT mpin when none provided', async () => {
+    test('hashes empty mpin when none provided', async () => {
       const { mpin, ...noMpin } = data;
       await service.registerNewFarmer(noMpin);
       const params = farmerRepository.createFarmerRecord.mock.calls[0][0];
-      expect(params[params.length - 1]).toBe(hashMpin(farmerConstants.DEFAULT_MPIN));
+      expect(params[params.length - 1]).toBe(hashMpin(''));
     });
 
     test('applies default state and commodity', async () => {
@@ -181,17 +181,13 @@ describe('farmer.service', () => {
         });
       });
 
-      test('SECURITY: farmer with no mpin — DEFAULT_MPIN grants login', async () => {
-        // Documents current behavior: farmer.mpin || DEFAULT_MPIN means any
-        // farmer who never set an MPIN can be logged into with the default.
+      test('farmer with no mpin rejects login → 401', async () => {
         farmerRepository.getFarmerByPhone.mockResolvedValue({
           id: 'F1', name: 'Ram', phone: '9876543210', state: 'UP', mpin: null,
         });
-        const result = await service.loginWithMpin(
-          '9876543210',
-          farmerConstants.DEFAULT_MPIN
-        );
-        expect(result.role).toBe(farmerConstants.ROLES.FARMER);
+        await expect(service.loginWithMpin('9876543210', farmerConstants.DEFAULT_MPIN)).rejects.toMatchObject({
+          statusCode: 401,
+        });
       });
     });
   });

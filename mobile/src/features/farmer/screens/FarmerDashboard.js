@@ -195,32 +195,54 @@ export default function FarmerDashboard({ farmerData, holdingsList = [], notific
           onPress={() => onActionPress('Weather')}
           activeOpacity={0.9}
         >
-          <LinearGradient
-            colors={['#0EA5E9', '#2563EB']}
-            style={styles.weatherGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-          >
-            <Feather name="sun" size={32} color="#FCD34D" />
-            <View style={styles.weatherInfo}>
-              <TranslatedText style={styles.weatherLoc}>
-                {weatherData ? weatherData.location : `${farmerData.village || farmerData.district || 'Tundla'}, ${farmerData.state || 'UP'}`}
-              </TranslatedText>
-              <TranslatedText style={styles.weatherDesc}>
-                {weatherData ? `${weatherData.description} · Humidity: ${weatherData.humidity}%` : t('dashboard.weather_loading')}
-              </TranslatedText>
-            </View>
-            <View style={styles.weatherRight}>
-              <Text style={styles.weatherTemp}>
-                {weatherData ? `${Math.round(weatherData.temp)}°C` : '32°C'}
-              </Text>
-              <Text style={styles.weatherRange}>
-                {weatherData && weatherData.forecast && weatherData.forecast.length > 0
-                  ? `Max ${weatherData.forecast[0].maxTemp}° / Min ${weatherData.forecast[0].minTemp}°`
-                  : 'Max 35° / Min 24°'}
-              </Text>
-            </View>
-          </LinearGradient>
+          {weatherData ? (
+            <LinearGradient
+              colors={['#0EA5E9', '#2563EB']}
+              style={styles.weatherGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Feather name="sun" size={32} color="#FCD34D" />
+              <View style={styles.weatherInfo}>
+                <TranslatedText style={styles.weatherLoc}>
+                  {weatherData.location}
+                </TranslatedText>
+                <TranslatedText style={styles.weatherDesc}>
+                  {`${weatherData.description} · Humidity: ${weatherData.humidity}%`}
+                </TranslatedText>
+              </View>
+              <View style={styles.weatherRight}>
+                <Text style={styles.weatherTemp}>
+                  {`${Math.round(weatherData.temp)}°C`}
+                </Text>
+                <Text style={styles.weatherRange}>
+                  {weatherData.forecast && weatherData.forecast.length > 0
+                    ? `Max ${weatherData.forecast[0].maxTemp}° / Min ${weatherData.forecast[0].minTemp}°`
+                    : ''}
+                </Text>
+              </View>
+            </LinearGradient>
+          ) : (
+            <LinearGradient
+              colors={['#9CA3AF', '#4B5563']}
+              style={styles.weatherGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Feather name="cloud-off" size={32} color="#E5E7EB" />
+              <View style={styles.weatherInfo}>
+                <TranslatedText style={styles.weatherLoc}>
+                  {`${farmerData.village || farmerData.district || 'Tundla'}, ${farmerData.state || 'UP'}`}
+                </TranslatedText>
+                <Text style={[styles.weatherDesc, { color: '#E5E7EB' }]}>
+                  {t('weather.forecast_unavailable')}
+                </Text>
+              </View>
+              <View style={styles.weatherRight}>
+                <Feather name="alert-circle" size={20} color="#E5E7EB" style={{ opacity: 0.8 }} />
+              </View>
+            </LinearGradient>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>

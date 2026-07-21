@@ -1,4 +1,4 @@
-const DEFAULT_COLD_STORAGE_ID = 'cmmp9txv0000ai3t4wush9trs';
+const DEFAULT_COLD_STORAGE_ID = '7895544442';
 
 const HTTP_STATUS = Object.freeze({
   OK: 200,

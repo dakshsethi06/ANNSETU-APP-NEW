@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as IntentLauncher from 'expo-intent-launcher';
 import { BACKEND_URL } from '../../../core/network/config';
@@ -19,7 +19,14 @@ export function useKhataDownloads(farmerData, lang) {
       const fileUri = `${FileSystem.documentDirectory}${filename}`;
       const url = `${BACKEND_URL}/api/farmers/${encodeURIComponent(farmerId)}/statement/download-pdf?fromDate=${fromDate}&toDate=${toDate}`;
 
-      const downloadResult = await FileSystem.downloadAsync(url, fileUri);
+      const { useAuthStore } = require('../../auth/store/useAuthStore');
+      const token = useAuthStore.getState().session?.access_token;
+
+      const downloadResult = await FileSystem.downloadAsync(url, fileUri, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
       if (downloadResult.status !== 200) throw new Error(`Status ${downloadResult.status}`);
 
       await handleFileView(downloadResult.uri, 'Statement downloaded successfully.', 'विवरण सफलतापूर्वक डाउनलोड हो गया।');
