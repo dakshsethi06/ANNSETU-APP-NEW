@@ -12,6 +12,6 @@ export const WEATHER_API_KEY = 'cc98b5f11d594fa893f52703261806'; // User's Weath
 export const ZOHO_DESK_PORTAL_LINK = process.env.EXPO_PUBLIC_ZOHO_DESK_PORTAL_LINK || 'https://annsetu.zohodesk.in/portal/';
 
 // Azure Translator credentials
-export const AZURE_TRANSLATOR_KEY = process.env.EXPO_PUBLIC_AZURE_TRANSLATOR_KEY || '';
-export const AZURE_TRANSLATOR_REGION = process.env.EXPO_PUBLIC_AZURE_TRANSLATOR_REGION || 'centralindia';
+export const AZURE_TRANSLATOR_KEY = '16vD2QiaclSgpdd4ObTxhoyvEg7z73yCQH0ezbLqhlWdBMWTth1RJQQJ99CGACGhslBXJ3w3AAAbACOGJLLo';
+export const AZURE_TRANSLATOR_REGION = 'centralindia';
 
