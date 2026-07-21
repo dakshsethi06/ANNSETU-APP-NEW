@@ -1,0 +1,24 @@
+node_modules/
+.env
+*.log
+.DS_Store
+
+# Expo / React Native
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# Android
+mobile/android/
+*.apk
+*.aab
+
+# iOS
+mobile/ios/

@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Annsetu",
+    "slug": "annsetu",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1E4032",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.annsetu.mandiprices"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "707a1ebb-44c0-4817-a368-9f30711b04e9"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/707a1ebb-44c0-4817-a368-9f30711b04e9"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-localization",
+      "expo-asset"
+    ]
+  }
+}
