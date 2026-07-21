@@ -9,6 +9,7 @@ import KhataTab from '../../farmer/screens/KhataTab';
 import NotificationsTab from '../../notifications/screens/NotificationsTab';
 import ProfileTab from '../../farmer/screens/ProfileTab';
 import CreateRequestTab from '../../farmer/screens/CreateRequestTab';
+import ClimateDashboard from './ClimateDashboard';
 import { fetchWeather } from '../../weather/services/weatherService';
 import MandiPricePreview from '../../mandi/components/MandiPricePreview';
 import styles from '../../farmer/styles/farmerDashboardStyles';
@@ -23,6 +24,7 @@ const QUICK_ACTIONS = [
   { label: 'Billing', icon: 'file-text', bg: '#F5F3FF', color: '#7C3AED' },
   { label: 'Manage Request', icon: 'plus', bg: '#FFF1F2', color: '#E11D48' },
   { label: 'Gate Pass', icon: 'clipboard', bg: '#FEF2F2', color: '#B91C1C' },
+  { label: 'Climate Status', icon: 'thermometer', bg: '#ECFDF5', color: '#047857' },
 ];
 
 const statusConfig = {
@@ -224,6 +226,8 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
   const handleQuickAction = (label) => {
     if (label === 'Manage Request') {
       setActiveTab('createRequest');
+    } else if (label === 'Climate Status') {
+      setActiveTab('climate');
     } else {
       Alert.alert(label, `${label} action clicked!`);
     }
@@ -435,6 +439,8 @@ export default function ColdStorageScreen({ loggedInPhone, onSwitchRole, onLogou
             </>
           ) : activeTab === 'createRequest' ? (
             <CreateRequestTab onBackPress={() => setActiveTab('home')} coldStorageId={profile.id} />
+          ) : activeTab === 'climate' ? (
+            <ClimateDashboard coldStorageId={profile.id} onBack={() => setActiveTab('home')} />
           ) : activeTab === 'stock' ? (
             <StockTab holdingsList={holdingsList} disableFallback={true} />
           ) : activeTab === 'market' ? (

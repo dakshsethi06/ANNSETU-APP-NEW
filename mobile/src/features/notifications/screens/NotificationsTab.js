@@ -6,6 +6,7 @@ import { FONTS } from '../../../core/theme/theme';
 import s from '../styles/notificationsTabStyles';
 import { fetchNotifications, markNotificationRead } from '../services/notificationService';
 import { fetchFarmers, BACKEND_URL } from '../../../core/network/api';
+import { supabase } from '../../../core/network/supabase';
 
 export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, onMarkRead }) {
   const { t } = useTranslation();
@@ -118,7 +119,48 @@ export default function NotificationsTab({ farmerId, onBack, onNavigateToTab, on
         setTimeout(() => reject(new Error('Network request timeout')), 2000)
       );
       const fetched = await Promise.race([fetchPromise, timeoutPromise]);
-      setNotifications(fetched || []);
+      let allNotifs = fetched || [];
+
+      // Fetch IoT alerts directly via Supabase FDW
+      try {
+        const { data: iotAlerts } = await supabase
+          .from('ForeignAlerts')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(10);
+        
+        if (iotAlerts && iotAlerts.length > 0) {
+          const formattedIotAlerts = iotAlerts.map(alert => {
+            // Translate raw errors into business logic (Peace-of-mind dashboard)
+            let bizMessage = `Chamber ${alert.device_id} requires attention.`;
+            if (alert.alert_type === 'TEMPERATURE_HIGH') {
+              bizMessage = `Chamber ${alert.device_id} is too warm. Your produce is at risk.`;
+            } else if (alert.alert_type === 'SENSOR_FAILURE') {
+              bizMessage = `Chamber ${alert.device_id} sensors are offline. Needs maintenance.`;
+            } else if (alert.alert_type === 'OFFLINE') {
+              bizMessage = `Chamber ${alert.device_id} has lost connection.`;
+            }
+
+            return {
+              id: alert.id,
+              title: `Climate Alert`,
+              message: bizMessage,
+              type: 'warning',
+              createdAt: alert.timestamp,
+              timeLabel: 'IoT Alert',
+              isRead: false,
+              isIot: true
+            };
+          });
+          allNotifs = [...formattedIotAlerts, ...allNotifs];
+        }
+      } catch (err) {
+        console.warn('Failed to fetch IoT alerts:', err.message);
+      }
+
+      // Sort by date descending
+      allNotifs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setNotifications(allNotifs);
     } catch (err) {
       console.warn('Error fetching notifications:', err.message);
       setNotifications([]);

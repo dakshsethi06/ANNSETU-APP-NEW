@@ -74,6 +74,7 @@ export default function ColdStorageTab({ setActiveTab }) {
               { label: 'Dues List', icon: '📒', bg: '#FFF3E0', color: '#E65100' },
               { label: 'Inventory', icon: '📋', bg: '#F3E5F5', color: '#4A148C' },
               { label: 'Mandi Rates', icon: '📈', bg: '#E0F7FA', color: '#006064' },
+              { label: 'Climate Status', icon: '🌡️', bg: '#E8F5E9', color: '#2E7D32' },
               { label: 'Onboarding CS', icon: '➕', bg: '#FCE4EC', color: '#C62828' }
             ].map((action, idx) => (
               <TouchableOpacity key={action.label + idx} style={dashboardStyles.csGridItem} activeOpacity={0.7}
@@ -82,6 +83,10 @@ export default function ColdStorageTab({ setActiveTab }) {
                   else if (action.label === 'Mandi Rates') setActiveTab('prices');
                   else if (action.label === 'Inventory') handleOpenInventory();
                   else if (action.label === 'Onboarding CS') setCsRegisterModalVisible(true);
+                  else if (action.label === 'Climate Status') {
+                    // Navigate to Climate Dashboard
+                    setActiveTab('climate');
+                  }
                   else Alert.alert(action.label, `${action.label} feature coming soon.`);
                 }}>
                 <View style={[dashboardStyles.csGridIconContainer, { backgroundColor: action.bg }]}><Text style={{ fontSize: 24 }}>{action.icon}</Text></View>
