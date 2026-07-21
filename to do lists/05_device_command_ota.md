@@ -9,26 +9,29 @@
 - [ ] **Rollback Support**: Ability to roll back a firmware version if an update fails.
 
 ## 5.2 Diagnostics Hub (Web Admin Panel)
-- [ ] **Deep Diagnostics View**: Battery voltage trends, RSSI signal trends, heartbeat intervals, and packet loss — all visualized for internal support teams.
-- [ ] **Device Restart Control**: Only accessible to Technician, Company Admin, and Super Admin roles via the web panel. Never exposed in the mobile app.
+- [ ] **Deep Diagnostics View**: Visualize battery voltage, RSSI signal trends, and heartbeat intervals.
+- [ ] **Battery Health Percentage**: Display "Battery Health" as a percentage (e.g., 85%) instead of just current charge level, tracking degradation over time.
+- [ ] **Actionable Sensor Alerts**: When sensor failures occur, visually link them to a protocol prompt (e.g., "Call Cold Storage Manager to replace sensor").
+- [ ] **Device Restart Control**: Only accessible to Admin/Super Admin via web panel.
 - [ ] **Maintenance Logs**: Technicians can log notes against a device or chamber.
 
-## 5.3 Configuration Tools (Web Admin Panel)
+## 5.3 Configuration & Setup (Web Admin Panel)
+- [ ] **Sequential MAC Pairing Wizard**: UI flow forcing users to link MACs in order: Master Controller -> Chamber Controller -> Child Nodes.
+- [ ] **Cloud-to-Device Configuration Push**: Sending a payload via MQTT to configure the Master Controller with its allowed child nodes' MAC addresses for ESP-NOW.
+- [ ] **Two-Step Device Lifecycle**: New devices default to "Disabled/Inactive". Only marked "Active" when a technician completes the setup wizard.
 - [ ] **Threshold Settings**: Admins set Temperature/Humidity alert thresholds per chamber.
 - [ ] **Sampling Intervals**: Configure how often devices send readings.
-- [ ] **Heartbeat Intervals & Alert Delays**: Fine-tune device communication cadence.
-- [ ] **OTA Schedules & Time Zones**: Configure deployment windows per region.
 
 ## 5.4 Device Management Workflows (Web Admin Panel)
-- [ ] Register Device, Replace Device, Remove Device, Assign to Chamber.
+- [x] Register Device, Replace Device, Remove Device, Assign to Chamber. *(Partially Done: Register Device is done)*
 - [ ] Change Firmware Version, View Full Device Logs, Update Configuration.
 
 ## 5.5 MAC Address → Barcode System (NEW)
-- [ ] On device registration, capture the device **MAC Address**.
-- [ ] Auto-generate a unique **barcode** (e.g. QR code or Code128) from the MAC address.
-- [ ] Store the barcode image and MAC address together in the company database linked to the device record.
-- [ ] Allow technicians to print the barcode and physically stick it on the device for field identification.
-- [ ] Admin panel must support **barcode scanning** to instantly look up a device's full profile.
+- [x] On device registration, capture the device **MAC Address**.
+- [x] Auto-generate a unique **barcode** (e.g. QR code or Code128) from the MAC address.
+- [x] Store the barcode image and MAC address together in the company database linked to the device record.
+- [x] Allow technicians to print the barcode and physically stick it on the device for field identification.
+- [x] Admin panel must support **barcode scanning** to instantly look up a device's full profile.
 
 ## 5.6 Two-Stage OTA Relay Architecture (NEW — Architecture TBD)
 The OTA update flow uses a relay model through the Master Controller:

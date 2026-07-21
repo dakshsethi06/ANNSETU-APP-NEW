@@ -11,3 +11,6 @@ The database must rigidly reflect the physical installation environments and str
 - [ ] Fields: `device_id`, `mac_address`, `barcode_value`, `barcode_image_url`, `generated_at`, `printed_at`.
 - [ ] The barcode record is created automatically when a device is registered via the admin panel.
 - [ ] Barcode must be unique per device — one MAC address = one barcode.
+
+## 2.5 Admin Panel Sync (TODO)
+- [ ] **TODO (PENDING HIGHER-UP CONFIRMATION)**: Decide whether the Admin Panel should query the FDW `annsetu_remote."Devices"` (live sync with IoT source DB) or strictly query the local `public.devices` table shown in the Supabase screenshot.

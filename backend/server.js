@@ -2,9 +2,17 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const path = require('path');
+const setupMQTTBroker = require('./modules/telemetry/telemetry.mqtt');
+const { startWatchdog } = require('./modules/alerts/watchdog.cron');
+const { initDispatcher } = require('./modules/commands/command.dispatcher');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Initialize MQTT Broker
+setupMQTTBroker();
+initDispatcher();
+startWatchdog();
 
 // Middlewares
 const allowedOrigins = process.env.CORS_WHITELIST 
@@ -37,6 +45,10 @@ app.use('/api', require('./modules/mandi'));
 app.use('/api', require('./modules/weather'));
 app.use('/api', require('./modules/farmer'));
 app.use('/api', require('./modules/amad'));
+app.use('/api', require('./modules/telemetry'));
+app.use('/api', require('./modules/device-management'));
+app.use('/api', require('./modules/ota'));
+app.use('/api/commands', require('./modules/commands/command.routes'));
 app.use('/api', require('./modules/storage'));
 app.use('/api', require('./modules/notification'));
 app.use('/api', require('./modules/cron'));
