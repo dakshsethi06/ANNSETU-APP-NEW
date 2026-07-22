@@ -23,7 +23,22 @@ const processIncomingPacket = async (topic, payloadString, clientId) => {
 
   const { type, data } = payload;
 
+  // Auto-detect flat sensor payloads from real ESP32/QEMU firmware
+  // These arrive as: { device_id, temperature, humidity, battery_voltage, rssi }
+  // instead of the wrapped: { type: "SENSOR_DATA", data: { ... } }
   if (!type) {
+    if (payload.temperature !== undefined || payload.humidity !== undefined) {
+      console.log(`[PacketParser] Auto-detected flat SENSOR_DATA payload, normalizing...`);
+      const deviceId = payload.device_id || clientId;
+      await handleSensorData(deviceId, {
+        temperature: payload.temperature,
+        humidity: payload.humidity,
+        battery_voltage: payload.battery_voltage,
+        rssi: payload.rssi,
+        chamberId: payload.chamber_id || null
+      });
+      return;
+    }
     throw new Error('Payload missing "type" field');
   }
 
