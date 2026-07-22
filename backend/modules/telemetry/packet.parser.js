@@ -79,16 +79,31 @@ const processIncomingPacket = async (topic, payloadString, clientId) => {
 };
 
 const { evaluateTelemetry } = require('../alerts/alert.engine');
+const pool = require('../../config/database');
+
+const updateDeviceLastSeen = async (clientId) => {
+  if (!pool) return;
+  try {
+    const cleanId = clientId.toUpperCase();
+    await pool.query(
+      `UPDATE devices SET last_seen_at = NOW(), status = 'ACTIVE' WHERE mac_address = $1 OR device_id = $1`,
+      [cleanId]
+    );
+  } catch (err) {
+    console.error(`[PacketParser] Error updating last_seen_at for ${clientId}:`, err.message);
+  }
+};
 
 // Handlers for each packet type (to be expanded with DB logic)
 const handleHeartbeat = async (clientId, data) => {
   console.log(`[PacketParser] HEARTBEAT from ${clientId}`);
-  // Update last communication timestamp in DB
+  await updateDeviceLastSeen(clientId);
 };
 
 const handleSensorData = async (clientId, data) => {
   console.log(`[PacketParser] SENSOR_DATA from ${clientId}:`, data);
   // Insert telemetry data into DB
+  await updateDeviceLastSeen(clientId);
   
   // Evaluate thresholds and failures
   await evaluateTelemetry(clientId, data);
