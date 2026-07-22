@@ -59,14 +59,18 @@ async function getMandiPrices(req, res) {
     ];
 
     let filtered = mockMandiRecords;
-    if (state && state !== 'All') {
-      filtered = filtered.filter(r => r.state.toLowerCase() === state.toLowerCase());
+    const reqState = req.query.state || 'Uttar Pradesh';
+    const reqCommodity = req.query.commodity || 'All';
+    const reqMarket = req.query.market || '';
+    
+    if (reqState && reqState !== 'All') {
+      filtered = filtered.filter(r => r.state.toLowerCase() === reqState.toLowerCase());
     }
-    if (commodity && commodity !== 'All') {
-      filtered = filtered.filter(r => r.commodity.toLowerCase().includes(commodity.toLowerCase()));
+    if (reqCommodity && reqCommodity !== 'All') {
+      filtered = filtered.filter(r => r.commodity.toLowerCase().includes(reqCommodity.toLowerCase()));
     }
-    if (market && market !== 'All') {
-      filtered = filtered.filter(r => r.market.toLowerCase().includes(market.toLowerCase()));
+    if (reqMarket && reqMarket !== 'All') {
+      filtered = filtered.filter(r => r.market.toLowerCase().includes(reqMarket.toLowerCase()));
     }
 
     const minPrice = filtered.length > 0 ? Math.min(...filtered.map(r => r.minPrice)) : 750;

@@ -1,4 +1,4 @@
-export const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+export const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://10.189.73.163:3001';
 export const USE_BACKEND = true;
 
 export const API_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
@@ -15,3 +15,39 @@ export const ZOHO_DESK_PORTAL_LINK = process.env.EXPO_PUBLIC_ZOHO_DESK_PORTAL_LI
 export const AZURE_TRANSLATOR_KEY = '16vD2QiaclSgpdd4ObTxhoyvEg7z73yCQH0ezbLqhlWdBMWTth1RJQQJ99CGACGhslBXJ3w3AAAbACOGJLLo';
 export const AZURE_TRANSLATOR_REGION = 'centralindia';
 
+export const formatImageUrl = (url) => {
+  if (!url) return url;
+  if (url.includes('localhost')) {
+    // Extract IP address from BACKEND_URL (e.g., "http://10.189.73.163:3001" -> "10.189.73.163")
+    const match = BACKEND_URL.match(/http:\/\/([^:]+)/);
+    const ip = match ? match[1] : '10.189.73.163';
+    return url.replace('localhost', ip);
+  }
+  return url;
+};
+
+
+// WeatherAPI.com API details
+export const WEATHER_API_URL = 'https://api.weatherapi.com/v1/forecast.json';
+export const WEATHER_API_KEY = 'cc98b5f11d594fa893f52703261806'; // User's WeatherAPI.com API Key
+
+// Zoho Desk Portal Link
+export const ZOHO_DESK_PORTAL_LINK = process.env.EXPO_PUBLIC_ZOHO_DESK_PORTAL_LINK || 'https://annsetu.zohodesk.in/portal/';
+
+// Azure Translator credentials
+export const AZURE_TRANSLATOR_KEY = '16vD2QiaclSgpdd4ObTxhoyvEg7z73yCQH0ezbLqhlWdBMWTth1RJQQJ99CGACGhslBXJ3w3AAAbACOGJLLo';
+export const AZURE_TRANSLATOR_REGION = 'centralindia';
+
+=======
+
+export const formatImageUrl = (url) => {
+  if (!url) return url;
+  if (url.includes('localhost')) {
+    // Extract IP address from BACKEND_URL (e.g., "http://10.189.73.163:3001" -> "10.189.73.163")
+    const match = BACKEND_URL.match(/http:\/\/([^:]+)/);
+    const ip = match ? match[1] : '10.189.73.163';
+    return url.replace('localhost', ip);
+  }
+  return url;
+};
+>>>>>>> fix-backend-frontend

@@ -25,15 +25,19 @@ const dispatchCommand = async (deviceId, payload) => {
     throw new Error('MQTT Client not connected');
   }
 
-  const topic = `annsetu/commands/${deviceId}`;
-  
+  // Topic format matches firmware: device/{mac}/cmd/status or device/{mac}/cmd/ota
+  const topic = `device/${deviceId}/cmd/${payload.type === 'OTA_UPDATE' ? 'ota' : 'status'}`;
+  const mqttPayload = payload.type === 'OTA_UPDATE'
+    ? { url: payload.url }
+    : { action: payload.action };
+
   return new Promise((resolve, reject) => {
-    mqttClient.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
+    mqttClient.publish(topic, JSON.stringify(mqttPayload), { qos: 1 }, (err) => {
       if (err) {
         console.error(`[CommandDispatcher] Failed to dispatch to ${topic}:`, err);
         return reject(err);
       }
-      console.log(`[CommandDispatcher] Dispatched command to ${topic}:`, payload);
+      console.log(`[CommandDispatcher] Dispatched command to ${topic}:`, mqttPayload);
       resolve(true);
     });
   });

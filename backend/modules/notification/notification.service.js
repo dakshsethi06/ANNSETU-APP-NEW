@@ -59,7 +59,11 @@ async function fetchNotifications(farmerId) {
   for (const item of dbNotifs) {
     if (item.isRead) {
       readNotifIds.add(item.id);
-      continue;
+      
+      // Auto-generated notifications disappear when read, but admin broadcasts stay until manually deleted.
+      if (item.type !== 'GLOBAL_BROADCAST') {
+        continue;
+      }
     }
 
     if (await checkStale(item, processedTxsMap)) {
@@ -100,7 +104,7 @@ async function fetchNotifications(farmerId) {
     }
   }
 
-  return notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 50);
 }
 
 /**
@@ -140,10 +144,17 @@ async function markNotificationRead(id) {
     return { message: 'Bill notification marked as read' };
   }
 
-  const userId = await notificationRepository.getNotificationUserId(id);
-  if (!userId) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
+  // Get the full notification row (userId may be null for CS notifications)
+  const notif = await notificationRepository.getNotificationById(id);
+  if (!notif) throw Object.assign(new Error('Notification not found'), { statusCode: 404 });
 
-  const isCS = await notificationRepository.checkColdStorageExists(userId);
+  // If userId is null it's a CS notification — mark as read directly
+  if (!notif.userId) {
+    const notification = await notificationRepository.markNotificationAsRead(id);
+    return { notification };
+  }
+
+  const isCS = await notificationRepository.checkColdStorageExists(notif.userId);
   if (isCS) {
     await notificationRepository.deleteNotification(id);
     return { message: 'Notification deleted' };
@@ -162,9 +173,18 @@ async function registerUserPushToken(userId, pushToken) {
   await notificationRepository.upsertUserPushToken(resolvedUserId, `farmer_${resolvedUserId}@annsetu.local`, pushToken);
 }
 
+async function deleteNotificationById(id) {
+  if (id.startsWith('bill-')) {
+    return { message: 'Bill notification cannot be deleted directly' };
+  }
+  await notificationRepository.deleteNotification(id);
+  return { message: 'Notification deleted' };
+}
+
 module.exports = {
   fetchNotifications,
   cleanupStaleNotifications,
   markNotificationRead,
-  registerUserPushToken
+  registerUserPushToken,
+  deleteNotificationById
 };

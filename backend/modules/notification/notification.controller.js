@@ -41,5 +41,16 @@ async function cleanupNotifications(req, res) {
   }
 }
 
-module.exports = { getNotifications, markAsRead, registerPushToken, cleanupNotifications };
+async function deleteNotification(req, res) {
+  try {
+    const result = await notificationService.deleteNotificationById(req.params.id);
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    console.error('PostgreSQL notification delete error:', error.message);
+    const status = error.statusCode || 500;
+    return res.status(status).json({ success: false, error: error.message || 'Failed to delete notification' });
+  }
+}
+
+module.exports = { getNotifications, markAsRead, registerPushToken, cleanupNotifications, deleteNotification };
 

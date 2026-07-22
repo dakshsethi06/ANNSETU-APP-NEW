@@ -4,7 +4,7 @@ const userSync = require('./repositories/userSync.repository');
 async function getAppNotifications(farmerId) {
   const dbNotifsRes = await db.query(
     `SELECT id, "lotId", type, title, message, icon, "isRead", "createdAt", "actionUrl" 
-     FROM "AppNotification" WHERE "userId" = $1 ORDER BY "createdAt" DESC`,
+     FROM "AppNotification" WHERE "userId" = $1 OR "coldStorageId" = $1 ORDER BY "createdAt" DESC`,
     [farmerId]
   );
   return dbNotifsRes.rows;
@@ -108,6 +108,11 @@ async function upsertBillingNotification(id, coldStorageId, farmerId, message) {
   );
 }
 
+async function getNotificationById(id) {
+  const checkRes = await db.query('SELECT * FROM "AppNotification" WHERE id = $1', [id]);
+  return checkRes.rows[0];
+}
+
 async function getNotificationUserId(id) {
   const checkRes = await db.query('SELECT "userId" FROM "AppNotification" WHERE id = $1', [id]);
   return checkRes.rows[0]?.userId;
@@ -129,6 +134,7 @@ module.exports = {
   getFarmerColdStorageId,
   upsertBillingNotification,
   getNotificationUserId,
+  getNotificationById,
   getUserForFarmer: userSync.getUserForFarmer,
   getFarmerDetails: userSync.getFarmerDetails,
   insertShadowUser: userSync.insertShadowUser,

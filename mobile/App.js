@@ -1,23 +1,38 @@
 import React, { useEffect } from 'react';
-import { Alert, View, Text, ActivityIndicator, Platform, Keyboard } from 'react-native';
-import * as Updates from 'expo-updates';
-import * as Notifications from 'expo-notifications';
+import { Alert, View, ActivityIndicator, Platform, Keyboard } from 'react-native';
+// import * as Notifications from 'expo-notifications';
 import { supabase } from './src/core/network/supabase';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/features/auth/store/useAuthStore';
 import { NavigationContainer } from '@react-navigation/native';
 
-// NOTE: Global fetch interceptor is defined in index.js — do not duplicate here.
+// Global fetch interceptor to automatically attach JWT token
+const originalFetch = global.fetch;
+global.fetch = async (input, init) => {
+  try {
+    const sessionObj = useAuthStore.getState().session;
+    if (sessionObj && sessionObj.access_token) {
+      init = init || {};
+      init.headers = init.headers || {};
+      if (!init.headers['Authorization'] && !init.headers['authorization']) {
+        init.headers['Authorization'] = `Bearer ${sessionObj.access_token}`;
+      }
+    }
+  } catch (err) {
+    console.warn('Fetch interceptor failed to attach auth token:', err.message);
+  }
+  return originalFetch(input, init);
+};
 
 
 // Configure push notification alert settings when the app is foregrounded
-Notifications.setNotificationHandler({
+/* Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
-});
+}); */
 
 // Expo Google Fonts loader
 import { useFonts } from 'expo-font';
@@ -54,7 +69,6 @@ export default function App() {
     setLoadingSession,
     setKeyboardVisible,
     determineRole,
-    _hasHydrated,
   } = useAuthStore();
 
   // Load custom fonts for native Android / iOS builds (APK/IPA)
@@ -86,72 +100,22 @@ export default function App() {
     }
   }, [session]);
 
-  // Wait for zustand persist rehydration before initializing session
   useEffect(() => {
-    if (!_hasHydrated) return; // Don't run until store is rehydrated
-
-    let resolved = false;
-    const done = () => {
-      if (!resolved) {
-        resolved = true;
-        setLoadingSession(false);
-      }
-    };
-
-    // 2.5-second timeout safety fallback
-    const timeoutId = setTimeout(() => {
-      console.warn("Initial session retrieval timed out. Proceeding to load app...");
-      done();
-    }, 2500);
-
     // 1. Fetch initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(timeoutId);
-      if (session) {
-        setSession(session);
-      } else {
-        const current = useAuthStore.getState().session;
-        if (!current || !current.isMpinLogin) {
-          setSession(null);
-        }
-      }
-      done();
+      setSession(session);
+      setLoadingSession(false);
     }).catch(err => {
-      clearTimeout(timeoutId);
       console.warn("Failed to get initial session:", err);
-      done();
+      setLoadingSession(false);
     });
 
     // 2. Listen for auth changes (login, logout, token refresh)
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setSession(session);
-      } else {
-        const current = useAuthStore.getState().session;
-        if (!current || !current.isMpinLogin) {
-          setSession(null);
-        }
-      }
+      setSession(session);
     });
 
-    // 3. OTA Updates check
-    async function checkUpdates() {
-      if (__DEV__) return; 
-      try {
-        const update = await Updates.checkForUpdateAsync();
-        if (update.isAvailable) {
-          await Updates.fetchUpdateAsync();
-          Alert.alert(
-            "Update Available",
-            "A new update has been downloaded. The app will now reload to apply the changes.",
-            [{ text: "Reload Now", onPress: () => Updates.reloadAsync() }]
-          );
-        }
-      } catch (e) {
-        console.log("Error checking for updates:", e);
-      }
-    }
-    checkUpdates();
+    // 3. OTA Updates check (disabled in dev mode)
 
     // 4. Keyboard listeners to hide preview bar when typing
     const keyboardDidShowListener = Keyboard.addListener(
@@ -170,15 +134,12 @@ export default function App() {
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
-  }, [_hasHydrated]);
+  }, []);
 
-  if (!fontsLoaded || !_hasHydrated || loadingSession) {
+  if (!fontsLoaded || loadingSession) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E8F5E9' }}>
         <ActivityIndicator size="large" color="#2E7D32" />
-        <Text style={{ marginTop: 10, color: '#2E7D32', fontWeight: 'bold' }}>
-          {!fontsLoaded ? "Loading Fonts..." : !_hasHydrated ? "Restoring Session..." : "Loading Session..."}
-        </Text>
       </View>
     );
   }

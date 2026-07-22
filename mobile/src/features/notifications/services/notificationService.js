@@ -36,6 +36,22 @@ export async function markNotificationRead(notificationId) {
   }
 }
 
+export async function deleteNotification(notificationId) {
+  try {
+    const url = `${BACKEND_URL}/api/notifications/${encodeURIComponent(notificationId)}`;
+    const response = await fetch(url, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error(`Server returned status ${response.status}`);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Failed to delete notification');
+    return true;
+  } catch (err) {
+    console.warn('Error deleting notification:', err.message);
+    return false;
+  }
+}
+
 /**
  * Subscribe to real-time notification changes (INSERT, UPDATE, DELETE) for a specific user.
  */

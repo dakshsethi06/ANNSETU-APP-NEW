@@ -6,6 +6,7 @@ const { validateGetNotifications, validateRegisterPushToken } = require('./notif
 router.get('/notifications', validateGetNotifications, notificationController.getNotifications);
 router.post('/notifications/cleanup', notificationController.cleanupNotifications);
 router.post('/notifications/:id/read', notificationController.markAsRead);
+router.delete('/notifications/:id', notificationController.deleteNotification);
 router.post('/users/push-token', validateRegisterPushToken, notificationController.registerPushToken);
 
 module.exports = router;
