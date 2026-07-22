@@ -1,0 +1,24 @@
+Command: ninja all
+[1/11] Performing build step for 'bootloader'
+[1/1] C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\tejas\AnnsetuNewApp\esp32_qemu_mock\build\bootloader\esp-idf\esptool_py && C:\Espressif\python_env\idf5.5_py3.11_env\Scripts\python.exe C:/Espressif/frameworks/esp-idf-v5.5.5-2/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x1000 C:/Users/tejas/AnnsetuNewApp/esp32_qemu_mock/build/bootloader/bootloader.bin"
+Bootloader binary size 0x6610 bytes. 0x9f0 bytes (9%) free.
+[2/11] No install step for 'bootloader'
+[3/11] Completed 'bootloader'
+[4/11] Building C object esp-idf/esp_app_format/CMakeFiles/__idf_esp_app_format.dir/esp_app_desc.c.obj
+[5/11] Linking C static library esp-idf\esp_app_format\libesp_app_format.a
+[6/11] Building CXX object esp-idf/main/CMakeFiles/__idf_main.dir/main.cpp.obj
+C:/Users/tejas/AnnsetuNewApp/esp32_qemu_mock/main/main.cpp: In function 'void init_qemu_ethernet()':
+C:/Users/tejas/AnnsetuNewApp/esp32_qemu_mock/main/main.cpp:153:11: warning: unused variable 'glpi' [-Wunused-variable]
+  153 |     void *glpi = NULL; // Glue logic for QEMU openeth usually not needed for ESP-IDF v5+
+      |           ^~~~
+[7/11] Linking C static library esp-idf\main\libmain.a
+[8/11] Generating esp-idf/esp_system/ld/sections.ld
+[9/11] Linking CXX executable esp32_qemu_mock.elf
+[10/11] Generating binary image from built executable
+esptool.py v4.12.0
+Creating esp32 image...
+Merged 2 ELF sections
+Successfully created esp32 image.
+Generated C:/Users/tejas/AnnsetuNewApp/esp32_qemu_mock/build/esp32_qemu_mock.bin
+[11/11] C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\tejas\AnnsetuNewApp\esp32_qemu_mock\build\esp-idf\esptool_py && C:\Espressif\python_env\idf5.5_py3.11_env\Scripts\python.exe C:/Espressif/frameworks/esp-idf-v5.5.5-2/components/partition_table/check_sizes.py --offset 0x8000 partition --type app C:/Users/tejas/AnnsetuNewApp/esp32_qemu_mock/build/partition_table/partition-table.bin C:/Users/tejas/AnnsetuNewApp/esp32_qemu_mock/build/esp32_qemu_mock.bin"
+esp32_qemu_mock.bin binary size 0xa51e0 bytes. Smallest app partition is 0x100000 bytes. 0x5ae20 bytes (36%) free.

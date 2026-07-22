@@ -19,7 +19,7 @@
 static const char *TAG = "MASTER_NODE";
 
 // Firmware Version — bump this for each OTA build
-#define FIRMWARE_VERSION "v1.0.1"
+#define FIRMWARE_VERSION "3.0.0-FIXED"
 
 // HiveMQ Public Broker
 #define BROKER_URL "mqtt://broker.hivemq.com"
@@ -79,7 +79,13 @@ void perform_ota_update(const char* url, const char* version) {
         ESP_LOGI(TAG, "OTA flash successful! Sending status and rebooting...");
         publish_ota_status("flashed", version);
         vTaskDelay(1000 / portTICK_PERIOD_MS); // Give MQTT time to send before reboot
-        esp_restart();
+        ESP_LOGW(TAG, "==================================================");
+        ESP_LOGW(TAG, "OTA UPDATE SUCCESSFUL!");
+        ESP_LOGW(TAG, "Due to a QEMU emulator bug with esp_restart(),");
+        ESP_LOGW(TAG, "the device will not reboot automatically.");
+        ESP_LOGW(TAG, "Please press Ctrl+C and restart QEMU manually.");
+        ESP_LOGW(TAG, "==================================================");
+        // esp_restart(); // Commented out to prevent QEMU SW_CPU_RESET crash
     } else {
         ESP_LOGE(TAG, "OTA Update FAILED (esp_https_ota returned error %d)", ret);
         publish_ota_status("failed", version);

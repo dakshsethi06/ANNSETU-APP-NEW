@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "esp32_qemu_mock",
-    "project_version":    "b6b2672",
+    "project_version":    "b467df1-dirty",
     "project_path":       "C:/Users/tejas/AnnsetuNewApp/esp32_qemu_mock",
     "idf_path":           "C:/Espressif/frameworks/esp-idf-v5.5.5-2",
     "build_dir":          "C:/Users/tejas/AnnsetuNewApp/esp32_qemu_mock/build",

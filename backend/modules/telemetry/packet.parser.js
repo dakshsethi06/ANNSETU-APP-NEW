@@ -42,36 +42,40 @@ const processIncomingPacket = async (topic, payloadString, clientId) => {
     throw new Error('Payload missing "type" field');
   }
 
-  switch (type) {
-    case 'HEARTBEAT':
-      await handleHeartbeat(clientId, data);
+  const typeLower = type ? type.toLowerCase() : null;
+  const payloadData = data || payload;
+
+  switch (typeLower) {
+    case 'heartbeat':
+      await handleHeartbeat(clientId, payloadData);
       break;
-    case 'SENSOR_DATA':
-      await handleSensorData(clientId, data);
+    case 'sensor_data':
+    case 'sensor':
+      await handleSensorData(clientId, payloadData);
       break;
-    case 'BATTERY':
-      await handleBattery(clientId, data);
+    case 'battery':
+      await handleBattery(clientId, payloadData);
       break;
-    case 'ALERT':
-      await handleAlert(clientId, data);
+    case 'alert':
+      await handleAlert(clientId, payloadData);
       break;
-    case 'OTA_REQUEST':
-      await handleOtaRequest(clientId, data);
+    case 'ota_request':
+      await handleOtaRequest(clientId, payloadData);
       break;
-    case 'OTA_DATA':
-      await handleOtaData(clientId, data);
+    case 'ota_data':
+      await handleOtaData(clientId, payloadData);
       break;
-    case 'OTA_COMPLETE':
-      await handleOtaComplete(clientId, data);
+    case 'ota_complete':
+      await handleOtaComplete(clientId, payloadData);
       break;
-    case 'ACK':
-      await handleAck(clientId, data);
+    case 'ack':
+      await handleAck(clientId, payloadData);
       break;
-    case 'ERROR':
-      await handleError(clientId, data);
+    case 'error':
+      await handleError(clientId, payloadData);
       break;
-    case 'DEVICE_STATUS':
-      await handleDeviceStatus(clientId, data);
+    case 'device_status':
+      await handleDeviceStatus(clientId, payloadData);
       break;
     default:
       console.warn(`[PacketParser] Unknown payload type: ${type}`);
@@ -98,19 +102,52 @@ const updateDeviceLastSeen = async (clientId) => {
 const handleHeartbeat = async (clientId, data) => {
   console.log(`[PacketParser] HEARTBEAT from ${clientId}`);
   await updateDeviceLastSeen(clientId);
+  
+  if (!pool) return;
+  const deviceId = data.device_id || clientId;
+  try {
+    await pool.query(
+      `INSERT INTO "TelemetryLogs" ("device_id", "uptime", "status_code", "rssi") VALUES ($1, $2, $3, $4)`,
+      [deviceId, data.uptime || null, data.status_code || null, data.rssi || null]
+    );
+  } catch (err) {
+    console.error('[PacketParser] DB Insert Error for Heartbeat:', err.message);
+  }
 };
 
 const handleSensorData = async (clientId, data) => {
   console.log(`[PacketParser] SENSOR_DATA from ${clientId}:`, data);
-  // Insert telemetry data into DB
   await updateDeviceLastSeen(clientId);
   
-  // Evaluate thresholds and failures
+  // Evaluate thresholds and failures BEFORE inserting so alerts fire immediately
   await evaluateTelemetry(clientId, data);
+
+  if (!pool) return;
+  const deviceId = data.device_id || clientId;
+  try {
+    await pool.query(
+      `INSERT INTO "TelemetryLogs" ("device_id", "temperature", "humidity", "battery_voltage", "rssi") VALUES ($1, $2, $3, $4, $5)`,
+      [deviceId, data.temperature, data.humidity, data.battery_voltage || null, data.rssi || null]
+    );
+  } catch (err) {
+    console.error('[PacketParser] DB Insert Error for SensorData:', err.message);
+  }
 };
 
 const handleBattery = async (clientId, data) => {
   console.log(`[PacketParser] BATTERY from ${clientId}:`, data);
+  await updateDeviceLastSeen(clientId);
+
+  if (!pool) return;
+  const deviceId = data.device_id || clientId;
+  try {
+    await pool.query(
+      `INSERT INTO "TelemetryLogs" ("device_id", "battery_voltage", "battery_percentage", "charging_state") VALUES ($1, $2, $3, $4)`,
+      [deviceId, data.voltage || data.battery_voltage, data.percentage || data.battery_percentage, data.charging_state || null]
+    );
+  } catch (err) {
+    console.error('[PacketParser] DB Insert Error for Battery:', err.message);
+  }
 };
 
 const handleAlert = async (clientId, data) => {

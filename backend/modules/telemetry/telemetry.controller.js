@@ -28,8 +28,9 @@ const bulkSync = async (req, res) => {
 const getLiveTelemetry = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT * FROM "ForeignTelemetry" 
-      ORDER BY timestamp DESC 
+      SELECT *, recorded_at as timestamp 
+      FROM "TelemetryLogs" 
+      ORDER BY recorded_at DESC 
       LIMIT 10
     `);
 
