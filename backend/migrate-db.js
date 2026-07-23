@@ -212,7 +212,7 @@ async function createIndexes(newPool, targetSchema, tableName, indexes) {
 }
 
 async function copyData(oldPool, newPool, targetSchema, tableName, columns) {
-  const countRes = await oldPool.query(`SELECT COUNT(*) FROM public."${tableName}"`);
+  const countRes = await oldPool.query(`SELECT COUNT(*) FROM "${tableName}"`);
   const total = parseInt(countRes.rows[0].count);
   
   if (total === 0) {
@@ -220,7 +220,7 @@ async function copyData(oldPool, newPool, targetSchema, tableName, columns) {
     return;
   }
 
-  const rows = await oldPool.query(`SELECT * FROM public."${tableName}"`);
+  const rows = await oldPool.query(`SELECT * FROM "${tableName}"`);
   const colNames = columns.map(c => `"${c.column_name}"`).join(', ');
   const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
   
@@ -329,7 +329,7 @@ async function main() {
     console.log('\n🔍 Verification:');
     let allMatch = true;
     for (const [tableName, targetSchema] of Object.entries(tableSchemas)) {
-      const oldCount = await oldPool.query(`SELECT COUNT(*) FROM public."${tableName}"`);
+      const oldCount = await oldPool.query(`SELECT COUNT(*) FROM "${tableName}"`);
       let newCount = { rows: [{ count: '?' }] };
       try {
         newCount = await newPool.query(`SELECT COUNT(*) FROM "${targetSchema}"."${tableName}"`);

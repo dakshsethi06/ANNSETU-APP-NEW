@@ -24,7 +24,7 @@ describe('farmer.repository (main)', () => {
       db.query.mockResolvedValue({ rows: [] });
       await repo.updateColdStorageMpin('CS1', 'newhash');
       expect(db.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE public."ColdStorageOnboarding"'),
+        expect.stringContaining('UPDATE "ColdStorageOnboarding"'),
         ['newhash', 'CS1']
       );
     });
@@ -33,7 +33,7 @@ describe('farmer.repository (main)', () => {
       db.query.mockResolvedValue({ rows: [] });
       await repo.updateFarmerMpin('F1', 'newhash');
       expect(db.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE public."Farmer"'),
+        expect.stringContaining('UPDATE "Farmer"'),
         ['newhash', 'F1']
       );
     });
