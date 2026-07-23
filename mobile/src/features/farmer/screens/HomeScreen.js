@@ -243,7 +243,7 @@ export default function HomeScreen({ loggedInPhone, onSwitchRole, onLogout }) {
                 farmerData={farmerData}
                 onSwitchRole={onSwitchRole}
                 onLogout={onLogout}
-                onRefreshFarmer={() => handleSelectFarmer(selectedFarmerId)}
+                onRefreshFarmer={() => handleSelectFarmer(selectedFarmerId, true)}
                 loggedInPhone={loggedInPhone}
                 userRole="Farmer"
               />

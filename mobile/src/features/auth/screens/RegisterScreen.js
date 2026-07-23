@@ -246,7 +246,7 @@ export default function RegisterScreen({ onBack, onNext }) {
     const [form, setForm] = useState({
         name: '', phone: '', email: '',
         state: '', district: '', village: '', pincode: '',
-        aadhaar: '', pan: '', businessName: '', storageName: '',
+        businessName: '', storageName: '',
         mpin: '',
     });
 
@@ -265,12 +265,11 @@ export default function RegisterScreen({ onBack, onNext }) {
             return form.name.length > 1 && form.phone.length === 10 && isMpinValid && isEmailValid;
         }
         if (step === 3) return form.state !== '' && form.district !== '';
-        if (step === 4) return form.aadhaar.length === 12;
         return true;
     };
 
     const handleAction = async () => {
-        if (step === 5) {
+        if (step === 4) {
             setSubmitting(true);
             try {
                 if (onNext) {
@@ -474,33 +473,6 @@ export default function RegisterScreen({ onBack, onNext }) {
                         )}
 
                         {step === 4 && (
-                            <View>
-                                <Text style={styles.title}>{currentT.kycVerification}</Text>
-                                <Text style={styles.subtitle}>{currentT.kycSub}</Text>
-
-                                <View style={localStyles.alertBox}>
-                                    <Feather name="shield" size={16} color="#B45309" style={{ marginTop: 2 }} />
-                                    <Text style={localStyles.alertText}>{currentT.kycAlert}</Text>
-                                </View>
-
-                                <View style={{ marginBottom: SPACING.md }}>
-                                    <Text style={styles.label}>{currentT.aadhaarNumber}</Text>
-                                    <View style={styles.inputContainer}>
-                                        <Feather name="file-text" size={16} color={COLORS.textMid} style={{ marginRight: 8 }} />
-                                        <TextInput style={styles.input} placeholder="XXXX XXXX XXXX" placeholderTextColor="#6B7B6B" keyboardType="numeric" maxLength={12} value={form.aadhaar} onChangeText={v => updateForm('aadhaar', v.replace(/[^0-9]/g, ''))} />
-                                    </View>
-                                </View>
-
-                                <View style={{ marginBottom: SPACING.md }}>
-                                    <Text style={styles.label}>{currentT.panNumber}</Text>
-                                    <View style={styles.inputContainer}>
-                                        <TextInput style={styles.input} placeholder={currentT.panPlaceholder} placeholderTextColor="#6B7B6B" autoCapitalize="characters" maxLength={10} value={form.pan} onChangeText={v => updateForm('pan', v)} />
-                                    </View>
-                                </View>
-                            </View>
-                        )}
-
-                        {step === 5 && (
                             <View style={localStyles.successContainer}>
                                 <View style={localStyles.successIconBox}>
                                     <Feather name="check-circle" size={48} color="#10B981" />
@@ -537,7 +509,7 @@ export default function RegisterScreen({ onBack, onNext }) {
                             {submitting ? (
                                 <ActivityIndicator color="#ffffff" size="small" />
                             ) : (
-                                <Text style={styles.primaryButtonText}>{step === 5 ? currentT.verifyOtp : currentT.continue}</Text>
+                                <Text style={styles.primaryButtonText}>{step === 4 ? currentT.verifyOtp : currentT.continue}</Text>
                             )}
                         </TouchableOpacity>
                     </View>

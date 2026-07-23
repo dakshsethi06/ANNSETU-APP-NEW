@@ -9,6 +9,8 @@ const config = {
   cronSecret: process.env.CRON_SECRET || 'mandi_cron_secret',
   supabaseUrl: process.env.SUPABASE_URL || 'https://tbrvuyzjzruysxamiuaz.supabase.co',
   supabaseAnonKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRicnZ1eXpqenJ1eXN4YW1pdWF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzODczNTAsImV4cCI6MjA5Nzk2MzM1MH0.vs9F0doRCPhI6rPGfURJYak05FbFMhZ1jhmN64m7NXY',
+  cashfreeClientId: process.env.CASHFREE_CLIENT_ID || '',
+  cashfreeClientSecret: process.env.CASHFREE_CLIENT_SECRET || '',
 };
 
 // Validate required config at startup

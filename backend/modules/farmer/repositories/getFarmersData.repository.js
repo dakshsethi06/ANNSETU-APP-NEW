@@ -5,7 +5,7 @@ async function getFarmersData(state, serial_number) {
     SELECT 
       f.id AS "serial_number", f.name, f.state, f."primaryCrop" AS commodity, 
       f."fatherName", f.phone, f.village, f.district, f.tehsil,
-      f."aadhaarNumber", f."panNumber",
+      f."aadhaarNumber", f."panNumber", f."accountNumber", f."ifscCode", f."accountHolderName",
       (
         COALESCE(f."openingBalance", 0)
         + COALESCE((SELECT SUM("totalBillAmount") FROM "NikasiTransaction" WHERE "farmerId" = f.id), 0)
@@ -24,7 +24,7 @@ async function getFarmersData(state, serial_number) {
     paramIndex++;
   }
   if (serial_number) {
-    sql += ` AND f.id = $${paramIndex}`;
+    sql += ` AND (f.id::text = $${paramIndex} OR f.phone = $${paramIndex})`;
     params.push(serial_number);
     paramIndex++;
   }

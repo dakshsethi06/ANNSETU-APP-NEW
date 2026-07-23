@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Platform, StatusBar, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 import { FONTS } from '../../../core/theme/theme';
 import AnnsetuLogo from '../../../core/components/AnnsetuLogo';
 import s from '../styles/profileTabStyles';
 import { useTranslation } from 'react-i18next';
 import { updateFarmerProfile, sendProfileVerificationOtp, verifyAndUpdateFarmerProfile } from '../services/farmerService';
+import { initiateDigiLocker, getDigiLockerStatus } from '../services/kycService';
 import SupportModal from '../../support/modals/SupportModal';
 import ChatbotWebViewModal from '../../support/modals/ChatbotWebViewModal';
 import TranslatedText from '../../../core/components/TranslatedText';
+import KycWizardModal from '../components/KycWizardModal';
+
 
 export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedInPhone, userRole, onRefreshFarmer }) {
   const { t, i18n } = useTranslation();
@@ -20,6 +24,69 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
   const [kycPan, setKycPan] = useState('');
   const [kycLoading, setKycLoading] = useState(false);
   const [kycError, setKycError] = useState('');
+  const [kycWebViewVisible, setKycWebViewVisible] = useState(false);
+  const [kycRedirectUrl, setKycRedirectUrl] = useState('');
+  const [kycVerificationId, setKycVerificationId] = useState('');
+  const [kycPolling, setKycPolling] = useState(false);
+  const [kycPollingStatusText, setKycPollingStatusText] = useState('');
+
+  const handleInitiateKyc = async () => {
+    setKycLoading(true);
+    setKycError('');
+    try {
+      const data = await initiateDigiLocker();
+      if (data.success && data.redirect_url) {
+        setKycRedirectUrl(data.redirect_url);
+        setKycVerificationId(data.verification_id);
+        setKycWebViewVisible(true);
+      } else {
+        throw new Error(data.error || 'Failed to get verification link.');
+      }
+    } catch (err) {
+      console.warn(err);
+      setKycError(err.message || 'Failed to initiate KYC verification.');
+    } finally {
+      setKycLoading(false);
+    }
+  };
+
+  const startKycPolling = (verificationId) => {
+    setKycPolling(true);
+    setKycPollingStatusText('Verifying consent and retrieving details...');
+    let attempts = 0;
+    const maxAttempts = 15; // 45 seconds total
+    
+    const interval = setInterval(async () => {
+      attempts += 1;
+      try {
+        const data = await getDigiLockerStatus(verificationId);
+        if (data.success) {
+          if (data.status === 'SUCCESS') {
+            clearInterval(interval);
+            setKycPolling(false);
+            setKycModalVisible(false);
+            if (onRefreshFarmer) {
+              await onRefreshFarmer();
+            }
+            Alert.alert('KYC Verified', 'Your identity has been verified successfully via DigiLocker.');
+          } else if (data.status === 'FAILED' || data.status === 'EXPIRED') {
+            clearInterval(interval);
+            setKycPolling(false);
+            setKycError('Verification failed or link expired. Please try again.');
+          }
+        }
+      } catch (err) {
+        console.warn('KYC polling error:', err);
+      }
+      
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        setKycPolling(false);
+        setKycError('Verification status check timed out. Please refresh or try again.');
+      }
+    }, 3000);
+  };
+
   const [docsModalVisible, setDocsModalVisible] = useState(false);
   const [reportsModalVisible, setReportsModalVisible] = useState(false);
 
@@ -830,177 +897,13 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
         onClose={() => setChatbotModalVisible(false)}
       />
 
-      {/* Security & KYC Modal */}
-      <Modal
+      {/* Full-Screen Multi-Step PhonePe Style KYC Wizard Modal */}
+      <KycWizardModal
         visible={kycModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setKycModalVisible(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View style={{ width: '90%', backgroundColor: '#ffffff', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5 }}>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: '#1E5C2E', marginBottom: 6, fontFamily: FONTS.bold }}>
-              Security & KYC / सुरक्षा एवं केवाईसी
-            </Text>
-
-            {isKycVerified ? (
-              <>
-                <Text style={{ fontSize: 14, color: '#10B981', fontWeight: '700', marginBottom: 12, fontFamily: FONTS.bold }}>
-                  ✓ KYC Verified / केवाईसी सत्यापित है
-                </Text>
-                <Text style={{ fontSize: 13, color: '#4B5563', marginBottom: 20, fontFamily: FONTS.regular, lineHeight: 18 }}>
-                  Your identity has been verified successfully. Your details are secured.
-                </Text>
-
-                {farmerData?.aadhaarNumber ? (
-                  <View style={{ marginBottom: 10, padding: 12, backgroundColor: '#F9FAF9', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB' }}>
-                    <Text style={{ fontSize: 11, color: '#71717A', fontFamily: FONTS.regular }}>Aadhaar Number</Text>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1A2E1A', fontFamily: FONTS.bold }}>
-                      XXXX-XXXX-{farmerData.aadhaarNumber.slice(-4)}
-                    </Text>
-                  </View>
-                ) : null}
-
-                {farmerData?.panNumber ? (
-                  <View style={{ marginBottom: 20, padding: 12, backgroundColor: '#F9FAF9', borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB' }}>
-                    <Text style={{ fontSize: 11, color: '#71717A', fontFamily: FONTS.regular }}>PAN Number</Text>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1A2E1A', fontFamily: FONTS.bold }}>
-                      XXXXX{farmerData.panNumber.slice(-5)}
-                    </Text>
-                  </View>
-                ) : null}
-
-                <TouchableOpacity
-                  style={{ paddingVertical: 12, backgroundColor: '#1E5C2E', borderRadius: 12, alignItems: 'center' }}
-                  onPress={() => setKycModalVisible(false)}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#ffffff', fontFamily: FONTS.bold }}>Close</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Text style={{ fontSize: 13, color: '#71717A', marginBottom: 16, fontFamily: FONTS.regular }}>
-                  Please enter your Aadhaar and PAN Card details to verify your identity.
-                </Text>
-
-                {kycError ? (
-                  <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 12, fontFamily: FONTS.regular }}>
-                    {kycError}
-                  </Text>
-                ) : null}
-
-                <Text style={{ fontSize: 12, color: '#71717A', marginBottom: 4, fontFamily: FONTS.bold }}>
-                  Aadhaar Number (12 Digits) / आधार संख्या
-                </Text>
-                <TextInput
-                  style={{
-                    height: 44,
-                    borderWidth: 1,
-                    borderColor: '#E5E2D9',
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    marginBottom: 14,
-                    fontFamily: FONTS.regular,
-                    color: '#1A2E1A',
-                    backgroundColor: '#FFFFFF',
-                  }}
-                  value={kycAadhaar}
-                  onChangeText={setKycAadhaar}
-                  keyboardType="number-pad"
-                  maxLength={12}
-                  placeholder="e.g. 123456789012"
-                />
-
-                <Text style={{ fontSize: 12, color: '#71717A', marginBottom: 4, fontFamily: FONTS.bold }}>
-                  PAN Number (10 Alphanumeric) / पैन संख्या
-                </Text>
-                <TextInput
-                  style={{
-                    height: 44,
-                    borderWidth: 1,
-                    borderColor: '#E5E2D9',
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    marginBottom: 20,
-                    fontFamily: FONTS.regular,
-                    color: '#1A2E1A',
-                    backgroundColor: '#FFFFFF',
-                    autoCapitalize: 'characters',
-                  }}
-                  value={kycPan}
-                  onChangeText={setKycPan}
-                  maxLength={10}
-                  placeholder="e.g. ABCDE1234F"
-                />
-
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <TouchableOpacity
-                    style={{ flex: 1, paddingVertical: 12, backgroundColor: '#F5F3EE', borderRadius: 12, alignItems: 'center', marginRight: 10 }}
-                    onPress={() => setKycModalVisible(false)}
-                    disabled={kycLoading}
-                  >
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#71717A', fontFamily: FONTS.bold }}>Cancel</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={{ flex: 1, paddingVertical: 12, backgroundColor: '#1E5C2E', borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
-                    onPress={async () => {
-                      const cleanAadhaar = kycAadhaar.trim();
-                      const cleanPan = kycPan.trim().toUpperCase();
-
-                      if (!cleanAadhaar && !cleanPan) {
-                        setKycError('Please provide either Aadhaar or PAN number.');
-                        return;
-                      }
-                      if (cleanAadhaar && (cleanAadhaar.length !== 12 || isNaN(cleanAadhaar))) {
-                        setKycError('Aadhaar number must be exactly 12 digits.');
-                        return;
-                      }
-                      if (cleanPan && cleanPan.length !== 10) {
-                        setKycError('PAN number must be exactly 10 characters.');
-                        return;
-                      }
-
-                      const serialNumber = farmerData?.serial_number || farmerData?.id;
-                      if (!serialNumber) {
-                        setKycError('Farmer identifier not found.');
-                        return;
-                      }
-
-                      setKycLoading(true);
-                      setKycError('');
-
-                      try {
-                        await updateFarmerProfile(serialNumber, {
-                          aadhaarNumber: cleanAadhaar || null,
-                          panNumber: cleanPan || null
-                        });
-                        if (onRefreshFarmer) {
-                          await onRefreshFarmer();
-                        }
-                        setKycModalVisible(false);
-                        Alert.alert('KYC Updated', 'Your identity details have been submitted successfully.');
-                      } catch (err) {
-                        console.warn(err);
-                        setKycError(err.message || 'Failed to update identity details.');
-                      } finally {
-                        setKycLoading(false);
-                      }
-                    }}
-                    disabled={kycLoading}
-                  >
-                    {kycLoading ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
-                    ) : (
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#ffffff', fontFamily: FONTS.bold }}>Verify Now</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setKycModalVisible(false)}
+        farmerData={farmerData}
+        onRefreshProfile={onRefreshFarmer}
+      />
 
       {/* Documents Modal */}
       <Modal
@@ -1020,17 +923,24 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
               <View>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: '#1A2E1A', fontFamily: FONTS.bold }}>Aadhaar Card / आधार कार्ड</Text>
                 <Text style={{ fontSize: 11, color: '#71717A', fontFamily: FONTS.regular }}>
-                  {farmerData?.aadhaarNumber ? `Verified (XXXX-XXXX-${farmerData.aadhaarNumber.slice(-4)})` : 'Not Uploaded'}
+                  {farmerData?.aadhaarNumber ? `Verified (${farmerData.aadhaarNumber})` : 'Not Verified / सत्यापित नहीं'}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: farmerData?.aadhaarNumber ? '#E6F4EA' : '#F5F3EE', borderRadius: 8 }}
-                onPress={() => Alert.alert('Upload Document', 'Upload files feature is coming soon!')}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: farmerData?.aadhaarNumber ? '#137333' : '#71717A', fontFamily: FONTS.bold }}>
-                  {farmerData?.aadhaarNumber ? 'View' : 'Upload'}
-                </Text>
-              </TouchableOpacity>
+              {farmerData?.aadhaarNumber ? (
+                <View style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#E6F4EA', borderRadius: 8 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#137333', fontFamily: FONTS.bold }}>Verified</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#1E5C2E', borderRadius: 8 }}
+                  onPress={() => {
+                    setDocsModalVisible(false);
+                    setKycModalVisible(true);
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#ffffff', fontFamily: FONTS.bold }}>Verify</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* PAN Row */}
@@ -1038,17 +948,24 @@ export default function ProfileTab({ farmerData, onSwitchRole, onLogout, loggedI
               <View>
                 <Text style={{ fontSize: 14, fontWeight: '700', color: '#1A2E1A', fontFamily: FONTS.bold }}>PAN Card / पैन कार्ड</Text>
                 <Text style={{ fontSize: 11, color: '#71717A', fontFamily: FONTS.regular }}>
-                  {farmerData?.panNumber ? `Verified (XXXXX${farmerData.panNumber.slice(-5)})` : 'Not Uploaded'}
+                  {farmerData?.panNumber ? `Verified (${farmerData.panNumber})` : 'Not Verified / सत्यापित नहीं'}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: farmerData?.panNumber ? '#E6F4EA' : '#F5F3EE', borderRadius: 8 }}
-                onPress={() => Alert.alert('Upload Document', 'Upload files feature is coming soon!')}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: farmerData?.panNumber ? '#137333' : '#71717A', fontFamily: FONTS.bold }}>
-                  {farmerData?.panNumber ? 'View' : 'Upload'}
-                </Text>
-              </TouchableOpacity>
+              {farmerData?.panNumber ? (
+                <View style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#E6F4EA', borderRadius: 8 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#137333', fontFamily: FONTS.bold }}>Verified</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#1E5C2E', borderRadius: 8 }}
+                  onPress={() => {
+                    setDocsModalVisible(false);
+                    setKycModalVisible(true);
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#ffffff', fontFamily: FONTS.bold }}>Verify</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Land Deed Row */}
