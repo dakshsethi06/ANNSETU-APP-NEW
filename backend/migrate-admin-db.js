@@ -70,7 +70,7 @@ async function main() {
       }
       
       console.log(`  Copying data...`);
-      const data = await oldPool.query(`SELECT * FROM public."${t}"`);
+      const data = await oldPool.query(`SELECT * FROM "${t}"`);
       if (data.rows.length > 0) {
         // use columns that exist in BOTH to avoid insert errors if there's any mismatch we couldn't resolve
         const currentNewCols = await getColumns(newPool, 'admin', t);

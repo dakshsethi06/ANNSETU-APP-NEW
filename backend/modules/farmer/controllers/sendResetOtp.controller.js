@@ -21,7 +21,7 @@ async function sendResetOtp(req, res) {
     // 2. Fallback: Check if Cold Storage exists
     if (!targetUser) {
       const csRes = await db.query(
-        'SELECT id, "displayName", email, phone, "account_status" FROM public."ColdStorageOnboarding" WHERE phone = $1 OR phone = $2',
+        'SELECT id, "displayName", email, phone, "account_status" FROM "ColdStorageOnboarding" WHERE phone = $1 OR phone = $2',
         [cleanPhone, '+91' + cleanPhone]
       );
       if (csRes.rows[0]) {

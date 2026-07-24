@@ -3,7 +3,7 @@ const db = require('../../../config/database');
 async function getFarmerByPhone(phone) {
   const cleanPhone = phone.replace('+91', '').trim();
   const result = await db.query(
-    `SELECT * FROM public."Farmer" 
+    `SELECT * FROM "Farmer" 
      WHERE "phone" = $1 
         OR "phone" = $2 
         OR "id" = $1 

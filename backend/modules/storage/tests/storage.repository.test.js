@@ -26,7 +26,7 @@ describe('storage.repository unit tests', () => {
 
     const result = await storageRepository.getColdStorages();
 
-    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM public."ColdStorageOnboarding" c'));
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM "ColdStorageOnboarding" c'));
     expect(result).toEqual([{
       id: 'cs1',
       name: 'Sharma',
@@ -45,7 +45,7 @@ describe('storage.repository unit tests', () => {
     const params = ['cs1', 'CS-CS1', 'CS1 Legal', 'CS1 Disp', 'Mgr', '999', 'cs@mail.com', 'Tundla', 'Firozabad', 'UP', 'Addr', 5000, 10, 'APPROVED', null, null, null, null, true, null, 'Consent', 'v1.0', 'hash'];
     await storageRepository.createColdStorage(params);
 
-    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO public."ColdStorageOnboarding"'), params);
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO "ColdStorageOnboarding"'), params);
   });
 
   describe('getStorageSummaryData', () => {
@@ -75,9 +75,9 @@ describe('storage.repository unit tests', () => {
       const result = await storageRepository.getStorageSummaryData('cs1');
 
       expect(db.query).toHaveBeenCalledTimes(5);
-      expect(db.query).toHaveBeenNthCalledWith(1, expect.stringContaining('FROM public."ColdStorageOnboarding" WHERE id = $1'), ['cs1']);
-      expect(db.query).toHaveBeenNthCalledWith(2, expect.stringContaining('FROM public."AmadLot" WHERE "coldStorageId" = $1'), ['cs1']);
-      expect(db.query).toHaveBeenNthCalledWith(3, expect.stringContaining('FROM public."NikasiTransaction" WHERE "coldStorageId" = $1'), ['cs1']);
+      expect(db.query).toHaveBeenNthCalledWith(1, expect.stringContaining('FROM "ColdStorageOnboarding" WHERE id = $1'), ['cs1']);
+      expect(db.query).toHaveBeenNthCalledWith(2, expect.stringContaining('FROM "AmadLot" WHERE "coldStorageId" = $1'), ['cs1']);
+      expect(db.query).toHaveBeenNthCalledWith(3, expect.stringContaining('FROM "NikasiTransaction" WHERE "coldStorageId" = $1'), ['cs1']);
       expect(db.query).toHaveBeenNthCalledWith(4, expect.stringContaining('CURRENT_DATE'), ['cs1']);
       expect(db.query).toHaveBeenNthCalledWith(5, expect.stringContaining('ORDER BY "amadDate" DESC LIMIT 5'), ['cs1']);
 
