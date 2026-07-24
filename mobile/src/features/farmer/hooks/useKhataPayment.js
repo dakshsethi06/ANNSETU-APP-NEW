@@ -24,6 +24,7 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
 
   const [paymentId, setPaymentId] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [hasInitializedAmount, setHasInitializedAmount] = useState(false);
 
   // Missing states from previous refactoring
   const [razorpayOrderData, setRazorpayOrderData] = useState(null);
@@ -34,8 +35,11 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
   const pendingRent = parseFloat(farmerData?.pendingRent || 0);
 
   useEffect(() => {
-    setPaymentAmount(pendingRent > 0 ? pendingRent.toString() : '0');
-  }, [pendingRent]);
+    if (pendingRent > 0 && !hasInitializedAmount) {
+      setPaymentAmount(pendingRent.toString());
+      setHasInitializedAmount(true);
+    }
+  }, [pendingRent, hasInitializedAmount]);
 
   const adjustDay = (val) => {
     let nextDay = pickerDay + val;
@@ -130,9 +134,15 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
       const farmerId = farmerData?.id || farmerData?.serial_number;
       if (!farmerId) throw new Error('Farmer identifier not found.');
 
+      const { useAuthStore } = require('../../auth/store/useAuthStore');
+      const token = useAuthStore.getState().session?.access_token;
+
       const response = await fetch(`${BACKEND_URL}/api/payments/order`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ farmerId, amount: targetAmount })
       });
 
@@ -261,9 +271,15 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     }
 
     try {
+      const { useAuthStore } = require('../../auth/store/useAuthStore');
+      const token = useAuthStore.getState().session?.access_token;
+
       const response = await fetch(`${BACKEND_URL}/api/payments/verify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           paymentId: paymentId,
           utrNumber: utrNumber,
@@ -290,6 +306,8 @@ export function useKhataPayment(farmerData, holdingsList, onPaymentSuccess) {
     setShowVerificationForm(false);
     setShowSummary(false);
     setIsOnlineSuccess(false);
+    setPaymentAmount('');
+    setHasInitializedAmount(false);
     if (onPaymentSuccess) onPaymentSuccess();
   };
 

@@ -41,13 +41,20 @@ async function createOrder(req, res) {
     let finalAmount = amount ? parseFloat(amount) : 0;
     console.log('[Create Order API] parsed finalAmount:', finalAmount);
     
-    // Acquire a lock on the farmer's pending transactions to prevent race conditions
+    // Acquire a lock on the farmer's record to prevent race conditions
     await client.query(
-      `SELECT id FROM "NikasiTransaction" WHERE "farmerId" = $1 AND "balanceDueAmount" > 0 FOR UPDATE`,
+      `SELECT id FROM "Farmer" WHERE id = $1 FOR UPDATE`,
       [farmerId]
     );
     const lockRes = await client.query(
-      `SELECT COALESCE(SUM("balanceDueAmount"), 0) AS "pendingRent" FROM "NikasiTransaction" WHERE "farmerId" = $1`,
+      `SELECT (
+        COALESCE(f."openingBalance", 0)
+        + COALESCE((SELECT SUM("totalBillAmount") FROM "NikasiTransaction" WHERE "farmerId" = f.id), 0)
+        + COALESCE((SELECT SUM("amount") FROM "BillingEntry" WHERE "farmerId" = f.id), 0)
+        - COALESCE((SELECT SUM("amount") FROM "Payment" WHERE "farmerId" = f.id AND "status" IN ('APPROVED', 'PAID')), 0)
+      ) AS "pendingRent"
+      FROM "Farmer" f
+      WHERE f.id = $1`,
       [farmerId]
     );
     const pendingDues = parseFloat(lockRes.rows[0]?.pendingRent || 0);
@@ -106,8 +113,9 @@ async function createOrder(req, res) {
         paymentLinkUrl = link ? link.short_url : `http://${serverIp}/api/payments/mock-checkout/${orderId}`;
       } catch (err) {
         console.warn('Real Razorpay order/link generation failed, falling back to mock:', err.message);
-        const mockOrder = await razorpayService.createOrder(amountPaise, receipt);
-        orderId = mockOrder.id;
+        if (!orderId) {
+          orderId = `order_mock_${Math.random().toString(36).substr(2, 9)}`;
+        }
         paymentLinkUrl = `http://${serverIp}/api/payments/mock-checkout/${orderId}`;
       }
     }

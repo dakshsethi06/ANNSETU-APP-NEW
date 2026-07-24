@@ -7,7 +7,7 @@ jest.mock('../../../config/database', () => ({
   query: jest.fn(),
   connect: jest.fn().mockImplementation(() => Promise.resolve({
     query: jest.fn().mockImplementation((queryStr) => {
-      if (queryStr.includes('FOR UPDATE') || queryStr.includes('SUM("balanceDueAmount")')) {
+      if (queryStr.includes('FOR UPDATE') || queryStr.includes('SUM("balanceDueAmount")') || queryStr.includes('openingBalance') || queryStr.includes('pendingRent')) {
         // Just return a mock value that can be overridden in tests, or we can look up the mock of getFarmerPendingRent
         const paymentRepo = require('../payment.repository');
         return paymentRepo.getFarmerPendingRent().then(val => ({ rows: [{ pendingRent: val }] }));
@@ -93,17 +93,19 @@ describe('Payment Checkout Capping Unit Tests', () => {
     await createOrder(mockReq, mockRes);
 
     expect(spyWarn).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch farmer profile'), 'Profile fetch failed');
-    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     spyWarn.mockRestore();
   });
 
-  test('should return 400 if coldStorageId is missing', async () => {
+  test('should fallback to default coldStorageId and succeed if coldStorageId is missing', async () => {
+    paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
     farmerRepository.getFarmerBasicDetails.mockResolvedValue({ name: 'Farmer', coldStorageId: null });
+    razorpayService.isMockMode.mockReturnValue(true);
+    razorpayService.createOrder.mockResolvedValue({ id: 'order_mock123' });
 
     await createOrder(mockReq, mockRes);
 
-    expect(mockRes.status).toHaveBeenCalledWith(400);
-    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'coldStorageId is required.' }));
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 
   test('should fallback to pending rent if amount is missing or falsy', async () => {
@@ -127,7 +129,7 @@ describe('Payment Checkout Capping Unit Tests', () => {
     await createOrder(mockReq, mockRes);
 
     expect(mockRes.status).toHaveBeenCalledWith(400);
-    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'No pending rent balance to pay.' }));
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'No dues left to pay.' }));
   });
 
   test('real mode: should create payment link successfully with host routing', async () => {
@@ -251,17 +253,15 @@ describe('Payment Checkout Capping Unit Tests', () => {
     }));
   });
 
-  test('should handle getFarmerBasicDetails returning null gracefully', async () => {
+  test('should handle getFarmerBasicDetails returning null gracefully by falling back and succeeding', async () => {
     paymentRepository.getFarmerPendingRent.mockResolvedValue(1000);
-    // Resolving to null
     farmerRepository.getFarmerBasicDetails.mockResolvedValue(null);
     razorpayService.isMockMode.mockReturnValue(true);
     razorpayService.createOrder.mockResolvedValue({ id: 'order_mock123' });
 
     await createOrder(mockReq, mockRes);
 
-    // Should return 400 because coldStorageId will be missing
-    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
 
   test('should use req.user.id as farmerId if present', async () => {

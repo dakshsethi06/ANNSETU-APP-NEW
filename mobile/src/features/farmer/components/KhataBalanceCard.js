@@ -29,7 +29,7 @@ export function KhataBalanceCard({ lang, pendingRent, setDateModalVisible, handl
         <TouchableOpacity
           style={styles.btnPay}
           activeOpacity={0.9}
-          onPress={() => handlePayPress()}
+          onPress={() => handlePayPress(pendingRent)}
         >
           <Text style={styles.btnPayText}>{lang === 'en' ? 'Pay' : 'भुगतान करें'}</Text>
         </TouchableOpacity>

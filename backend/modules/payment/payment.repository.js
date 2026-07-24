@@ -3,11 +3,17 @@ const { extractBankNameAndTransactionId } = require('./payment.helpers');
 
 async function getFarmerPendingRent(farmerId) {
   const result = await db.query(
-    `SELECT COALESCE(SUM("balanceDueAmount"), 0) AS "pendingRent"
-     FROM "NikasiTransaction"
-     WHERE "farmerId" = $1`,
+    `SELECT (
+      COALESCE(f."openingBalance", 0)
+      + COALESCE((SELECT SUM("totalBillAmount") FROM "NikasiTransaction" WHERE "farmerId" = f.id), 0)
+      + COALESCE((SELECT SUM("amount") FROM "BillingEntry" WHERE "farmerId" = f.id), 0)
+      - COALESCE((SELECT SUM("amount") FROM "Payment" WHERE "farmerId" = f.id AND "status" IN ('APPROVED', 'PAID')), 0)
+    ) AS "pendingRent"
+    FROM "Farmer" f
+    WHERE f.id = $1`,
     [farmerId]
   );
+  if (result.rows.length === 0) return 0;
   return parseFloat(result.rows[0]?.pendingRent || 0);
 }
 

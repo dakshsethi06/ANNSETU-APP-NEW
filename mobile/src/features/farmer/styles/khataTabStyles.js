@@ -10,7 +10,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 12 : 56,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 30) + 12 : 56,
     paddingBottom: 12,
     paddingHorizontal: 20,
     backgroundColor: '#FAF7F0',
